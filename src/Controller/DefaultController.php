@@ -116,7 +116,7 @@ class DefaultController extends AbstractController
                     array_push($productTable, ['id' => $i,'nom'=>$product->getNom(), 'lignesCommande' => $ligneCommndeTable]);
                     $i++;
                 }
-                array_push($jourDistribsTable, ['date' => $jourDistrib->getDate(), 'produits' => $productTable]);
+                array_push($jourDistribsTable, ['id' => $jourDistrib->getId(), 'date' => $jourDistrib->getDate(), 'produits' => $productTable]);
             }
 
             return $this->render('passe_commande/livraison_by_product.html.twig', [

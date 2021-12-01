@@ -15,57 +15,59 @@
         <div class="card-header border-transparent">
             <h3 class="card-title">{{ jour_distrib.date|format_datetime('full', 'none', locale='fr') }}</h3>
             <div class="card-tools">
-            <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                <i class="fas fa-minus"></i>
-            </button>
+                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <i class="fas fa-minus"></i>
+                </button>
             </div>
         </div>
-        <div class="card card-{{ options_settings.get('color') }} card-outline card-tabs">
-            <div class="card-header p-0 pt-1 border-bottom-0">
-                <ul class="nav nav-tabs" id="custom-tabs-three-tab" role="tablist">
-                {% for produit in jour_distrib.produits %}
-                    {% if produit.id==0 %}{% set active='active' %}{% else %}{% set active='' %}{% endif %}
-                    <li class="nav-item">
-                        <a class="nav-link {{ active }}" id="custom-tabs-three-{{ produit.id }}-{{ jour_distrib.id }}-tab" data-toggle="pill" href="#custom-tabs-three-{{ produit.id }}-{{ jour_distrib.id }}" role="tab" aria-controls="custom-tabs-three-{{ produit.id }}-{{ jour_distrib.id }}" aria-selected="true">{{ produit.nom }}</a>
-                    </li>
-                {% endfor %}
-                </ul>
-            </div>
-            <div class="card-body">
-                <div class="tab-content" id="custom-tabs-three-tabContent">
-                {% for produit in jour_distrib.produits %}
-                    {% if produit.id==0 %}{% set active='show active'%}{% else %}{% set active='' %}{% endif %}
+        <div class="card-body p-0">
+            <div class="card card-{{ options_settings.get('color') }} card-outline card-tabs">
+                <div class="card-header p-0 pt-1 border-bottom-0">
+                    <ul class="nav nav-tabs" id="custom-tabs-three-tab" role="tablist">
+                    {% for produit in jour_distrib.produits %}
+                        {% if produit.id==0 %}{% set active='active' %}{% else %}{% set active='' %}{% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link {{ active }}" id="custom-tabs-three-{{ produit.id }}-{{ jour_distrib.id }}-tab" data-toggle="pill" href="#custom-tabs-three-{{ produit.id }}-{{ jour_distrib.id }}" role="tab" aria-controls="custom-tabs-three-{{ produit.id }}-{{ jour_distrib.id }}" aria-selected="true">{{ produit.nom }}</a>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="custom-tabs-three-tabContent">
+                    {% for produit in jour_distrib.produits %}
+                        {% if produit.id==0 %}{% set active='show active'%}{% else %}{% set active='' %}{% endif %}
 
-                    <div class="tab-pane fade  {{ active }}" id="custom-tabs-three-{{ produit.id }}-{{ jour_distrib.id }}" role="tabpanel" aria-labelledby="custom-tabs-three-{{ produit.id }}-{{ jour_distrib.id }}-tab">
-                        <table class="table table-striped table-sm table-bordered" id="tableau-{{ produit.id }}">
-                            <thead>
-                                <tr>
-                                    <th>N°</th>
-                                    <th>Nom</th>
-                                    <th>Produit</th>
-                                    <th>Livrée</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for ligneCommande in produit.lignesCommande %}
+                        <div class="tab-pane fade  {{ active }}" id="custom-tabs-three-{{ produit.id }}-{{ jour_distrib.id }}" role="tabpanel" aria-labelledby="custom-tabs-three-{{ produit.id }}-{{ jour_distrib.id }}-tab">
+                            <table class="table table-striped table-sm table-bordered" id="tableau-{{ produit.id }}-{{ jour_distrib.id }}">
+                                <thead>
+                                    <tr>
+                                        <th>N°</th>
+                                        <th>Nom</th>
+                                        <th>Produit</th>
+                                        <th>Livrée</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ligneCommande in produit.lignesCommande %}
 
-                                    {% if ligneCommande.livree == null%}
-                                        <tr class="table">
-                                            <td>{{ ligneCommande.commande.id }}</td>
-                                            <td>{{ ligneCommande.commande.user.prenom }} {{ ligneCommande.commande.user.nom }}</br><i><small>{{ ligneCommande.commande.commentaire }}</small></small></td>
-                                            <td>
-                                                <p>{{ ligneCommande.quantite}} {{ ligneCommande.product.nom }} - {{ ligneCommande.product.conditionnement }}{{ ligneCommande.product.unit }} </p>
-                                            </td>
-                                            <td>
-                                                <a href="{{ path('livree_ligne_commande', { ligneCommande: ligneCommande.id }) }}" onclick="return confirm('Tu lui as vraiment donné ?')"><i class="fas fa-check"></i></a>
-                                            </td>
-                                        </tr>
-                                    {% endif %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                        {% if ligneCommande.livree == null%}
+                                            <tr class="table">
+                                                <td>{{ ligneCommande.commande.id }}</td>
+                                                <td>{{ ligneCommande.commande.user.prenom }} {{ ligneCommande.commande.user.nom }}</br><i><small>{{ ligneCommande.commande.commentaire }}</small></small></td>
+                                                <td>
+                                                    <p>{{ ligneCommande.quantite}} {{ ligneCommande.product.nom }} - {{ ligneCommande.product.conditionnement }}{{ ligneCommande.product.unit }} </p>
+                                                </td>
+                                                <td>
+                                                    <a href="{{ path('livree_ligne_commande', { ligneCommande: ligneCommande.id }) }}" onclick="return confirm('Tu lui as vraiment donné ?')"><i class="fas fa-check"></i></a>
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endfor %}
                     </div>
-                {% endfor %}
                 </div>
             </div>
         </div>
@@ -78,4 +80,32 @@
     </div>
 {% endfor %}
 </div>
+{% endblock %}
+
+{% block javascripts %}
+{% for jour_distrib in jour_distribs %}
+{% for produit in jour_distrib.produits %}
+    <script>
+    $(function () {
+        $('#tableau-{{ produit.id }}-{{ jour_distrib.id }}').DataTable({
+        "dom": 'Bfrtip',
+        "buttons": [
+            'csv', 'excel', 'pdf'
+        ],
+        "paging": true,
+        "lengthChange": false,
+        "searching": true,
+        "ordering": true,
+        "info": true,
+        "autoWidth": false,
+        "responsive": true,
+        "language": {
+            "url": "/French.json"
+        },
+        "order": [[ 0, "asc" ]],
+        });
+    });
+    </script>
+{% endfor %}
+{% endfor %}
 {% endblock %}

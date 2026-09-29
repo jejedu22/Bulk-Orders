@@ -72,6 +72,10 @@ Exemples de `MAILER_DSN` :
   — un **mot de passe d'application** est obligatoire (compte Google →
   Sécurité → Validation en deux étapes → Mots de passe des applications),
   à saisir **sans les espaces** ;
+- Infomaniak : `smtp://adresse%40domaine.fr:MOTDEPASSE@mail.infomaniak.com:587`
+  — identifiant = adresse complète de la boîte ; avec la double
+  authentification, utiliser un mot de passe d'application. L'expéditeur
+  doit être cette boîte : renseigner `MAILER_FROM` avec la même adresse ;
 - autre fournisseur : `smtp://utilisateur:motdepasse@smtp.example.org:587`.
 
 Les caractères spéciaux de l'identifiant et du mot de passe doivent être

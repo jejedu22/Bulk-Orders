@@ -34,15 +34,6 @@ Au démarrage (`RUN_MIGRATIONS=1`, par défaut) :
   sont marquées comme exécutées (l'historique ne rejoue pas depuis zéro) ;
 - base existante : `doctrine:migrations:migrate`.
 
-Reprise d'une base existante :
-
-```bash
-docker compose --env-file .env.docker up -d db
-docker compose --env-file .env.docker exec -T db \
-    sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' < dump.sql
-docker compose --env-file .env.docker up -d
-```
-
 Sauvegarde :
 
 ```bash
@@ -50,8 +41,11 @@ docker compose --env-file .env.docker exec -T db \
     sh -c 'mysqldump -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' > dump.sql
 ```
 
-Le logo existant se copie dans le volume avec
-`docker compose --env-file .env.docker cp logo.png app:/var/www/html/public/uploads/logo/`.
+Sauvegarde quotidienne (crontab) :
+
+```bash
+0 3 * * * cd /chemin/Bulk-Orders && docker compose --env-file .env.docker exec -T db sh -c 'mysqldump -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' | gzip > /backups/bulkorders-$(date +\%F).sql.gz
+```
 
 ### Commandes utiles
 
@@ -59,3 +53,131 @@ Le logo existant se copie dans le volume avec
 docker compose --env-file .env.docker logs -f app
 docker compose --env-file .env.docker exec -u www-data app php bin/console <commande>
 ```
+
+## Migration depuis l'ancienne installation (Apache + MySQL 5.7)
+
+Deux règles :
+
+- **importer le dump avant le premier démarrage de `app`**, sinon un schéma
+  vide est créé ;
+- Traefik prend les ports 80/443 : si l'ancien Apache est sur le même
+  serveur, il faut l'arrêter au moment de la bascule.
+
+### 1. Préparation (sans coupure)
+
+```bash
+# Traefik
+git clone https://github.com/jejedu22/traefik.git && cd traefik
+cp .env.example .env        # ACME_EMAIL, TRAEFIK_DASHBOARD_HOST, TRAEFIK_DASHBOARD_AUTH
+# ne pas le démarrer tant que l'ancien Apache occupe 80/443
+
+# Application
+cd .. && git clone https://github.com/jejedu22/Bulk-Orders.git && cd Bulk-Orders
+cp .env.docker.example .env.docker
+```
+
+Renseigner `.env.docker` :
+
+- `APP_HOST` / `APP_HOST_REGEX` : le domaine actuel ;
+- `APP_SECRET` : `openssl rand -hex 32` ;
+- `MYSQL_*` : nouveaux mots de passe ;
+- `MAILER_DSN` : repris de l'ancienne config (`.env.local` ou variables Apache),
+  par ex. `gmail+smtp://USER:MOT_DE_PASSE_APPLICATION@default`.
+
+Construire l'image et démarrer **uniquement** la base :
+
+```bash
+docker compose --env-file .env.docker build
+docker compose --env-file .env.docker up -d db
+```
+
+### 2. Répétition à blanc (recommandé)
+
+Faire les étapes 3.b et 3.c avec un dump pris à chaud, pour valider l'import
+dans MySQL 8.4 et l'état des migrations, puis repartir de zéro :
+
+```bash
+docker compose --env-file .env.docker down -v
+docker compose --env-file .env.docker up -d db
+```
+
+### 3. Bascule (quelques minutes de coupure)
+
+**a. Figer l'ancienne application** (page de maintenance ou arrêt du vhost)
+pour qu'aucune commande n'arrive pendant l'export.
+
+**b. Exporter la base et le logo** depuis l'ancienne installation :
+
+```bash
+mysqldump -u <user> -p --single-transaction --no-tablespaces \
+    --default-character-set=utf8mb4 <base> > dump.sql
+tar czf logo.tgz -C /chemin/ancienne/app/public/uploads logo
+```
+
+**c. Importer dans le nouveau MySQL** :
+
+```bash
+docker compose --env-file .env.docker exec -T db \
+    sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' < dump.sql
+```
+
+Contrôler les migrations (table `migration_versions`, dernière version
+attendue : `20210218223845`) :
+
+```bash
+docker compose --env-file .env.docker run --rm --no-deps -e RUN_MIGRATIONS=0 app \
+    php bin/console doctrine:migrations:status
+```
+
+- `New Migrations: 0` : rien à faire ;
+- sinon elles seront appliquées au démarrage. Vérifier qu'elles correspondent
+  à des changements réellement absents de la base ; si le schéma est déjà à
+  jour, les marquer comme exécutées :
+  `php bin/console doctrine:migrations:version --add --all -n`
+  (même commande `run --rm --no-deps -e RUN_MIGRATIONS=0 app` que ci-dessus).
+
+**d. Arrêter l'ancien Apache** (s'il est sur le même serveur) **et démarrer
+Traefik** :
+
+```bash
+sudo systemctl stop apache2 && sudo systemctl disable apache2
+cd ../traefik && docker compose up -d
+```
+
+**e. DNS** : si le serveur change, faire pointer le domaine vers la nouvelle
+IP (baisser le TTL la veille). Le certificat Let's Encrypt n'est délivré
+qu'une fois le DNS en place.
+
+**f. Démarrer l'application et restaurer le logo** :
+
+```bash
+cd ../Bulk-Orders
+docker compose --env-file .env.docker up -d
+tar xzf logo.tgz
+docker compose --env-file .env.docker cp logo/. app:/var/www/html/public/uploads/logo/
+docker compose --env-file .env.docker exec app chown -R www-data:www-data public/uploads
+```
+
+### 4. Vérifications
+
+```bash
+docker compose --env-file .env.docker logs app | tail -30   # « No migrations to execute. »
+docker logs traefik 2>&1 | grep -i acme                     # certificat obtenu
+```
+
+Dans le navigateur : HTTPS valide, connexion avec un compte existant,
+commandes / produits / jours de distribution présents, logo affiché, exports,
+envoi d'un mail (réinitialisation de mot de passe ou contact).
+Les utilisateurs devront se reconnecter (sessions non migrées).
+
+### 5. Retour arrière
+
+Tant que l'ancienne base n'a pas été modifiée :
+
+```bash
+cd traefik && docker compose down
+sudo systemctl enable --now apache2
+```
+
+(et remettre l'ancien DNS s'il a changé). Conserver l'ancienne installation
+et `dump.sql` quelques semaines.

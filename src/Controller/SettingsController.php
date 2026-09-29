@@ -62,9 +62,6 @@ class SettingsController extends AbstractController
                     $setting->setValue($newFilename);
                 }
             }
-            if ($form->get('name')->getData() == 'contact_email') {
-                $setting->setValue($form->get('value')->getData());
-            }
             $this->getDoctrine()->getManager()->flush();
 
             return $this->redirectToRoute('settings_index');

@@ -4,6 +4,8 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
 parameters:
+    # Expéditeur des e-mails (facultatif, par défaut l'e-mail de contact)
+    env(MAILER_FROM): ''
     logo_directory: '%kernel.project_dir%/public/uploads/logo'
 services:
     # default configuration for services in *this* file
@@ -19,6 +21,10 @@ services:
 
     # controllers are imported separately to make sure services can be injected
     # as action arguments even if you don't extend any base controller class
+    App\Service\MailSender:
+        arguments:
+            $mailerFrom: '%env(MAILER_FROM)%'
+
     App\Controller\:
         resource: '../src/Controller'
         tags: ['controller.service_arguments']

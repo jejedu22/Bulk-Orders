@@ -54,6 +54,36 @@ docker compose --env-file .env.docker logs -f app
 docker compose --env-file .env.docker exec -u www-data app php bin/console <commande>
 ```
 
+### E-mails
+
+Les e-mails (commande enregistrée, paiement reçu, mot de passe oublié) partent
+via `MAILER_DSN` dans `.env.docker`. Après modification, recréer le conteneur :
+`docker compose --env-file .env.docker up -d`.
+
+Tester l'envoi (affiche l'erreur exacte du serveur SMTP en cas d'échec) :
+
+```bash
+docker compose --env-file .env.docker exec -u www-data app php bin/console app:mail:test vous@example.org
+```
+
+Exemples de `MAILER_DSN` :
+
+- Gmail : `gmail+smtp://adresse%40gmail.com:MOTDEPASSEAPPLICATION@default`
+  — un **mot de passe d'application** est obligatoire (compte Google →
+  Sécurité → Validation en deux étapes → Mots de passe des applications),
+  à saisir **sans les espaces** ;
+- autre fournisseur : `smtp://utilisateur:motdepasse@smtp.example.org:587`.
+
+Les caractères spéciaux de l'identifiant et du mot de passe doivent être
+encodés (`@` → `%40`, `:` → `%3A`, `/` → `%2F`, `#` → `%23`, `%` → `%25`).
+
+Si le fournisseur refuse un expéditeur différent du compte, renseigner
+`MAILER_FROM` avec l'adresse du compte : l'e-mail de contact de la
+configuration devient alors l'adresse de réponse.
+
+Un échec d'envoi n'interrompt pas la commande : l'utilisateur est averti et
+l'erreur apparaît dans `docker compose logs app`.
+
 ## Migration depuis l'ancienne installation (Apache + MySQL 5.7)
 
 Deux règles :

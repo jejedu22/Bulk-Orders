@@ -64,6 +64,19 @@
         });
     });
 
+    // Sélecteur d'icône (catégories) : met à jour le <select> associé
+    document.addEventListener('click', function (e) {
+        var option = e.target.closest('[data-icon-picker] [data-value]');
+        if (!option) { return; }
+        var picker = option.closest('[data-icon-picker]');
+        var select = picker.parentNode.querySelector('select');
+        var value = option.getAttribute('data-value');
+        select.value = value;
+        picker.querySelector('.icon-picker-preview i').className = value || 'fas fa-tag';
+        picker.querySelector('.icon-picker-label').textContent = option.getAttribute('data-label');
+        picker.querySelectorAll('[data-value]').forEach(function (o) { o.classList.toggle('active', o === option); });
+    });
+
     // Panneaux repliables
     document.addEventListener('click', function (e) {
         var toggle = e.target.closest('.panel-toggle');

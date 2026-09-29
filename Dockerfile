@@ -6,9 +6,13 @@
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock symfony.lock ./
-RUN composer install --no-dev --no-plugins --no-scripts --no-autoloader \
+# Cache Composer conservé entre les builds (utile quand composer.lock change)
+RUN --mount=type=cache,target=/tmp/cache \
+    composer install --no-dev --no-plugins --no-scripts --no-autoloader \
         --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
-COPY . .
+# Seul src/ est nécessaire pour générer la classmap : modifier un template
+# ou un asset ne relance pas cette étape.
+COPY src/ src/
 # ocramius/package-versions 1.x (plugin non exécuté) ne sait pas lire le
 # installed.json de Composer 2 et fait planter doctrine:migrations:migrate :
 # sans ce fichier, il se rabat sur composer.lock.
@@ -45,7 +49,9 @@ WORKDIR /var/www/html
 ENV APP_ENV=prod \
     APP_DEBUG=0
 
-COPY --from=vendor --chown=www-data:www-data /app /var/www/html
+# vendor/ d'abord (change rarement), puis le code de l'application
+COPY --from=vendor /app/vendor vendor/
+COPY . .
 
 # Préchauffage du cache prod. Les %env()% sont résolus à l'exécution :
 # des valeurs factices suffisent ici.

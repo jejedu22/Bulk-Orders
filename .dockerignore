@@ -1,7 +1,9 @@
 .git
+.github
 .env.local
 .env.*.local
 .env.docker
+.env.docker.example
 var/
 vendor/
 node_modules/
@@ -9,3 +11,23 @@ public/bundles/
 public/uploads/
 docker-compose*.yml
 Dockerfile
+README.md
+
+# --- Ressources front ---------------------------------------------------------
+# AdminLTE embarque ~75 Mo de plugins, presque tous inutilisés. Seuls les
+# fichiers chargés par templates/base.html.twig sont copiés dans l'image :
+# pour utiliser un autre plugin, l'ajouter ci-dessous.
+public/plugins/*
+!public/plugins/jquery/jquery.min.js
+!public/plugins/bootstrap/js/bootstrap.bundle.min.js
+!public/plugins/fontawesome/css/all.min.css
+!public/plugins/fontawesome/webfonts
+
+public/dist/img
+public/dist/css/alt
+public/dist/css/adminlte.css
+public/dist/js/adminlte.js
+public/dist/js/demo.js
+public/dist/js/pages
+public/French.json
+**/*.map

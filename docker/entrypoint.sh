@@ -7,6 +7,10 @@ if [ -z "${TRUSTED_HOSTS:-}" ] && [ -n "${APP_HOST:-}" ]; then
     export TRUSTED_HOSTS
 fi
 
+case "${MAILER_DSN:-null://null}" in
+    null://*) echo "ATTENTION : MAILER_DSN non configuré, aucun e-mail ne sera envoyé." >&2 ;;
+esac
+
 console() {
     su -s /bin/sh www-data -c "php bin/console $*"
 }

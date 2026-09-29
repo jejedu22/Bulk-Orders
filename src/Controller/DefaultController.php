@@ -18,8 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
-use Symfony\Component\Mailer\MailerInterface;
-use Symfony\Component\Mime\Email;
+use App\Service\MailSender;
 
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -177,44 +176,17 @@ class DefaultController extends AbstractController
     /**
      * @Route("/confirme/{commande}", name="livree_confirme", methods={"GET"})
      */
-    public function confirmeCommande(CommandeRepository $commandeRepository, Commande $commande, MailerInterface $mailer, TranslatorInterface $translator): Response
+    public function confirmeCommande(CommandeRepository $commandeRepository, Commande $commande, MailSender $mailSender, TranslatorInterface $translator): Response
     {
         $entityManager = $this->getDoctrine()->getManager();
         $commande->setConfirmed(true);
         
         $entityManager->persist($commande);
         $entityManager->flush();
-        $messageEmail = $entityManager->getRepository(Settings::class)->findOneByName('text_confirm_email')->getValue();
-        $messageEmail .= '</br></br><table style="border-collapse: collapse; border: 1px solid black">';
-        $ligneCommandes = $commande->getLigneCommandes();
-        $messageEmail .= '<tr>';
-        $messageEmail .= '<th style="border: 1px solid black">Produit</th>';
-        $messageEmail .= '<th style="border: 1px solid black">Conditionnement</th>';
-        $messageEmail .= '<th style="border: 1px solid black">Prix unitaire initial</th>';
-        $messageEmail .= '<th style="border: 1px solid black">Quantité</th>';
-        $messageEmail .= '</tr>';
-        foreach ($ligneCommandes as $ligneCommande) {
-            $messageEmail .= '<tr>';
-            $messageEmail .= '<td style="border: 1px solid black">' . $ligneCommande->getProduct()->getNom() . '</td>';
-            $messageEmail .= '<td style="border: 1px solid black">' . $ligneCommande->getProduct()->getConditionnement() . $ligneCommande->getProduct()->getUnit() . '</td>';
-            $messageEmail .= '<td style="border: 1px solid black">' . $ligneCommande->getProduct()->getPrixInit() . ' €' . '</td>';
-            $messageEmail .= '<td style="border: 1px solid black">' . $ligneCommande->getQuantite() . '</td>';
-            $messageEmail .= '</tr>';
+        $message = $entityManager->getRepository(Settings::class)->findOneByName('text_confirm_email')->getValue();
+        if (!$mailSender->sendCommande($commande, $translator->trans('email.subject.confirm_command'), (string) $message)) {
+            $this->addFlash('warning', $translator->trans('alert_message.email_not_sent', ['%email%' => $commande->getUser()->getMail()]));
         }
-        $messageEmail .= '</table>';
-
-        $email = (new Email())
-            ->from($entityManager->getRepository(Settings::class)->findOneByName('contact_email')->getValue())
-            ->to($commande->getUser()->getMail())
-            //->cc('cc@example.com')
-            //->bcc('bcc@example.com')
-            //->replyTo('fabien@example.com')
-            //->priority(Email::PRIORITY_HIGH)
-            ->subject($translator->trans('email.subject.confirm_command'))
-            // ->text($messageEmail)
-            ->html($messageEmail);
-
-        $mailer->send($email);
 
         return $this->redirectToRoute('synthese_index',['suivi' => 2]);
     }
@@ -222,7 +194,7 @@ class DefaultController extends AbstractController
     /**
      * @Route("/new/{idJourDistrib}", name="passe_commande_new", methods={"GET","POST"})
      */
-    public function new(Request $request, int $idJourDistrib, JourDistribRepository $jourDistribRepository, MailerInterface $mailer, TranslatorInterface $translator): Response
+    public function new(Request $request, int $idJourDistrib, JourDistribRepository $jourDistribRepository, MailSender $mailSender, TranslatorInterface $translator): Response
     {
         $commande = new Commande();
         $jourDistrib = $jourDistribRepository->findOneById($idJourDistrib);
@@ -276,33 +248,10 @@ class DefaultController extends AbstractController
                             'Attention ! ' . $textRegisterCommand
                         );            
                             
-                        $messageEmail = $entityManager->getRepository(Settings::class)->findOneByName('text_register_command')->getValue();
-                        $messageEmail .= '</br></br><table style="border-collapse: collapse; border: 1px solid black">';
-                        $ligneCommandes = $commande->getLigneCommandes();
-                        $messageEmail .= '<tr>';
-                        $messageEmail .= '<th style="border: 1px solid black">Produit</th>';
-                        $messageEmail .= '<th style="border: 1px solid black">Conditionnement</th>';
-                        $messageEmail .= '<th style="border: 1px solid black">Prix unitaire initial</th>';
-                        $messageEmail .= '<th style="border: 1px solid black">Quantité</th>';
-                        $messageEmail .= '</tr>';
-                        foreach ($ligneCommandes as $ligneCommande) {
-                            $messageEmail .= '<tr>';
-                            $messageEmail .= '<td style="border: 1px solid black">' . $ligneCommande->getProduct()->getNom() . '</td>';
-                            $messageEmail .= '<td style="border: 1px solid black">' . $ligneCommande->getProduct()->getConditionnement() . $ligneCommande->getProduct()->getUnit() .'</td>';
-                            $messageEmail .= '<td style="border: 1px solid black">' . $ligneCommande->getProduct()->getPrixInit() . ' €' . '</td>';
-                            $messageEmail .= '<td style="border: 1px solid black">' . $ligneCommande->getQuantite() . '</td>';
-                            $messageEmail .= '</tr>';
+                        if (!$mailSender->sendCommande($commande, $translator->trans('email.subject.register_command'), (string) $textRegisterCommand)) {
+                            $this->addFlash('warning', $translator->trans('alert_message.email_not_sent', ['%email%' => $this->getUser()->getMail()]));
                         }
-                        $messageEmail .= '</table>';
-    
-                        $email = (new Email())
-                            ->from($entityManager->getRepository(Settings::class)->findOneByName('contact_email')->getValue())
-                            ->to($this->getUser()->getMail())
-                            ->subject($translator->trans('email.subject.register_command'))
-                            ->html($messageEmail);
-    
-                        $mailer->send($email);
-    
+
                         return $response;
                     }
                     else {

@@ -14,6 +14,8 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Validator\Constraints\File;
+use Symfony\Component\Validator\Constraints\Email as EmailConstraint;
+use Symfony\Component\Validator\Constraints\NotBlank;
 
 class SettingsType extends AbstractType
 {
@@ -70,10 +72,11 @@ class SettingsType extends AbstractType
                 ]);
             }
             elseif (!$settings || 5 === $settings->getId()){
+                // Champ lié à la valeur : il est prérempli et ne peut plus être vidé par erreur
                 $form->add('value', EmailType::class, [
                     'help' => 'settings.form.valid_mail',
-                    'mapped' => false,
-                    'required' => false,
+                    'required' => true,
+                    'constraints' => [new NotBlank(), new EmailConstraint()],
             ]);
             }
             else {

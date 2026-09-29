@@ -140,5 +140,6 @@ alert_message:
   connected_user: Impossible de supprimer l'utilisateur connecté !
   unknown_user: Utilisateur inconnu !
   confirm_delete_command: Voulez-vous vraiment supprimer cette commande ?
+  email_not_sent: "L'e-mail n'a pas pu être envoyé à %email%. L'opération est bien enregistrée."
 button:
   register: Enregistrer

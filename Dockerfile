@@ -14,17 +14,22 @@ RUN composer dump-autoload --no-dev --classmap-authoritative --no-plugins --no-s
 # --- Image d'exécution -------------------------------------------------------
 FROM php:7.4-apache
 
-# PHP 7.4 n'existe que sur Debian bullseye : si ses dépôts ont été déplacés
-# vers archive.debian.org, on bascule dessus.
+# PHP 7.4 n'existe que sur Debian bullseye (fin de support). L'image fournit
+# déjà libicu67 : seul libicu-dev est nécessaire, pris dans bullseye main
+# (bullseye-security référence des paquets retirés du miroir). Si le miroir
+# principal ne le sert plus, on bascule sur archive.debian.org.
 RUN set -eux; \
-    if ! apt-get update; then \
-        sed -i -e 's|deb.debian.org|archive.debian.org|g' -e '/bullseye-updates/d' /etc/apt/sources.list; \
-        apt-get update; \
+    install_icu_dev() { \
+        apt-get update && apt-get install -y --no-install-recommends libicu-dev; \
+    }; \
+    echo 'deb http://deb.debian.org/debian bullseye main' > /etc/apt/sources.list; \
+    if ! install_icu_dev; then \
+        echo 'deb http://archive.debian.org/debian bullseye main' > /etc/apt/sources.list; \
+        install_icu_dev; \
     fi; \
-    apt-get install -y --no-install-recommends libicu-dev; \
+    apt-mark manual libicu67; \
     docker-php-ext-install -j"$(nproc)" intl pdo_mysql opcache; \
     apt-get purge -y --auto-remove libicu-dev; \
-    apt-get install -y --no-install-recommends libicu67; \
     rm -rf /var/lib/apt/lists/*; \
     a2enmod rewrite headers remoteip
 

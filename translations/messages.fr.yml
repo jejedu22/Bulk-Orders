@@ -81,7 +81,7 @@ category:
   form:
     nom: Nom
     icon: Icône
-    icon_help: "Classe Font Awesome, par exemple : fas fa-apple-alt, fas fa-seedling, fas fa-tint, fas fa-cheese"
+    icon_none: Aucune icône
     position: Ordre d'affichage
     position_help: Les plus petits nombres apparaissent en premier.
 registration:

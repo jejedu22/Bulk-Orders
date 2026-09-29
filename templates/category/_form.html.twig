@@ -1,7 +1,43 @@
 {{ form_start(form) }}
     {{ form_row(form.nom) }}
+
+    {# Sélecteur d'icône : liste déroulante illustrée, adossée au <select> du formulaire #}
+    {% set current = form.icon.vars.value %}
+    {% set current_label = null %}
+    {% for group in form.icon.vars.choices %}
+        {% for choice in group.choices ?? [group] %}
+            {% if choice.value == current %}{% set current_label = choice.label %}{% endif %}
+        {% endfor %}
+    {% endfor %}
+    <div class="form-group">
+        {{ form_label(form.icon) }}
+        <div class="dropdown icon-picker" data-icon-picker>
+            <button type="button" class="form-control icon-picker-toggle dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="icon-picker-preview"><i class="{{ current ?: 'fas fa-tag' }}"></i></span>
+                <span class="icon-picker-label">{{ current_label ?? form.icon.vars.placeholder|trans }}</span>
+            </button>
+            <div class="dropdown-menu icon-picker-menu">
+                <button type="button" class="dropdown-item icon-picker-none {{ current ? '' : 'active' }}" data-value="" data-label="{{ form.icon.vars.placeholder|trans }}">
+                    <i class="fas fa-tag fa-fw mr-2 text-muted"></i>{{ form.icon.vars.placeholder|trans }}
+                </button>
+                {% for group_label, group in form.icon.vars.choices %}
+                    <h6 class="dropdown-header">{{ group_label }}</h6>
+                    <div class="icon-picker-grid">
+                    {% for choice in group.choices ?? [group] %}
+                        <button type="button" class="icon-option {{ choice.value == current ? 'active' }}" data-value="{{ choice.value }}" data-label="{{ choice.label }}" title="{{ choice.label }}">
+                            <i class="{{ choice.value }}"></i>
+                            <span>{{ choice.label }}</span>
+                        </button>
+                    {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {{ form_widget(form.icon, {'attr': {'class': 'd-none', 'tabindex': '-1', 'aria-hidden': 'true'}}) }}
+        {{ form_errors(form.icon) }}
+    </div>
+
     <div class="form-row">
-        <div class="col-sm-8">{{ form_row(form.icon) }}</div>
         <div class="col-sm-4">{{ form_row(form.position) }}</div>
     </div>
     {{ form_rest(form) }}

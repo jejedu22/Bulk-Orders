@@ -101,22 +101,27 @@ class DefaultController extends AbstractController
         {
             $jourDistribsTable = [];
             foreach ($jourDistribs as $jourDistrib ) {
-                $products = $jourDistrib->getProducts();
-                $productTable = [];
-                $i=0;
-                foreach ($products as $product ) {;
-                    $ligneCommandes = $product->getLigneCommandes();
-                    $ligneCommndeTable = [];
-                    foreach ($ligneCommandes as $ligneCommande ) {
-                        if($ligneCommande->getCommande()->getJourDistrib() == $jourDistrib and $ligneCommande->getLivree() == false and $ligneCommande->getCommande()->getLivree() == false and $ligneCommande->getCommande()->getConfirmed() == true)
-                        {
-                            array_push($ligneCommndeTable, $ligneCommande);
+                // Lignes restant à remettre, indexées par produit
+                $lignesParProduit = [];
+                $products = [];
+                foreach ($jourDistrib->getCommandes() as $commande) {
+                    if ($commande->getLivree() == false and $commande->getConfirmed() == true) {
+                        foreach ($commande->getLigneCommandes() as $ligneCommande) {
+                            if ($ligneCommande->getLivree() == false) {
+                                $product = $ligneCommande->getProduct();
+                                $products[$product->getId()] = $product;
+                                $lignesParProduit[$product->getId()][] = $ligneCommande;
+                            }
                         }
                     }
-                    array_push($productTable, ['id' => $i,'nom'=>$product->getNom(), 'lignesCommande' => $ligneCommndeTable]);
-                    $i++;
                 }
-                array_push($jourDistribsTable, ['id' => $jourDistrib->getId(), 'date' => $jourDistrib->getDate(), 'produits' => $productTable]);
+                array_push($jourDistribsTable, [
+                    'id' => $jourDistrib->getId(),
+                    'date' => $jourDistrib->getDate(),
+                    'dateLivraison' => $jourDistrib->getDateLivraison(),
+                    'products' => $products,
+                    'lignes' => $lignesParProduit,
+                ]);
             }
 
             return $this->render('passe_commande/livraison_by_product.html.twig', [
@@ -234,6 +239,7 @@ class DefaultController extends AbstractController
             if ($form->isSubmitted() && $form->isValid()) {
 
                 // Vérification de commande déjà passée
+                $testCommande = null;
                 if ($jourDistrib->getLimite())
                 {
                     $testCommande = $jourDistribRepository->findCommande($this->getUser(), $jourDistrib);
@@ -322,7 +328,7 @@ class DefaultController extends AbstractController
                 'commande' => $commande,
                 'form' => $form->createView(),
                 'products' => $products,
-                'idJourDistrib' => $jourDistrib,
+                'jourDistrib' => $jourDistrib,
                 ]);
         } 
         else {

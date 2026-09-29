@@ -1,193 +1,151 @@
 {% extends 'base.html.twig' %}
-    {% block title %}
-        {% if suivi == 1 %}
-            Suivi de livrason
-        {% elseif suivi == 0 %}
-            Toutes mes commandes
-        {% else %}
-            Synthèse des commandes par date
-        {% endif %}
-    {% endblock %}
 
-    {% block titre_page %}
-        {% if suivi == 1 %}
-            <h3 class="s-0 text-dark">Suivi de livraison</h3>
-        {% elseif suivi == 0 %}
-            <h3 class="s-0 text-dark">Toutes mes commandes</h3>
-        {% else %}
-            <h3 class="s-0 text-dark">Toutes les commandes par date</h3>
-        {% endif %}
-    {% endblock %}
+{% set page_title = suivi == 1 ? 'Suivi de livraison' : (suivi == 0 ? 'Toutes mes commandes' : 'Toutes les commandes') %}
 
-{% block stylesheets %}
-  <link rel="stylesheet" href="/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
-  <link rel="stylesheet" href="/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
-{% endblock %}
+{% block title %}{{ page_title }}{% endblock %}
 
+{% block titre_page %}{% endblock %}
 
 {% block body %}
-<div class="col-md-12">
-{% for jour_distrib in jour_distribs %}
-    {% if suivi == 2 %}
-        <div class="card">
-    {% elseif suivi == 1 and jour_distrib.date|date('Y-m-d') != "now"|date('Y-m-d') %}
-        <div class="card collapsed-card">
-    {% else %}
-        <div class="card">
+{% set today = "now"|date('Y-m-d') %}
+<div class="col-12" data-filter-scope>
+    <div class="page-head">
+        <div>
+            <h1>{{ page_title }}</h1>
+            <p class="subtitle">{{ suivi == 0 ? 'Historique de vos commandes, de la plus récente à la plus ancienne.' : 'Par vente, de la plus récente à la plus ancienne.' }}</p>
+        </div>
+        {% if suivi == 0 %}
+        <div class="actions">
+            <a href="{{ path('passe_commande_index') }}" class="btn btn-accent"><i class="fas fa-shopping-basket mr-1"></i> Nouvelle commande</a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if jour_distribs is not empty %}
+    <div class="toolbar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="search" data-filter-search placeholder="{{ suivi == 0 ? 'Rechercher un produit…' : 'Nom, n° de commande, produit…' }}" aria-label="Rechercher">
+        </div>
+        <div class="chips">
+            <button type="button" class="chip active" data-filter-value="">Toutes</button>
+            <button type="button" class="chip" data-filter-value="unpaid">En attente de paiement</button>
+            <button type="button" class="chip" data-filter-value="paid">Payées</button>
+            <button type="button" class="chip" data-filter-value="delivered">Livrées</button>
+        </div>
+    </div>
     {% endif %}
-        <div class="card-header border-transparent">
-            <h3 class="card-title">Commande du {{ jour_distrib.date|format_datetime('full', 'none', locale='fr') }} 
-            {{ jour_distrib.dateLivraison ? ' </br>Livraison le ' : '' }} {{ jour_distrib.dateLivraison ? jour_distrib.dateLivraison|format_datetime('full', 'none', locale='fr') : '' }}</h3>
-            <div class="card-tools">
-            <a href="{{ path('export_csv', { id: jour_distrib.id }) }}">
-                <button type="button" class="btn btn-info">
-                    Exporter en csv
-                </button>
-            </a>
-            <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                <i class="fas fa-minus"></i>
-            </button>
+
+{% for jour_distrib in jour_distribs %}
+    {% set commandes = (jour_distrib.commandes ?? [])|filter(c => ((c.livree == false or suivi == 0) and c.user == app.user) or suivi == 2) %}
+    {% set nb_unpaid = commandes|filter(c => not c.confirmed)|length %}
+    {% set nb_paid = commandes|filter(c => c.confirmed and not c.livree)|length %}
+    {% set nb_delivered = commandes|filter(c => c.livree)|length %}
+    {% set collapsed = (suivi == 1 and jour_distrib.date|date('Y-m-d') != today) or (suivi == 2 and commandes is not empty and nb_delivered == commandes|length) %}
+    <div class="panel {{ collapsed ? 'collapsed' }}" data-filter-group>
+        <div class="panel-head panel-toggle">
+            <div class="d-flex align-items-center" style="gap: .9rem; min-width: 0">
+                {{ include('passe_commande/_date_badge.html.twig', {'date': jour_distrib.date}) }}
+                <div style="min-width: 0">
+                    <h3>Vente du {{ jour_distrib.date|format_date('long', locale='fr') }}</h3>
+                    <div class="meta">
+                        {% if jour_distrib.dateLivraison %}Livraison le {{ jour_distrib.dateLivraison|format_date('full', locale='fr') }} · {% endif %}
+                        {{ commandes|length }} commande{{ commandes|length > 1 ? 's' }}
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center flex-wrap" style="gap: .4rem">
+                {% if suivi != 0 %}
+                    {% if nb_unpaid %}<span class="pill pill-danger" title="En attente de paiement">{{ nb_unpaid }} à payer</span>{% endif %}
+                    {% if nb_paid %}<span class="pill pill-warning" title="Payées, à livrer">{{ nb_paid }} à livrer</span>{% endif %}
+                    {% if nb_delivered %}<span class="pill pill-success">{{ nb_delivered }} livrée{{ nb_delivered > 1 ? 's' }}</span>{% endif %}
+                {% endif %}
+                {% if suivi == 2 %}
+                    <a href="{{ path('export_csv', { id: jour_distrib.id }) }}" class="btn btn-sm btn-soft" title="Exporter en CSV"><i class="fas fa-file-csv mr-1"></i> CSV</a>
+                {% endif %}
+                <i class="fas fa-chevron-down ml-1"></i>
             </div>
         </div>
 
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-striped table-sm table-bordered" id="tableau{{ jour_distrib.id }}">
-                    <thead>
-                        <tr>
-                            <th>N°</th>
-                            <th>Nom</th>
-                            <th>Prenom</th>
-                            <th>Commentaire</th>
-                            <th>Produit</th>
-                            <th>Prix Initial</th>
-                            <th>Prix Final</th>
-                            {% if suivi == 1 %}
-                            <th></th>
-                            {% elseif suivi == 2 %}
-                            <th>Paiement reçu</th>
-                            <th>Livrée</th>
-                            {% endif %}
-                            <th></th>
-
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% if jour_distrib.commandes is defined %}
-                        {% for commande in jour_distrib.commandes %}
-
-                            {% if ((commande.livree == false or suivi == 0) and commande.user == app.user) or suivi == 2  %}
-                                {% set totalInit = 0 %}
-                                {% set totalFinal = 0 %}
-                                {% set sommeInit = 0 %}
-                                {% set sommeFinal = 0 %}
-                                {% if  commande.livree %}
-                                <tr class="table-success">
-                                {% elseif commande.confirmed %}
-                                <tr class="table-warning">
-                                {% else %}
-                                <tr class="table-danger">
-                                {% endif %}
-                                    <td>{{ commande.id }}</td>
-                                    <td>{{ commande.user.nom }}</td>
-                                    <td>{{ commande.user.prenom }}</td>
-                                    <td><i><small>{{ commande.commentaire }}</small></i></td>
-                                    <td>
-                                    {% for ligne_commande in commande.ligneCommandes %}
-                                        {% set sommeInit = ligne_commande.quantite*ligne_commande.product.prixInit %}
-                                        {% set sommeFinal = ligne_commande.quantite*ligne_commande.product.prixFinal %}
-                                        {% set totalInit = totalInit+sommeInit %}
-                                        {% set totalFinal = totalFinal+sommeFinal %}
-                                        <p>{{ ligne_commande.quantite}} {{ ligne_commande.product.nom }} - {{ ligne_commande.product.conditionnement }}{{ ligne_commande.product.unit }} 
-                                        {% if commande.confirmed %} {% if ligne_commande.livree %}<span class="badge bg-success">Livrée</span>{% else %}<span class="badge bg-danger">A prendre</span>{% endif %}{% endif %}</p>
-                                        </p>
-                                    {% endfor %}
-                                    </td>
-                                    <td>{{ totalInit }} €</td>
-                                    <td>{{ totalFinal }} €</td>
-                                        {% if suivi == 1 %}
-                                        <td>
-                                                <a href="{{ path('livree_commande', { commande: commande.id }) }}" onclick="return confirm('Tu lui as vraiment donné ?')"><i class="fas fa-check"></i></a>
-                                        </td>
-                                        {% elseif suivi == 2 %}
-                                        <td class="center">
-                                            {% if commande.confirmed %}
-                                                <i class="fas fa-check-square"></i><span class='d-none'>1</span>
-                                            {% else %}
-                                                <a href="{{ path('livree_confirme', { commande: commande.id }) }}" onclick="return confirm('Tu lui as vraiment reçu le chèque ?')"><i class="far fa-square"></i></a>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if commande.livree %}
-                                                <i class="fas fa-check-square"></i><span class='d-none'>1</span>
-                                            {% else %}
-                                                <i class="far fa-square"></i>
-                                            {% endif %}
-                                        </td>
-                                        {% endif %}
-                                        <td>
-                                            {% if commande.livree == false %}
-                                                {% if jour_distrib.date|date('Y-m-d') >= "now"|date('Y-m-d') %}
-                                                    {% if commande.confirmed == false and suivi == 0 %} {{ include('commande/_delete_form.html.twig') }} {% endif %}
-                                                    {% if suivi != 0 %} {{ include('commande/_delete_form.html.twig') }} {% endif %}
-                                                {% endif %}
-                                            
-                                                {% if commande.confirmed == true %} 
-                                                <span class="badge bg-warning">Validée</span>
-                                                {% endif %}
-
-                                            {% else %}
-                                            <span class="badge bg-success">Livrée</span>
-                                            {% endif %}
-                                        </td>
-                                </tr>
-                            {% endif %}
-                        {% endfor %}
+        <ul class="rows panel-collapsible">
+        {% for commande in commandes %}
+            {% set totalInit = 0 %}
+            {% set totalFinal = 0 %}
+            {% set hasFinal = true %}
+            {% set search = commande.id ~ ' ' ~ commande.user.prenom ~ ' ' ~ commande.user.nom ~ ' ' ~ commande.commentaire %}
+            {% for ligne in commande.ligneCommandes %}
+                {% set totalInit = totalInit + ligne.quantite * ligne.product.prixInit %}
+                {% set totalFinal = totalFinal + ligne.quantite * ligne.product.prixFinal %}
+                {% if ligne.product.prixFinal is null %}{% set hasFinal = false %}{% endif %}
+                {% set search = search ~ ' ' ~ ligne.product.nom %}
+            {% endfor %}
+            {% set status = commande.livree ? 'delivered' : (commande.confirmed ? 'paid' : 'unpaid') %}
+            {% set can_delete = not commande.livree and jour_distrib.date|date('Y-m-d') >= today and (suivi != 0 or not commande.confirmed) %}
+            <li class="row-item align-items-start" data-filter-item data-status="{{ status }}" data-search="{{ search }}">
+                {% if suivi != 0 %}
+                    <span class="avatar hide-xs" title="{{ commande.user.prenom }} {{ commande.user.nom }}">{{ commande.user.prenom|initials(commande.user.nom) }}</span>
+                {% endif %}
+                <div class="row-main">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap" style="gap: .25rem .75rem">
+                        <div>
+                            <span class="row-title">{{ suivi != 0 ? commande.user.prenom ~ ' ' ~ commande.user.nom : 'Commande' }}</span>
+                            <span class="text-muted small ml-1">n°{{ commande.id }}</span>
+                            {% if suivi != 0 and commande.user.phone %}<a href="tel:{{ commande.user.phone }}" class="text-muted small ml-2"><i class="fas fa-phone-alt"></i> {{ commande.user.phone }}</a>{% endif %}
+                        </div>
+                        {{ include('commande/_status.html.twig') }}
+                    </div>
+                    <div class="mt-1">
+                        {{ include('commande/_lines.html.twig', {'show_delivery': commande.confirmed and not commande.livree}) }}
+                    </div>
+                    {% if commande.commentaire %}
+                        <div class="text-muted small mt-1"><i class="far fa-comment mr-1"></i>{{ commande.commentaire }}</div>
                     {% endif %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                    <div class="d-flex justify-content-between align-items-center flex-wrap mt-2" style="gap: .5rem">
+                        <div>
+                            {% if hasFinal and totalFinal != totalInit %}
+                                <span class="price-old">{{ totalInit|format_currency('EUR', locale='fr') }}</span>
+                                <span class="price">{{ totalFinal|format_currency('EUR', locale='fr') }}</span>
+                            {% else %}
+                                <span class="price">{{ totalInit|format_currency('EUR', locale='fr') }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex align-items-center" style="gap: .75rem">
+                            {% if suivi == 2 and not commande.confirmed %}
+                                <a href="{{ path('livree_confirme', { commande: commande.id }) }}" class="btn btn-sm btn-accent" data-confirm="Confirmer la réception du paiement de {{ commande.user.prenom }} {{ commande.user.nom }} ? Un e-mail de confirmation lui sera envoyé.">
+                                    <i class="fas fa-euro-sign mr-1"></i> Paiement reçu
+                                </a>
+                            {% elseif suivi == 1 and not commande.livree %}
+                                <a href="{{ path('livree_commande', { commande: commande.id }) }}" class="btn btn-sm btn-accent" data-confirm="Confirmer la remise de la commande ?">
+                                    <i class="fas fa-check mr-1"></i> Remise
+                                </a>
+                            {% endif %}
+                            {% if can_delete %}{{ include('commande/_delete_form.html.twig', {'compact': true}) }}{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </li>
+        {% else %}
+            <li class="row-item text-muted" data-filter-item data-status="none" data-search="">Aucune commande pour cette vente.</li>
+        {% endfor %}
+        </ul>
     </div>
 {% else %}
-    <div class="col-md-12">
-        <div class="callout callout-danger">
-            <h5>Ya pas de commande !</h5>
-
-            <p>Personne n'a passer de commande</p>
+    <div class="panel">
+        <div class="empty-state">
+            <i class="fas fa-receipt"></i>
+            <h3>Aucune commande</h3>
+            {% if suivi == 0 %}
+                <p>Vous n'avez pas encore passé de commande.</p>
+                <a href="{{ path('passe_commande_index') }}" class="btn btn-accent">Passer commande</a>
+            {% else %}
+                <p>Personne n'a encore passé de commande.</p>
+            {% endif %}
         </div>
     </div>
 {% endfor %}
 
+    <div class="panel is-hidden" data-filter-empty>
+        <div class="empty-state"><i class="fas fa-search"></i><h3>Aucune commande ne correspond</h3></div>
+    </div>
 </div>
-{% endblock %}
-
-{% block navbar %}
-
-{% endblock %}
-
-{% block javascripts %}
-{% for jour_distrib in jour_distribs %}
-    <script>
-    $(function () {
-        $('#tableau{{ jour_distrib.id }}').DataTable({
-        "dom": 'Bfrtip',
-        "buttons": [
-            'csv', 'excel', 'pdf'
-        ],
-        "paging": true,
-        "lengthChange": false,
-        "searching": true,
-        "ordering": true,
-        "info": true,
-        "autoWidth": false,
-        "responsive": true,
-        "language": {
-            "url": "/French.json"
-        },
-        "order": [[ 0, "asc" ]],
-        });
-    });
-    </script>
-{% endfor %}
 {% endblock %}

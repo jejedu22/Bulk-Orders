@@ -1,26 +1,23 @@
 {% extends 'base.html.twig' %}
 
-{# {% form_theme form 'bootstrap_base_layout.html.twig' %} #}
+{% block title %}Modifier {{ product.nom }}{% endblock %}
 
-{% block title %}Modifier le Produit{% endblock %}
+{% block titre_page %}{% endblock %}
 
 {% block body %}
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Modifier le Produit {{ product.nom }} {{ product.conditionnement }} {{ product.unit }}</h3>
-                <div class="card-tools">
-                        {{ include('product/_delete_form.html.twig') }}    
-                </div>            
-            </div>
-            <!-- /.card-header -->
-            <div class="card-body">
-
-                {{ include('product/_form.html.twig', {'button_label': 'Valider'}) }}
-                <a href="{{ path('product_index') }}"><i class="fas fa-angle-double-left"></i></a>
-            </div>
+<div class="col-12">
+    <a href="{{ path('product_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Produits</a>
+    <div class="page-head">
+        <div>
+            <h1>{{ product.nom }}</h1>
+            <p class="subtitle">{{ product.conditionnement|format_number(locale='fr') }} {{ product.unit }}{% if product.category %} · {{ product.category.nom }}{% endif %}</p>
+        </div>
+        <div class="actions">{{ include('product/_delete_form.html.twig') }}</div>
+    </div>
+    <div class="panel form-panel">
+        <div class="panel-body">
+            {{ include('product/_form.html.twig', {'button_label': 'Enregistrer'}) }}
         </div>
     </div>
-
-
+</div>
 {% endblock %}

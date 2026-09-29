@@ -1,0 +1,19 @@
+{# Lignes d'une commande. Options : show_delivery (badge par ligne), show_delete (suppression d'une ligne) #}
+<ul class="lines">
+{% for ligne_commande in commande.ligneCommandes %}
+    <li>
+        <span class="qty">{{ ligne_commande.quantite }}×</span>
+        <span class="name">
+            {{ ligne_commande.product.nom }}
+            <span class="pack">{{ ligne_commande.product.conditionnement|format_number(locale='fr') }} {{ ligne_commande.product.unit }}</span>
+            {% if show_delivery ?? false %}
+                {% if ligne_commande.livree %}<span class="pill pill-success">Remis</span>{% else %}<span class="pill pill-muted">À remettre</span>{% endif %}
+            {% endif %}
+        </span>
+        {% if show_prices ?? false %}
+            <span class="price">{{ (ligne_commande.quantite * ligne_commande.product.prixInit)|format_currency('EUR', locale='fr') }}</span>
+        {% endif %}
+        {% if show_delete ?? false %}{{ include('ligne_commande/_delete_form.html.twig') }}{% endif %}
+    </li>
+{% endfor %}
+</ul>

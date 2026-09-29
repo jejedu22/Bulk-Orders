@@ -1,4 +1,17 @@
 {{ form_start(form) }}
-    {{ form_widget(form) }}
-    <button class="btn btn-block btn-success">{{ button_label|default('Enregistrer') }}</button>
+    {{ form_row(form.nom) }}
+    {{ form_row(form.category) }}
+    <div class="form-row">
+        <div class="col-7">{{ form_row(form.conditionnement) }}</div>
+        <div class="col-5">{{ form_row(form.unit) }}</div>
+    </div>
+    <div class="form-row">
+        <div class="col-6">{{ form_row(form.prixInit) }}</div>
+        <div class="col-6">{{ form_row(form.prixFinal) }}</div>
+    </div>
+    {{ form_rest(form) }}
+    <div class="form-actions">
+        <button class="btn btn-accent"><i class="fas fa-check mr-1"></i> {{ button_label|default('Enregistrer') }}</button>
+        <a href="{{ path('product_index') }}" class="btn btn-soft">Annuler</a>
+    </div>
 {{ form_end(form) }}

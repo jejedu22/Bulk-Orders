@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Catégories{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <div class="page-head">
+        <div>
+            <h1>Catégories</h1>
+            <p class="subtitle">Elles organisent les produits dans le catalogue et lors de la commande.</p>
+        </div>
+        <div class="actions">
+            <a href="{{ path('category_new') }}" class="btn btn-accent"><i class="fas fa-plus mr-1"></i> Nouvelle catégorie</a>
+        </div>
+    </div>
+
+    <div class="panel">
+        {% if categories is empty %}
+            <div class="empty-state">
+                <i class="fas fa-tags"></i>
+                <h3>Aucune catégorie</h3>
+                <p>Créez des catégories (fruits secs, huiles…) pour ranger vos produits.</p>
+                <a href="{{ path('category_new') }}" class="btn btn-accent">Nouvelle catégorie</a>
+            </div>
+        {% else %}
+            <ul class="rows">
+            {% for category in categories %}
+                <li>
+                    <a href="{{ path('category_edit', {'id': category.id}) }}" class="row-item">
+                        <span class="avatar"><i class="{{ category.icon ?: 'fas fa-tag' }}"></i></span>
+                        <span class="row-main">
+                            <span class="row-title d-block">{{ category.nom }}</span>
+                            <span class="row-meta">
+                                <span>{{ category.products|length }} produit{{ category.products|length > 1 ? 's' }}</span>
+                                <span>Position {{ category.position }}</span>
+                            </span>
+                        </span>
+                    </a>
+                </li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

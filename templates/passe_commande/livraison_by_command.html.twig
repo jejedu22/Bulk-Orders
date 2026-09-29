@@ -1,119 +1,90 @@
 {% extends 'base.html.twig' %}
-{% block titre_page %}<h3 class="s-0 text-dark">Suivi livraison par commande</h3>{% endblock %}
 
-{% block title %}Suivi livraison par commande{% endblock %}
+{% block title %}Livraison par commande{% endblock %}
 
-{% block stylesheets %}
-  <link rel="stylesheet" href="/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
-  <link rel="stylesheet" href="/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
-{% endblock %}
-
+{% block titre_page %}{% endblock %}
 
 {% block body %}
-<div class="col-md-12">
+{% set days = [] %}
 {% for jour_distrib in jour_distribs %}
-    <div class="card">
-        <div class="card-header border-transparent">
-            <h3 class="card-title">{{ jour_distrib.date|format_datetime('full', 'none', locale='fr') }}</h3>
-            <div class="card-tools">
-            <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                <i class="fas fa-minus"></i>
-            </button>
-            </div>
+    {% set commandes = (jour_distrib.commandes ?? [])|filter(c => c.livree == false and c.confirmed == true) %}
+    {% if commandes is not empty %}{% set days = days|merge([{'jour': jour_distrib, 'commandes': commandes}]) %}{% endif %}
+{% endfor %}
+<div class="col-12" data-filter-scope>
+    <div class="page-head">
+        <div>
+            <h1>Livraison par commande</h1>
+            <p class="subtitle">Commandes payées restant à remettre.</p>
         </div>
+        <div class="actions">
+            <a href="{{ path('livraison', {'type': 'product'}) }}" class="btn btn-soft"><i class="fas fa-box mr-1"></i> Vue par produit</a>
+        </div>
+    </div>
 
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-striped table-sm table-bordered" id="tableau{{ jour_distrib.id }}">
-                    <thead>
-                        <tr>
-                            <th>N°</th>
-                            <th>Nom</th>
-                            <th>Produit</th>
-                            <th>Prix Initial</th>
-                            <th>Prix Final</th>
-                            <th>Livrée</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% if jour_distrib.commandes is defined %}
-                        {% for commande in jour_distrib.commandes %}
+    {% if days is not empty %}
+    <div class="toolbar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="search" data-filter-search placeholder="Nom, n° de commande, produit…" aria-label="Rechercher">
+        </div>
+    </div>
+    {% endif %}
 
-                            {% if commande.livree == false and commande.confirmed == true %}
-                                {% set totalInit = 0 %}
-                                {% set totalFinal = 0 %}
-                                {% set sommeInit = 0 %}
-                                {% set sommeFinal = 0 %}
-                                {% if  commande.livree %}
-                                <tr class="table-success">
-                                {% elseif commande.confirmed %}
-                                <tr class="table-warning">
-                                {% else %}
-                                <tr class="table-danger">
-                                {% endif %}
-                                    <td>{{ commande.id }}</td>
-                                    <td>{{ commande.user.prenom }} {{ commande.user.nom }}</br><i><small>{{ commande.commentaire }}</small></small></td>
-                                    <td>
-                                    {% for ligne_commande in commande.ligneCommandes %}
-                                        {% set sommeInit = ligne_commande.quantite*ligne_commande.product.prixInit %}
-                                        {% set sommeFinal = ligne_commande.quantite*ligne_commande.product.prixFinal %}
-                                        {% set totalInit = totalInit+sommeInit %}
-                                        {% set totalFinal = totalFinal+sommeFinal %}
-                                        <p>{{ ligne_commande.quantite}} {{ ligne_commande.product.nom }} - {{ ligne_commande.product.conditionnement }}{{ ligne_commande.product.unit }} 
-                                        {% if ligne_commande.livree %}<span class="badge bg-success">Livrée</span>{% else %}<span class="badge bg-danger">A prendre</span>{% endif %}</p>
-                                    {% endfor %}
-                                    </td>
-                                    <td>{{ totalInit }} €</td>
-                                    <td>{{ totalFinal }} €</td>
-                                    <td>
-                                        <a href="{{ path('livree_commande', { commande: commande.id }) }}" onclick="return confirm('Tu lui as vraiment donné ?')"><i class="fas fa-check"></i></a>
-                                    </td>
-                                </tr>
-                            {% endif %}
-                        {% endfor %}
-                    {% endif %}
-                    </tbody>
-                </table>
+{% for day in days %}
+    {% set jour_distrib = day.jour %}
+    <div class="panel" data-filter-group>
+        <div class="panel-head panel-toggle">
+            <div class="d-flex align-items-center" style="gap: .9rem">
+                {{ include('passe_commande/_date_badge.html.twig', {'date': jour_distrib.dateLivraison ?: jour_distrib.date}) }}
+                <div>
+                    <h3>Vente du {{ jour_distrib.date|format_date('long', locale='fr') }}</h3>
+                    <div class="meta">{{ day.commandes|length }} commande{{ day.commandes|length > 1 ? 's' }} à remettre</div>
+                </div>
+            </div>
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="panel-body panel-collapsible">
+            <div class="card-grid wide">
+            {% for commande in day.commandes %}
+                {% set totalFinal = 0 %}
+                {% set search = commande.id ~ ' ' ~ commande.user.prenom ~ ' ' ~ commande.user.nom %}
+                {% for ligne in commande.ligneCommandes %}
+                    {% set totalFinal = totalFinal + ligne.quantite * (ligne.product.prixFinal ?? ligne.product.prixInit) %}
+                    {% set search = search ~ ' ' ~ ligne.product.nom %}
+                {% endfor %}
+                <div class="tile status-warning" data-filter-item data-search="{{ search }}">
+                    <div class="d-flex align-items-center" style="gap: .7rem">
+                        <span class="avatar">{{ commande.user.prenom|initials(commande.user.nom) }}</span>
+                        <div style="min-width: 0">
+                            <div class="tile-title">{{ commande.user.prenom }} {{ commande.user.nom }}</div>
+                            <div class="tile-sub">n°{{ commande.id }}{% if commande.user.phone %} · <a href="tel:{{ commande.user.phone }}" class="text-muted">{{ commande.user.phone }}</a>{% endif %}</div>
+                        </div>
+                    </div>
+                    {{ include('commande/_lines.html.twig', {'show_delivery': true}) }}
+                    {% if commande.commentaire %}<div class="tile-sub"><i class="far fa-comment mr-1"></i>{{ commande.commentaire }}</div>{% endif %}
+                    <div class="tile-foot">
+                        <span class="price">{{ totalFinal|format_currency('EUR', locale='fr') }}</span>
+                        <a href="{{ path('livree_commande', { commande: commande.id }) }}" class="btn btn-sm btn-accent" data-confirm="Remettre toute la commande de {{ commande.user.prenom }} {{ commande.user.nom }} ?">
+                            <i class="fas fa-check mr-1"></i> Tout remis
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
             </div>
         </div>
     </div>
 {% else %}
-    <div class="callout callout-danger">
-        <h5>Ya pas de commande !</h5>
-
-        <p>Personne n'a passer de commande</p>
+    <div class="panel">
+        <div class="empty-state">
+            <i class="fas fa-truck"></i>
+            <h3>Rien à livrer</h3>
+            <p>Toutes les commandes payées ont été remises.</p>
+        </div>
     </div>
 {% endfor %}
 
+    <div class="panel is-hidden" data-filter-empty>
+        <div class="empty-state"><i class="fas fa-search"></i><h3>Aucune commande ne correspond</h3></div>
+    </div>
 </div>
-{% endblock %}
-
-{% block navbar %}
-
-{% endblock %}
-
-{% block javascripts %}
-<script src="/plugins/datatables/jquery.dataTables.min.js"></script>
-<script src="/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
-<script src="/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
-<script src="/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
-{% for jour_distrib in jour_distribs %}
-    <script>
-    $(function () {
-        $('#tableau{{ jour_distrib.id }}').DataTable({
-        "paging": true,
-        "lengthChange": false,
-        "searching": true,
-        "ordering": true,
-        "info": true,
-        "autoWidth": false,
-        "responsive": true,
-        "language": {
-            "url": "/French.json"
-        },
-        "order": [[ 0, "asc" ]],
-        });
-    });
-    </script>
-{% endfor %}
 {% endblock %}

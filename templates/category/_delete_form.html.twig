@@ -1,0 +1,5 @@
+<form method="post" action="{{ path('category_delete', {'id': category.id}) }}" data-confirm="Supprimer cette catégorie ? Ses produits passeront en « Sans catégorie ».">
+    <input type="hidden" name="_method" value="DELETE">
+    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ category.id) }}">
+    <button class="btn btn-outline-danger"><i class="fas fa-trash-alt mr-1"></i> Supprimer</button>
+</form>

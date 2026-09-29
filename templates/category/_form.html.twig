@@ -1,0 +1,12 @@
+{{ form_start(form) }}
+    {{ form_row(form.nom) }}
+    <div class="form-row">
+        <div class="col-sm-8">{{ form_row(form.icon) }}</div>
+        <div class="col-sm-4">{{ form_row(form.position) }}</div>
+    </div>
+    {{ form_rest(form) }}
+    <div class="form-actions">
+        <button class="btn btn-accent"><i class="fas fa-check mr-1"></i> {{ button_label|default('Enregistrer') }}</button>
+        <a href="{{ path('category_index') }}" class="btn btn-soft">Annuler</a>
+    </div>
+{{ form_end(form) }}

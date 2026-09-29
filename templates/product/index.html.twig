@@ -1,61 +1,69 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Produit index{% endblock %}
+{% block title %}Produits{% endblock %}
 
-{% block titre_page %}
-{% endblock %}
+{% block titre_page %}{% endblock %}
 
 {% block body %}
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Liste des produits</h3>
-                <div class="card-tools">
-                    <a href="{{ path('product_new') }}" class="btn btn-tool btn-sm">
-                        <i class="fas fa-plus"></i>
-                    </a>
-                </div>
-            </div>
-            <!-- /.card-header -->
-            <div class="card-body table-responsive p-0">
-                <table class="table table-hover text-nowrap">
-                    <thead>
-                        <tr>
-                            <th>Id</th>
-                            <th>Nom</th>
-                            <th>Conditionnement</th>
-                            <th>Prix Initial</th>
-                            <th>Prix Final</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% for product in products %}
-                        
-                        <tr onclick="document.location = '{{ path('product_edit', {'id': product.id}) }}';">
-                            <td>{{ product.id }}</td>
-                            <td>{{ product.nom }}</td>
-                            <td>{{ product.conditionnement|number_format(2, ',', '.') }} {{ product.unit }}</td>
-                            <td>{{ product.prixInit|number_format(2, ',', '.') }} €</td>
-                            <td>{{ product.prixFinal|number_format(2, ',', '.') }} €</td>
-                        </tr>
-                        
-                    {% else %}
-                        <tr>
-                            <td colspan="5">Vide ! </td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+<div class="col-12" data-filter-scope>
+    <div class="page-head">
+        <div>
+            <h1>Produits</h1>
+            <p class="subtitle">{{ products|length }} produit{{ products|length > 1 ? 's' }}, classés par catégorie</p>
+        </div>
+        <div class="actions">
+            <a href="{{ path('category_index') }}" class="btn btn-soft"><i class="fas fa-tags mr-1"></i> Catégories</a>
+            <a href="{{ path('product_new') }}" class="btn btn-accent"><i class="fas fa-plus mr-1"></i> Nouveau produit</a>
         </div>
     </div>
-        
+
+    {% if products is empty %}
+        <div class="panel">
+            <div class="empty-state">
+                <i class="fas fa-box-open"></i>
+                <h3>Aucun produit</h3>
+                <p>Commencez par créer votre premier produit.</p>
+                <a href="{{ path('product_new') }}" class="btn btn-accent">Nouveau produit</a>
+            </div>
+        </div>
+    {% else %}
+        <div class="toolbar">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="search" data-filter-search placeholder="Rechercher un produit…" aria-label="Rechercher un produit">
+            </div>
+        </div>
+
+        {% for group in products|group_by_category %}
+            <section class="cat-section" data-filter-group>
+                {{ include('category/_section_title.html.twig', {'category': group.category, 'count': group.products|length}) }}
+                <div class="card-grid">
+                {% for product in group.products %}
+                    <a href="{{ path('product_edit', {'id': product.id}) }}" class="tile" data-filter-item data-search="{{ product.nom }} {{ group.category ? group.category.nom }}">
+                        <div class="tile-title">{{ product.nom }}</div>
+                        <div class="tile-sub">{{ product.conditionnement|format_number(locale='fr') }} {{ product.unit }}</div>
+                        <div class="tile-foot">
+                            <span>
+                                {% if product.prixFinal is not null and product.prixFinal != product.prixInit %}
+                                    <span class="price-old">{{ product.prixInit|format_currency('EUR', locale='fr') }}</span>
+                                    <span class="price">{{ product.prixFinal|format_currency('EUR', locale='fr') }}</span>
+                                {% else %}
+                                    <span class="price">{{ product.prixInit|format_currency('EUR', locale='fr') }}</span>
+                                {% endif %}
+                            </span>
+                            {% if product.prixFinal is null %}
+                                <span class="pill pill-muted" title="Prix final non renseigné">Prix final ?</span>
+                            {% endif %}
+                        </div>
+                    </a>
+                {% endfor %}
+                </div>
+            </section>
+        {% endfor %}
+
+        <div class="panel is-hidden" data-filter-empty>
+            <div class="empty-state"><i class="fas fa-search"></i><h3>Aucun produit ne correspond</h3></div>
+        </div>
+    {% endif %}
+</div>
 {% endblock %}
-
-{% block navbar %}
-    <li class="nav-item d-none d-sm-inline-block">
-        <a href="{{ path('product_new') }}" class="nav-link">Ajouter un produit</a>
-    </li>
-{% endblock %}
-
-

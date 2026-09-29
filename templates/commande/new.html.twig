@@ -2,86 +2,156 @@
 
 {% block title %}Passer commande{% endblock %}
 
-{% block body %}
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Passer commande</h3>
-            </div>
-            <!-- /.card-header -->
-            <div class="card-body">
-                {{ include('commande/_form.html.twig') }}
+{% block titre_page %}{% endblock %}
 
-                <button type="button" class="btn btn-block btn-danger" onclick="window.location.href='{{ path('passe_commande_index') }}'">Annuler</button>
-            </div>
+{% block body %}
+{% set jour = jourDistrib %}
+{% set available = jour.total != 0 ? max(0, jour.total - jour.poidRestant|default(0)) : null %}
+<div class="col-12" data-filter-scope>
+    <a href="{{ path('passe_commande_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Ventes en cours</a>
+    <div class="page-head">
+        <div>
+            <h1>Commande jusqu'au {{ jour.date|format_date('long', locale='fr') }}</h1>
+            <p class="subtitle">
+                {{ jour.dateLivraison ? 'Livraison le ' ~ jour.dateLivraison|format_date('full', locale='fr') : 'Date de livraison non renseignée' }}
+                {% if available is not null %} · <strong>{{ available|round(1, 'floor')|format_number(locale='fr') }} kg</strong> encore disponibles{% endif %}
+            </p>
         </div>
     </div>
+
+    {% set groups = products|group_by_category %}
+    <div class="toolbar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="search" data-filter-search placeholder="Rechercher un produit…" aria-label="Rechercher un produit">
+        </div>
+        {% if groups|length > 1 %}
+        <div class="chips">
+            <button type="button" class="chip active" data-filter-value="">Tout</button>
+            {% for group in groups %}
+                <button type="button" class="chip" data-filter-value="cat-{{ group.category ? group.category.id : 0 }}">{{ group.category ? group.category.nom : 'category.none'|trans }}</button>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    {{ form_start(form, {'attr': {'id': 'order-form', 'novalidate': 'novalidate', 'data-available': available is null ? '' : available}}) }}
+        {% for group in groups %}
+            <section class="cat-section" data-filter-group>
+                {{ include('category/_section_title.html.twig', {'category': group.category}) }}
+                <div class="card-grid wide">
+                {% for product in group.products %}
+                    <div class="tile shop-item" data-filter-item data-status="cat-{{ group.category ? group.category.id : 0 }}"
+                         data-search="{{ product.nom }} {{ group.category ? group.category.nom }}"
+                         data-product="{{ product.id }}" data-price="{{ product.prixInit }}" data-weight="{{ product.conditionnement }}">
+                        <div class="info">
+                            <div class="tile-title">{{ product.nom }}</div>
+                            <div class="tile-sub">{{ product.conditionnement|format_number(locale='fr') }} {{ product.unit }}</div>
+                            <div class="price">{{ product.prixInit|format_currency('EUR', locale='fr') }}</div>
+                        </div>
+                        <div class="qty-stepper">
+                            <button type="button" data-step="-1" aria-label="Retirer un {{ product.nom }}"><i class="fas fa-minus"></i></button>
+                            <input type="number" min="0" step="1" value="0" inputmode="numeric" aria-label="Quantité de {{ product.nom }}">
+                            <button type="button" data-step="1" aria-label="Ajouter un {{ product.nom }}"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                {% endfor %}
+                </div>
+            </section>
+        {% endfor %}
+
+        <div class="panel is-hidden" data-filter-empty>
+            <div class="empty-state"><i class="fas fa-search"></i><h3>Aucun produit ne correspond</h3></div>
+        </div>
+
+        <div class="panel form-panel">
+            <div class="panel-body">
+                {{ form_row(form.commentaire, {'label': 'Commentaire (facultatif)', 'attr': {'rows': 2, 'placeholder': 'Une précision pour la livraison ?'}}) }}
+            </div>
+        </div>
+
+        {# Les lignes de commande sont générées à l'envoi à partir des quantités choisies #}
+        <div id="order-lines" class="d-none" data-prototype="{{ form_widget(form.ligneCommandes.vars.prototype)|e('html_attr') }}"></div>
+        {% do form.ligneCommandes.setRendered %}
+        <div class="d-none">{{ form_rest(form) }}</div>
+
+        <div class="order-bar">
+            <div class="summary">
+                <div class="total num" id="order-total">0,00 €</div>
+                <div class="detail"><span id="order-count">Aucun produit</span> · <span id="order-weight" class="num">0 kg</span>
+                    <span id="order-over" class="over d-none">· dépasse les {{ available is not null ? available|round(1, 'floor')|format_number(locale='fr') }} kg disponibles</span>
+                </div>
+            </div>
+            <a href="{{ path('passe_commande_index') }}" class="btn btn-soft hide-xs">Annuler</a>
+            <button type="submit" class="btn btn-accent" id="order-submit" disabled><i class="fas fa-check mr-1"></i> {{ 'button.register'|trans }}</button>
+        </div>
+    {{ form_end(form) }}
+</div>
 {% endblock %}
 
 {% block javascripts %}
 <script>
-var $collectionHolder;
+(function () {
+    var form = document.getElementById('order-form');
+    var items = form.querySelectorAll('[data-product]');
+    var available = form.dataset.available === '' ? null : parseFloat(form.dataset.available);
+    var money = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
+    var number = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
 
-// setup an "add a ligne" link
-var $addLigneButton = $('<button type="button" class="btn btn-block btn-info">Ajouter un produit</button>');
-var $newLinkLi = $('<li class="list-group-item"></li>').append($addLigneButton);
+    function quantity(item) {
+        var value = parseInt(item.querySelector('input').value, 10);
+        return isNaN(value) || value < 0 ? 0 : value;
+    }
 
-jQuery(document).ready(function() {
-    // Get the ul that holds the collection of lignes
-    $collectionHolder = $('ul.ligneCommandes');
+    function refresh() {
+        var total = 0, weight = 0, count = 0;
+        items.forEach(function (item) {
+            var qty = quantity(item);
+            item.classList.toggle('selected', qty > 0);
+            item.querySelector('[data-step="-1"]').disabled = qty === 0;
+            total += qty * parseFloat(item.dataset.price);
+            weight += qty * parseFloat(item.dataset.weight);
+            count += qty;
+        });
+        var over = available !== null && weight > available + 1e-9;
+        document.getElementById('order-total').textContent = money.format(total);
+        document.getElementById('order-weight').textContent = number.format(weight) + ' kg';
+        document.getElementById('order-count').textContent = count === 0 ? 'Aucun produit' : count + ' article' + (count > 1 ? 's' : '');
+        document.getElementById('order-over').classList.toggle('d-none', !over);
+        document.getElementById('order-submit').disabled = count === 0 || over;
+    }
 
-    // add the "add a ligne" anchor and li to the lignes ul
-    $collectionHolder.append($newLinkLi);
-
-    // count the current form inputs we have (e.g. 2), use that as the new
-    // index when inserting a new item (e.g. 2)
-    $collectionHolder.data('index', $collectionHolder.find('input').length);
-
-    $addLigneButton.on('click', function(e) {
-        // add a new ligne form (see next code block)
-        addLigneCommandeForm($collectionHolder, $newLinkLi);
+    items.forEach(function (item) {
+        var input = item.querySelector('input');
+        item.querySelectorAll('[data-step]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                input.value = Math.max(0, quantity(item) + parseInt(button.dataset.step, 10));
+                refresh();
+            });
+        });
+        input.addEventListener('input', refresh);
     });
-});
 
-
-function addLigneCommandeForm($collectionHolder, $newLinkLi) {
-    // Get the data-prototype explained earlier
-    var prototype = $collectionHolder.data('prototype');
-
-    // get the new index
-    var index = $collectionHolder.data('index');
-
-    var newForm = prototype;
-    // You need this only if you didn't set 'label' => false in your lignes field in CommndeType
-    // Replace '__name__label__' in the prototype's HTML to
-    // instead be a number based on how many items we have
-    // newForm = newForm.replace(/__name__label__/g, index);
-
-    // Replace '__name__' in the prototype's HTML to
-    // instead be a number based on how many items we have
-    newForm = newForm.replace(/__name__/g, index);
-
-    // increase the index with one for the next item
-    $collectionHolder.data('index', index + 1);
-
-    // Display the form in the page in an li, before the "Add a ligne" link li
-    var $newFormLi = $('<li class="list-group-item"></li>').append(newForm);
-    $newLinkLi.before($newFormLi);
-    
-    $newFormLi.append('<a href="#" class="remove-tag"><button class="btn"><i class="fas fa-trash-alt"></i></button></a>');
-    
-    $newLinkLi.before($newFormLi);
-    
-    // handle the removal, just for this example
-    $('.remove-tag').click(function(e) {
-        e.preventDefault();
-        
-        $(this).parent().remove();
-        
-        return false;
+    form.addEventListener('submit', function (e) {
+        var holder = document.getElementById('order-lines');
+        var prototype = holder.dataset.prototype;
+        var index = 0;
+        holder.innerHTML = '';
+        items.forEach(function (item) {
+            var qty = quantity(item);
+            if (qty === 0) { return; }
+            var line = document.createElement('div');
+            line.innerHTML = prototype.replace(/__name__/g, index++);
+            line.querySelector('select').value = item.dataset.product;
+            line.querySelector('input[type="number"]').value = qty;
+            holder.appendChild(line);
+        });
+        if (index === 0) {
+            e.preventDefault();
+        }
     });
-    
-}
+
+    refresh();
+})();
 </script>
-
 {% endblock %}

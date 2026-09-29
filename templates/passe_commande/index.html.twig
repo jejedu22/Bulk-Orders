@@ -1,76 +1,82 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Choix du jour de commande{% endblock %}
+{% block title %}Passer commande{% endblock %}
 
 {% block body %}
 {% if is_granted('ROLE_USER') %}
-{% if jour_distribs is empty %}
-    <div class="col-md-12">
-        <div class="callout callout-danger">
-            <h5>C'est vide !</h5>
-
-            <p>Il n'y a pas de commande en cours !</p>
+{% set today = "now"|date('Y-m-d') %}
+{% set jours = jour_distribs|filter(j => j.jour.dateLivraison|date('Y-m-d') >= today) %}
+<div class="col-12">
+    <div class="page-head">
+        <div>
+            <h1>Passer commande</h1>
+            <p class="subtitle">Choisissez une vente groupée.</p>
         </div>
     </div>
-{% else %}
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Choix du jour de commande</h3>
-            </div>
-            <!-- /.card-header -->
-            <div class="card-body table-responsive p-0">
-                <table class="table table-hover text-nowrap">
 
-                    <thead>
-                        <tr>
-                            <th>Date limite de commande</th>
-                            <th>Date de livraison</th>
-                            <th>Etat</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% for jour_distrib in jour_distribs %}
-                        {% if jour_distrib.jour.dateLivraison|date('Y-m-d') >= "now"|date('Y-m-d') %}
-                            {% if (jour_distrib.jour.poidRestant < jour_distrib.jour.total or jour_distrib.jour.total == 0) and jour_distrib.jour.date|date('Y-m-d') > "now"|date('Y-m-d') and jour_distrib.jour.closed == false and jour_distrib.test_user_commande == false %}
-                                <tr onclick="document.location = '{{ path('passe_commande_new', {'idJourDistrib': jour_distrib.jour.id}) }}';">
-                                    <td>{{ jour_distrib.jour.date|format_datetime('full', 'none', locale='fr') }}</td>
-                                    <td>{{ jour_distrib.jour.dateLivraison ? jour_distrib.jour.dateLivraison|format_datetime('full', 'none', locale='fr') : 'Non renseignée' }}</td>
-                                    {% if jour_distrib.jour.total != 0 %}
-                                        <td>Poids restant : {{ (jour_distrib.jour.total - jour_distrib.jour.poidRestant)|round(1, 'ceil')|default(0)}} kg</td>
-                                    {% elseif jour_distrib.jour.limite %} 
-                                        <td>Une Commande possible</td>
-                                    {% else %} 
-                                        <td>Pas de limite</td>{% endif %}
-                                </tr>
-                            {% else %}
-                                <tr class="table-warning">
-                                    <td>{{ jour_distrib.jour.date|format_datetime('full', 'none', locale='fr') }}</td>
-                                    <td>{{ jour_distrib.jour.dateLivraison ? jour_distrib.jour.dateLivraison|format_datetime('full', 'none', locale='fr') : 'Non renseignée' }}</td>
-                                    {% if jour_distrib.jour.closed == true %}
-                                        <td>FERMÉ</td>
-                                    {% elseif jour_distrib.test_user_commande %}
-                                        <td>Commande déjà passée</td>
-                                    {% else %}
-                                        <td>COMPLET</td>
-                                    {% endif %}
-                                </tr>
-                            {% endif %}
-                        {% endif %}
+    {% if jours is empty %}
+        <div class="panel">
+            <div class="empty-state">
+                <i class="far fa-calendar-times"></i>
+                <h3>Aucune vente en cours</h3>
+                <p>Revenez bientôt : la prochaine vente sera annoncée ici.</p>
+            </div>
+        </div>
+    {% else %}
+        <div class="card-grid wide">
+        {% for jour_distrib in jours %}
+            {% set jour = jour_distrib.jour %}
+            {% set open = (jour.poidRestant < jour.total or jour.total == 0) and jour.date|date('Y-m-d') > today and jour.closed == false and jour_distrib.test_user_commande == false %}
+            {% set tag = open ? 'a' : 'div' %}
+            <{{ tag }} {% if open %}href="{{ path('passe_commande_new', {'idJourDistrib': jour.id}) }}"{% endif %} class="tile {{ open ? '' : 'is-muted' }}">
+                <div class="d-flex" style="gap: .9rem">
+                    {{ include('passe_commande/_date_badge.html.twig', {'date': jour.date}) }}
+                    <div class="flex-grow-1" style="min-width: 0">
+                        <div class="tile-title">Commande jusqu'au {{ jour.date|format_date('long', locale='fr') }}</div>
+                        <div class="tile-sub">
+                            <i class="fas fa-truck mr-1"></i>
+                            {{ jour.dateLivraison ? 'Livraison le ' ~ jour.dateLivraison|format_date('full', locale='fr') : 'Date de livraison non renseignée' }}
+                        </div>
+                        <div class="tile-sub"><i class="fas fa-box mr-1"></i>{{ jour.products|length }} produit{{ jour.products|length > 1 ? 's' }}</div>
+                    </div>
+                </div>
+
+                {% if jour.total != 0 %}
+                    {% set ordered = jour.poidRestant|default(0) %}
+                    {% set percent = min(100, (ordered / jour.total * 100)|round) %}
+                    <div>
+                        <div class="d-flex justify-content-between small">
+                            <span class="text-muted">Poids disponible</span>
+                            <strong class="num">{{ max(0, jour.total - ordered)|round(1, 'floor')|format_number(locale='fr') }} / {{ jour.total|format_number(locale='fr') }} kg</strong>
+                        </div>
+                        <div class="gauge"><span style="width: {{ percent }}%"></span></div>
+                    </div>
+                {% endif %}
+
+                <div class="tile-foot">
+                    {% if jour.closed %}
+                        <span class="pill pill-muted"><i class="fas fa-lock"></i> Fermée</span>
+                    {% elseif jour_distrib.test_user_commande %}
+                        <span class="pill pill-success"><i class="fas fa-check"></i> Commande déjà passée</span>
+                    {% elseif jour.date|date('Y-m-d') <= today %}
+                        <span class="pill pill-muted"><i class="fas fa-hourglass-end"></i> Commandes terminées</span>
+                    {% elseif not open %}
+                        <span class="pill pill-danger"><i class="fas fa-weight-hanging"></i> Complet</span>
                     {% else %}
-                        <tr>
-                            <td colspan="2">C'est vide !</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                        {% if jour.limite %}
+                            <span class="pill pill-info">Une commande par personne</span>
+                        {% elseif jour.total == 0 %}
+                            <span class="pill pill-success">Pas de limite</span>
+                        {% else %}
+                            <span></span>
+                        {% endif %}
+                        <span class="btn btn-accent btn-sm">Commander <i class="fas fa-arrow-right ml-1"></i></span>
+                    {% endif %}
+                </div>
+            </{{ tag }}>
+        {% endfor %}
         </div>
-    </div>
+    {% endif %}
+</div>
 {% endif %}
-{% endif %}
-{% endblock %}
-
-{% block navbar %}
-
 {% endblock %}

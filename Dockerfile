@@ -9,7 +9,11 @@ COPY composer.json composer.lock symfony.lock ./
 RUN composer install --no-dev --no-plugins --no-scripts --no-autoloader \
         --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
 COPY . .
-RUN composer dump-autoload --no-dev --classmap-authoritative --no-plugins --no-scripts
+# ocramius/package-versions 1.x (plugin non exécuté) ne sait pas lire le
+# installed.json de Composer 2 et fait planter doctrine:migrations:migrate :
+# sans ce fichier, il se rabat sur composer.lock.
+RUN composer dump-autoload --no-dev --classmap-authoritative --no-plugins --no-scripts \
+    && rm vendor/composer/installed.json
 
 # --- Image d'exécution -------------------------------------------------------
 FROM php:7.4-apache

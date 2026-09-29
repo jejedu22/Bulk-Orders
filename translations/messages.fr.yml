@@ -38,10 +38,11 @@ ROLE_ADMIN: Administrateur
 menu:
   admin:
     title: Administration
-    product: Produit
+    product: Produits
+    category: Catégories
     add_product: Ajouter un produit
     add_category: Ajouter une catégorie
-    add_day: Jour de commande
+    add_day: Jours de commande
     delivery: Suivi de livraison
     delivery_by_product: Par produit
     delivery_by_command: Par commande
@@ -75,6 +76,14 @@ product:
     prixFinal: prix Final
     unit: Unité
     category: Catégorie
+category:
+  none: Sans catégorie
+  form:
+    nom: Nom
+    icon: Icône
+    icon_help: "Classe Font Awesome, par exemple : fas fa-apple-alt, fas fa-seedling, fas fa-tint, fas fa-cheese"
+    position: Ordre d'affichage
+    position_help: Les plus petits nombres apparaissent en premier.
 registration:
   form:
     nom: Nom
@@ -117,13 +126,13 @@ email:
     confirm_command: Commande Confirmée
     register_command: Commande Enregistrée
 recap:
-  title: Récapitilatif des commandes
+  title: Récapitulatif des commandes
   nom: Nom
   quantite: Quantité
   conditionnement: Conditionnement
 
 alert_message:
-  limit_weight: La limite de poid disponible a été dépassée !
+  limit_weight: La limite de poids disponible a été dépassée !
   limit_commande: Une commande a déjà été enregistrée !
   closed_commande: La commande est fermée !
   delete_user: Utilisateur supprimé !

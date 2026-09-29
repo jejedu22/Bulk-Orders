@@ -1,47 +1,60 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}Jours de commande{% endblock %}
-{% block titre_page %}
-{% endblock %}
-{% block body %}
 
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Jours de commande</h3>
-                <div class="card-tools">
-                    <a href="{{ path('jour_distrib_new') }}" class="btn btn-tool btn-sm">
-                        <i class="fas fa-plus"></i>
-                    </a>
-                </div>
-            </div>
-            <!-- /.card-header -->
-            <div class="card-body table-responsive p-0">
-                <table class="table table-hover text-nowrap">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% for jour_distrib in jour_distribs %}
-                        <tr onclick="document.location = '{{ path('jour_distrib_edit', {'id': jour_distrib.id}) }}';">
-                            <td>{{ jour_distrib.date|format_datetime('full', 'none', locale='fr') }}</td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="3">Fini le boulot !</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+{% set today = "now"|date('Y-m-d') %}
+<div class="col-12">
+    <div class="page-head">
+        <div>
+            <h1>Jours de commande</h1>
+            <p class="subtitle">Chaque vente groupée : date limite, livraison, produits proposés.</p>
+        </div>
+        <div class="actions">
+            <a href="{{ path('jour_distrib_new') }}" class="btn btn-accent"><i class="fas fa-plus mr-1"></i> Nouvelle vente</a>
         </div>
     </div>
-{% endblock %}
 
-{% block navbar %}
-    <li class="nav-item d-none d-sm-inline-block">
-        <a href="{{ path('jour_distrib_new') }}" class="nav-link">Ajouter un jour</a>
-    </li>
+    <div class="panel">
+    {% if jour_distribs is empty %}
+        <div class="empty-state">
+            <i class="far fa-calendar-alt"></i>
+            <h3>Aucune vente</h3>
+            <p>Créez une vente pour ouvrir les commandes.</p>
+            <a href="{{ path('jour_distrib_new') }}" class="btn btn-accent">Nouvelle vente</a>
+        </div>
+    {% else %}
+        <ul class="rows">
+        {% for jour_distrib in jour_distribs %}
+            <li>
+                <a href="{{ path('jour_distrib_edit', {'id': jour_distrib.id}) }}" class="row-item {{ jour_distrib.date|date('Y-m-d') < today ? 'is-muted' }}">
+                    {{ include('passe_commande/_date_badge.html.twig', {'date': jour_distrib.date}) }}
+                    <span class="row-main">
+                        <span class="row-title d-block">Commandes jusqu'au {{ jour_distrib.date|format_date('full', locale='fr') }}</span>
+                        <span class="row-meta d-block">
+                            <span>{{ jour_distrib.dateLivraison ? 'Livraison le ' ~ jour_distrib.dateLivraison|format_date('long', locale='fr') : 'Livraison non renseignée' }}</span>
+                            <span>{{ jour_distrib.commandes|length }} commande{{ jour_distrib.commandes|length > 1 ? 's' }}</span>
+                            <span>{{ jour_distrib.products|length }} produit{{ jour_distrib.products|length > 1 ? 's' }}</span>
+                            {% if jour_distrib.total != 0 %}<span class="num">{{ jour_distrib.poidRestant|default(0)|format_number(locale='fr') }} / {{ jour_distrib.total|format_number(locale='fr') }} kg</span>{% endif %}
+                        </span>
+                    </span>
+                    <span class="row-aside hide-xs">
+                        {% if jour_distrib.limite %}<span class="pill pill-info">1 commande / pers.</span>{% endif %}
+                        {% if jour_distrib.closed %}
+                            <span class="pill pill-muted"><i class="fas fa-lock"></i> Fermée</span>
+                        {% elseif jour_distrib.date|date('Y-m-d') <= today %}
+                            <span class="pill pill-muted">Terminée</span>
+                        {% else %}
+                            <span class="pill pill-success">Ouverte</span>
+                        {% endif %}
+                    </span>
+                </a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+    </div>
+</div>
 {% endblock %}

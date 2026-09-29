@@ -1,0 +1,5 @@
+<span class="date-badge" aria-hidden="true">
+    <span class="m d-block">{{ date|format_date(pattern='MMM', locale='fr')|trim('.') }}</span>
+    <span class="d d-block">{{ date|format_date(pattern='d', locale='fr') }}</span>
+    <span class="w d-block">{{ date|format_date(pattern='EEE', locale='fr')|trim('.') }}</span>
+</span>

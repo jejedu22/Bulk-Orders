@@ -1,38 +1,47 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Paramètres{% endblock %}
+{% block title %}Configuration{% endblock %}
+
+{% block titre_page %}{% endblock %}
 
 {% block body %}
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Paramètres</h3>
-            </div>
-            <!-- /.card-header -->
-            <div class="card-body table-responsive p-0">
-
-                <table  class="table table-hover text-nowrap">
-                    <tbody>
-                    {% for setting in settings %}
-                        <tr onclick="document.location = '{{ path('settings_edit', {'id': setting.id}) }}';">
-                            <td>{{ setting.name |trans}}</td>
-                                {% if setting.name == 'color'%}
-                                <td><div class="option-index-color color-{{setting.value}}"></div></td>
-                                {% elseif setting.name == 'logo'%}
-                                <td><img src='{{ asset('uploads/logo/' ~ options_settings.get('logo')) }}' alt="logo" class="brand-image img-circle elevation-3 navbar-{{ options_settings.get('color') }}" style="opacity: .8; max-height: 50px;"></td>
-
-                                {% else %}
-                                <td>{{ setting.value }}</td>
-                                {% endif %}
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="4">no records found</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+{% set icons = {
+    'color': 'fas fa-palette', 'logo': 'far fa-image', 'welcome_text': 'fas fa-bullhorn', 'name': 'fas fa-signature',
+    'contact_email': 'fas fa-at', 'favicon': 'far fa-star', 'text_confirm_email': 'fas fa-envelope-open-text', 'text_register_command': 'fas fa-receipt'
+} %}
+<div class="col-12">
+    <div class="page-head">
+        <div>
+            <h1>Configuration</h1>
+            <p class="subtitle">Personnalisation de l'application et des messages envoyés.</p>
         </div>
-    </div>                
+    </div>
+
+    <div class="panel form-panel">
+        <ul class="rows">
+        {% for setting in settings %}
+            <li>
+                <a href="{{ path('settings_edit', {'id': setting.id}) }}" class="row-item">
+                    <span class="avatar" style="background: #eef0f3; color: var(--text)"><i class="{{ icons[setting.name] ?? 'fas fa-cog' }}"></i></span>
+                    <span class="row-main">
+                        <span class="row-title d-block">{{ setting.name|trans }}</span>
+                        <span class="row-meta d-block text-truncate">
+                        {% if setting.name == 'color' %}
+                            <span class="d-inline-block align-middle rounded-circle color-{{ setting.value }}" style="width: 14px; height: 14px"></span>
+                            {{ ('settings.form.' ~ setting.value)|trans }}
+                        {% elseif setting.name == 'logo' %}
+                            <img src="{{ asset('uploads/logo/' ~ setting.value) }}" alt="logo" class="img-circle" style="max-height: 24px;">
+                        {% else %}
+                            {% set text = setting.value|striptags %}{{ text|length > 90 ? text|slice(0, 90) ~ '…' : text }}
+                        {% endif %}
+                        </span>
+                    </span>
+                </a>
+            </li>
+        {% else %}
+            <li class="row-item text-muted">Aucun paramètre.</li>
+        {% endfor %}
+        </ul>
+    </div>
+</div>
 {% endblock %}

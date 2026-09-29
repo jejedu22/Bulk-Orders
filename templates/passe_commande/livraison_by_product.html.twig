@@ -1,111 +1,92 @@
 {% extends 'base.html.twig' %}
-{% block titre_page %}<h3 class="s-0 text-dark">Suivi livraison par produit</h3>{% endblock %}
 
-{% block title %}Suivi livraison par produit{% endblock %}
+{% block title %}Livraison par produit{% endblock %}
 
-{% block stylesheets %}
-  <link rel="stylesheet" href="/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
-  <link rel="stylesheet" href="/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
-{% endblock %}
+{% block titre_page %}{% endblock %}
 
 {% block body %}
-<div class="col-md-12">
-{% for jour_distrib in jour_distribs %}
-    <div class="card">
-        <div class="card-header border-transparent">
-            <h3 class="card-title">{{ jour_distrib.date|format_datetime('full', 'none', locale='fr') }}</h3>
-            <div class="card-tools">
-                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                    <i class="fas fa-minus"></i>
-                </button>
-            </div>
+<div class="col-12" data-filter-scope>
+    <div class="page-head">
+        <div>
+            <h1>Livraison par produit</h1>
+            <p class="subtitle">Produits restant à remettre pour les commandes payées.</p>
         </div>
-        <div class="card-body p-0">
-            <div class="card card-{{ options_settings.get('color') }} card-outline card-tabs">
-                <div class="card-header p-0 pt-1 border-bottom-0">
-                    <ul class="nav nav-tabs" id="custom-tabs-three-tab" role="tablist">
-                    {% for produit in jour_distrib.produits %}
-                        {% if produit.id==0 %}{% set active='active' %}{% else %}{% set active='' %}{% endif %}
-                        <li class="nav-item">
-                            <a class="nav-link {{ active }}" id="custom-tabs-three-{{ produit.id }}-{{ jour_distrib.id }}-tab" data-toggle="pill" href="#custom-tabs-three-{{ produit.id }}-{{ jour_distrib.id }}" role="tab" aria-controls="custom-tabs-three-{{ produit.id }}-{{ jour_distrib.id }}" aria-selected="true">{{ produit.nom }}</a>
-                        </li>
-                    {% endfor %}
-                    </ul>
-                </div>
-                <div class="card-body">
-                    <div class="tab-content" id="custom-tabs-three-tabContent">
-                    {% for produit in jour_distrib.produits %}
-                        {% if produit.id==0 %}{% set active='show active'%}{% else %}{% set active='' %}{% endif %}
+        <div class="actions">
+            <a href="{{ path('livraison', {'type': 'command'}) }}" class="btn btn-soft"><i class="fas fa-file-invoice mr-1"></i> Vue par commande</a>
+        </div>
+    </div>
 
-                        <div class="tab-pane fade  {{ active }}" id="custom-tabs-three-{{ produit.id }}-{{ jour_distrib.id }}" role="tabpanel" aria-labelledby="custom-tabs-three-{{ produit.id }}-{{ jour_distrib.id }}-tab">
-                            <table class="table table-striped table-sm table-bordered" id="tableau-{{ produit.id }}-{{ jour_distrib.id }}">
-                                <thead>
-                                    <tr>
-                                        <th>N°</th>
-                                        <th>Nom</th>
-                                        <th>Produit</th>
-                                        <th>Livrée</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for ligneCommande in produit.lignesCommande %}
+    {% if jour_distribs|filter(j => j.products is not empty) is not empty %}
+    <div class="toolbar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="search" data-filter-search placeholder="Produit ou personne…" aria-label="Rechercher">
+        </div>
+    </div>
+    {% endif %}
 
-                                        {% if ligneCommande.livree == null%}
-                                            <tr class="table">
-                                                <td>{{ ligneCommande.commande.id }}</td>
-                                                <td>{{ ligneCommande.commande.user.prenom }} {{ ligneCommande.commande.user.nom }}</br><i><small>{{ ligneCommande.commande.commentaire }}</small></small></td>
-                                                <td>
-                                                    <p>{{ ligneCommande.quantite}} {{ ligneCommande.product.nom }} - {{ ligneCommande.product.conditionnement }}{{ ligneCommande.product.unit }} </p>
-                                                </td>
-                                                <td>
-                                                    <a href="{{ path('livree_ligne_commande', { ligneCommande: ligneCommande.id }) }}" onclick="return confirm('Tu lui as vraiment donné ?')"><i class="fas fa-check"></i></a>
-                                                </td>
-                                            </tr>
-                                        {% endif %}
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% endfor %}
-                    </div>
+{% for jour_distrib in jour_distribs|filter(j => j.products is not empty) %}
+    <div class="panel" data-filter-group>
+        <div class="panel-head panel-toggle">
+            <div class="d-flex align-items-center" style="gap: .9rem">
+                {{ include('passe_commande/_date_badge.html.twig', {'date': jour_distrib.dateLivraison ?: jour_distrib.date}) }}
+                <div>
+                    <h3>Vente du {{ jour_distrib.date|format_date('long', locale='fr') }}</h3>
+                    <div class="meta">{{ jour_distrib.dateLivraison ? 'Livraison le ' ~ jour_distrib.dateLivraison|format_date('full', locale='fr') : 'Date de livraison non renseignée' }}</div>
                 </div>
             </div>
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="panel-body panel-collapsible">
+        {% for group in jour_distrib.products|group_by_category %}
+            <section class="cat-section" data-filter-group>
+                {{ include('category/_section_title.html.twig', {'category': group.category}) }}
+                <div class="card-grid wide">
+                {% for product in group.products %}
+                    {% set lignes = jour_distrib.lignes[product.id] %}
+                    {% set total = 0 %}
+                    {% for l in lignes %}{% set total = total + l.quantite %}{% endfor %}
+                    <div class="panel mb-0" data-filter-group>
+                        <div class="panel-head">
+                            <div>
+                                <h3>{{ product.nom }}</h3>
+                                <div class="meta">{{ product.conditionnement|format_number(locale='fr') }} {{ product.unit }}</div>
+                            </div>
+                            <span class="pill pill-accent" title="Quantité restant à remettre">{{ total }} à remettre</span>
+                        </div>
+                        <ul class="rows">
+                        {% for ligneCommande in lignes %}
+                            <li class="row-item" data-filter-item data-search="{{ product.nom }} {{ ligneCommande.commande.user.prenom }} {{ ligneCommande.commande.user.nom }} {{ ligneCommande.commande.id }}">
+                                <span class="lines"><span class="qty">{{ ligneCommande.quantite }}×</span></span>
+                                <span class="row-main">
+                                    <span class="d-block">{{ ligneCommande.commande.user.prenom }} {{ ligneCommande.commande.user.nom }} <span class="text-muted small">n°{{ ligneCommande.commande.id }}</span></span>
+                                    {% if ligneCommande.commande.commentaire %}<span class="row-meta d-block"><i class="far fa-comment mr-1"></i>{{ ligneCommande.commande.commentaire }}</span>{% endif %}
+                                </span>
+                                <a href="{{ path('livree_ligne_commande', { ligneCommande: ligneCommande.id }) }}" class="btn btn-sm btn-accent" data-confirm="Remettre {{ ligneCommande.quantite }} × {{ product.nom }} à {{ ligneCommande.commande.user.prenom }} {{ ligneCommande.commande.user.nom }} ?">
+                                    <i class="fas fa-check mr-1"></i> Remis
+                                </a>
+                            </li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                {% endfor %}
+                </div>
+            </section>
+        {% endfor %}
         </div>
     </div>
 {% else %}
-    <div class="callout callout-danger">
-        <h5>Ya pas de commande !</h5>
-
-        <p>Personne n'a passer de commande</p>
+    <div class="panel">
+        <div class="empty-state">
+            <i class="fas fa-truck"></i>
+            <h3>Rien à livrer</h3>
+            <p>Toutes les commandes payées ont été remises.</p>
+        </div>
     </div>
 {% endfor %}
-</div>
-{% endblock %}
 
-{% block javascripts %}
-{% for jour_distrib in jour_distribs %}
-{% for produit in jour_distrib.produits %}
-    <script>
-    $(function () {
-        $('#tableau-{{ produit.id }}-{{ jour_distrib.id }}').DataTable({
-        "dom": 'Bfrtip',
-        "buttons": [
-            'csv', 'excel', 'pdf'
-        ],
-        "paging": true,
-        "lengthChange": false,
-        "searching": true,
-        "ordering": true,
-        "info": true,
-        "autoWidth": false,
-        "responsive": true,
-        "language": {
-            "url": "/French.json"
-        },
-        "order": [[ 0, "asc" ]],
-        });
-    });
-    </script>
-{% endfor %}
-{% endfor %}
+    <div class="panel is-hidden" data-filter-empty>
+        <div class="empty-state"><i class="fas fa-search"></i><h3>Aucun résultat</h3></div>
+    </div>
+</div>
 {% endblock %}

@@ -21,7 +21,7 @@ class JourDistribController extends AbstractController
     public function index(JourDistribRepository $jourDistribRepository): Response
     {
         return $this->render('jour_distrib/index.html.twig', [
-            'jour_distribs' => $jourDistribRepository->findAll(),
+            'jour_distribs' => $jourDistribRepository->findBy([], ['date' => 'DESC']),
         ]);
     }
 

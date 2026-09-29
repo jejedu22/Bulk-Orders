@@ -1,0 +1,6 @@
+{# Titre de section d'une catégorie (category peut être null : « Sans catégorie ») #}
+<h2 class="cat-title">
+    <span class="cat-icon"><i class="{{ category and category.icon ? category.icon : (category ? 'fas fa-tag' : 'fas fa-question') }}"></i></span>
+    {{ category ? category.nom : 'category.none'|trans }}
+    {% if count is defined %}<span class="count">{{ count }}</span>{% endif %}
+</h2>

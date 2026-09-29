@@ -1,80 +1,65 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Commandes{% endblock %}
+{% block title %}Ma dernière commande{% endblock %}
+
+{% block titre_page %}{% endblock %}
 
 {% block body %}
 {% if commande is null %}
-    <meta http-equiv="refresh" content="0;URL=/"> 
+    <meta http-equiv="refresh" content="0;URL=/">
 {% else %}
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">{{ commande.user.prenom }} {{ commande.user.nom }}</br>
-                Commande du {{ commande.jourDistrib.date|format_datetime('full', 'none', locale='fr') }} {{ commande.jourDistrib.dateLivraison ? '</br> Livraison le ' : '' }} {{ commande.jourDistrib.dateLivraison ? commande.jourDistrib.dateLivraison|format_datetime('full', 'none', locale='fr') : '' }}</h3>
-                {% if commande.confirmed == null %}
-                <div class="card-tools">
-                    {{ include('commande/_delete_form.html.twig') }}
-                </div>
-                {% endif %}
-            </div>
-            <div class="card-body table-responsive p-0">
-                <table class="table table-sm">
-
-                    <thead>
-                        <tr>
-                            <th>Produit</th>
-                            <th>Nb</th>
-                            <th>Prix Initial</th>
-                            <th>Prix Final</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% set totalInit = 0 %}
-                    {% set totalFinal = 0 %}
-                    {% for ligne_commande in commande.lignecommandes %}
-                        {% set sommeInit = ligne_commande.quantite*ligne_commande.product.prixInit %}
-                        {% set sommeFinal = ligne_commande.quantite*ligne_commande.product.prixfinal %}
-                        {% set totalInit = totalInit+sommeInit %}
-                        {% set totalFinal = totalFinal+sommeFinal %}
-                        <tr>
-                            <td>{{ ligne_commande.product.nom }} - {{ ligne_commande.product.conditionnement }}{{ ligne_commande.product.unit }}</td>
-                            <td>{{ ligne_commande.quantite }}</td>
-                            <td>{{ sommeInit }} €</td>
-                            <td>{{ sommeFinal }} €</td>
-                            <td>{% if commande.confirmed == null %}{{ include('ligne_commande/_delete_form.html.twig') }}{% endif %}</td>
-                        </tr>
-                    {% endfor %}
-                        <tr>
-                            <td colspan=2 align=right>Total</td>
-                            <td>{{ totalInit }}€</td>
-                            <td>{{ totalFinal }}€</td>
-                            <td></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="card-footer">
-                Commentaire : {{ commande.commentaire }}
-            </div>
+{% set totalInit = 0 %}
+{% set totalFinal = 0 %}
+{% set hasFinal = true %}
+{% for ligne in commande.ligneCommandes %}
+    {% set totalInit = totalInit + ligne.quantite * ligne.product.prixInit %}
+    {% set totalFinal = totalFinal + ligne.quantite * ligne.product.prixFinal %}
+    {% if ligne.product.prixFinal is null %}{% set hasFinal = false %}{% endif %}
+{% endfor %}
+<div class="col-12">
+    <div class="page-head">
+        <div>
+            <h1>Ma dernière commande</h1>
+            <p class="subtitle">N°{{ commande.id }} · {{ commande.user.prenom }} {{ commande.user.nom }}</p>
+        </div>
+        <div class="actions">
+            {% if not commande.confirmed %}{{ include('commande/_delete_form.html.twig') }}{% endif %}
+            <a href="{{ path('passe_commande_index') }}" class="btn btn-accent"><i class="fas fa-shopping-basket mr-1"></i> Nouvelle commande</a>
         </div>
     </div>
+
+    <div class="panel form-panel">
+        <div class="panel-head">
+            <div class="d-flex align-items-center" style="gap: .9rem">
+                {{ include('passe_commande/_date_badge.html.twig', {'date': commande.jourDistrib.dateLivraison ?: commande.jourDistrib.date}) }}
+                <div>
+                    <h3>Vente du {{ commande.jourDistrib.date|format_date('long', locale='fr') }}</h3>
+                    <div class="meta">
+                        {{ commande.jourDistrib.dateLivraison ? 'Livraison le ' ~ commande.jourDistrib.dateLivraison|format_date('full', locale='fr') : 'Date de livraison non renseignée' }}
+                    </div>
+                </div>
+            </div>
+            {{ include('commande/_status.html.twig') }}
+        </div>
+        <div class="panel-body">
+            {{ include('commande/_lines.html.twig', {'show_prices': true, 'show_delete': not commande.confirmed, 'show_delivery': commande.confirmed}) }}
+            {% if commande.commentaire %}
+                <p class="text-muted mt-3 mb-0"><i class="far fa-comment mr-1"></i> {{ commande.commentaire }}</p>
+            {% endif %}
+        </div>
+        <div class="panel-foot d-flex justify-content-between align-items-center flex-wrap" style="gap: .5rem">
+            <span class="text-muted">Total</span>
+            <span>
+                {% if hasFinal and commande.ligneCommandes is not empty and totalFinal != totalInit %}
+                    <span class="price-old">{{ totalInit|format_currency('EUR', locale='fr') }}</span>
+                    <span class="price" style="font-size: 1.2rem">{{ totalFinal|format_currency('EUR', locale='fr') }}</span>
+                    <span class="d-block text-muted small text-right">prix final</span>
+                {% else %}
+                    <span class="price" style="font-size: 1.2rem">{{ totalInit|format_currency('EUR', locale='fr') }}</span>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+</div>
 {% endif %}
-{% endblock %}
-
-{% block navbar %}
-    <li class="nav-item d-none d-sm-inline-block">
-        <a href="{{ path('passe_commande_index') }}" class="nav-link">Passer une commande</a>
-    </li> 
-{% endblock %}
-
-{% block modal %}
-
-{% endblock %}
-
-{% block javascript %}
-
-<script>
-
-</script>
 {% endblock %}

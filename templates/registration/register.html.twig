@@ -1,11 +1,12 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Enregistrer{% endblock %}
+{% block title %}Créer un compte{% endblock %}
 
 {% block body %}
-<div class="card-body login-card-body">
-<p class="login-box-msg">Enregistrer un utilisateur</p>
- 
+<div class="col-12">
+<div class="panel mx-auto" style="max-width: 520px">
+<div class="panel-body">
+<h1 class="h4 text-center mb-3">Créer un compte</h1>
 
     {{ form_start(registrationForm) }}
         {{ form_row(registrationForm.mail) }}
@@ -16,13 +17,9 @@
         {{ form_row(registrationForm.confirmPassword) }}
         {{ form_row(registrationForm.agreeTerms) }}
 
-        <div class="row">
-          <!-- /.col -->
-          <div class="col-4">
-            <button type="submit" class="btn btn-primary btn-block">Enregistrer</button>
-            {{ form_end(registrationForm) }}
-          </div>
-          <!-- /.col -->
-        </div>
+        <button type="submit" class="btn btn-accent btn-block">Créer le compte</button>
+    {{ form_end(registrationForm) }}
+</div>
+</div>
 </div>
 {% endblock %}

@@ -1,55 +1,30 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Utilisateurs{% endblock %}
+{% block title %}{{ user.prenom }} {{ user.nom }}{% endblock %}
+
+{% block titre_page %}{% endblock %}
 
 {% block body %}
-
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Utilisateur</h3>
-                <div class="card-tools">
-                        {{ include('user/_delete_form.html.twig') }}    
-                </div>            
-            </div>
-            <!-- /.card-header -->
-            <div class="card-body">
-
-                <table class="table">
-                    <tbody>
-                        <tr>
-                            <th>Nom</th>
-                            <td>{{ user.nom }}</td>
-                        </tr>
-                        <tr>
-                            <th>Prénom</th>
-                            <td>{{ user.prenom }}</td>
-                        </tr>
-                        <tr>
-                            <th>Email</th>
-                            <td>{{ user.mail }}</td>
-                        </tr>
-                        <tr>
-                            <th>Téléphone</th>
-                            <td>{{ user.phone }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="card-footer">
-                <div class="row">
-                    <div class="col-md-2">
-                        <a href="{{ path('user_index') }}"><i class="fas fa-angle-double-left"></i></a>
-                    </div>
-                    <div class="col-md-8">
-                    </div>
-                    <div class="col-md-2">
-                        <a href="{{ path('user_edit', {'id': user.id}) }}"><button class="btn btn-info center">{{ button_label|default('Modifier') }}</button></a>
-                    </div>
-                </div>
+<div class="col-12">
+    <a href="{{ path('user_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Utilisateurs</a>
+    <div class="page-head">
+        <div class="d-flex align-items-center" style="gap: .9rem">
+            <span class="avatar" style="width: 56px; height: 56px; font-size: 1.2rem">{{ user.prenom|initials(user.nom) }}</span>
+            <div>
+                <h1>{{ user.prenom }} {{ user.nom }}</h1>
+                <p class="subtitle">{% for role in user.roles %}{{ role|trans }}{{ not loop.last ? ', ' }}{% endfor %}</p>
             </div>
         </div>
+        <div class="actions">
+            {{ include('user/_delete_form.html.twig') }}
+            <a href="{{ path('user_edit', {'id': user.id}) }}" class="btn btn-accent"><i class="fas fa-pen mr-1"></i> Modifier</a>
+        </div>
     </div>
-
-        
+    <div class="panel form-panel">
+        <ul class="rows">
+            <li class="row-item"><i class="fas fa-envelope text-muted fa-fw"></i><span class="row-main"><a href="mailto:{{ user.mail }}">{{ user.mail }}</a></span></li>
+            <li class="row-item"><i class="fas fa-phone-alt text-muted fa-fw"></i><span class="row-main">{% if user.phone %}<a href="tel:{{ user.phone }}">{{ user.phone }}</a>{% else %}<span class="text-muted">Non renseigné</span>{% endif %}</span></li>
+        </ul>
+    </div>
+</div>
 {% endblock %}

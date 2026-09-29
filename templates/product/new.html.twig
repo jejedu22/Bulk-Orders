@@ -1,20 +1,17 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Ajouter un produit{% endblock %}
+{% block title %}Nouveau produit{% endblock %}
+
+{% block titre_page %}{% endblock %}
 
 {% block body %}
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Ajouter un produit</h3>
-            </div>
-            <!-- /.card-header -->
-            <div class="card-body">
-                {{ include('product/_form.html.twig') }}
-
-                <a href="{{ path('product_index') }}"><i class="fas fa-angle-double-left"></i></a>
-            </div>
+<div class="col-12">
+    <a href="{{ path('product_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Produits</a>
+    <div class="page-head"><h1>Nouveau produit</h1></div>
+    <div class="panel form-panel">
+        <div class="panel-body">
+            {{ include('product/_form.html.twig') }}
         </div>
     </div>
+</div>
 {% endblock %}
-

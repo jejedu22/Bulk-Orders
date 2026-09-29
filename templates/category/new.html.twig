@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvelle catégorie{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <a href="{{ path('category_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Catégories</a>
+    <div class="page-head"><h1>Nouvelle catégorie</h1></div>
+    <div class="panel form-panel">
+        <div class="panel-body">
+            {{ include('category/_form.html.twig') }}
+        </div>
+    </div>
+</div>
+{% endblock %}

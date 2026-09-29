@@ -1,4 +1,7 @@
 {{ form_start(form) }}
     {{ form_widget(form) }}
-    <button class="btn btn-success">{{ button_label|default('Enregistrer') }}</button>
+    <div class="form-actions">
+        <button class="btn btn-accent"><i class="fas fa-check mr-1"></i> {{ button_label|default('Enregistrer') }}</button>
+        <a href="{{ path('user_index') }}" class="btn btn-soft">Annuler</a>
+    </div>
 {{ form_end(form) }}

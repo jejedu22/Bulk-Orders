@@ -1,0 +1,7 @@
+{% if commande.livree %}
+    <span class="pill pill-success"><i class="fas fa-check-double"></i> Livrée</span>
+{% elseif commande.confirmed %}
+    <span class="pill pill-warning"><i class="fas fa-check"></i> Paiement reçu</span>
+{% else %}
+    <span class="pill pill-danger"><i class="far fa-clock"></i> En attente de paiement</span>
+{% endif %}

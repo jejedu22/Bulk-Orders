@@ -2,13 +2,18 @@
 
 namespace App\Form;
 
+use App\Entity\Category;
 use App\Entity\Product;
+use App\Repository\CategoryRepository;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\MoneyType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 
 class ProductType extends AbstractType
 {
@@ -16,10 +21,23 @@ class ProductType extends AbstractType
     {
         $builder
             ->add('nom',TextType::class, [
-                'label' => 'product.form.nom', 
+                'label' => 'product.form.nom',
             ])
-            ->add('conditionnement',TextType::class, [
-                'label' => 'product.form.conditionnement', 
+            ->add('category', EntityType::class, [
+                'class' => Category::class,
+                'choice_label' => 'nom',
+                'query_builder' => function (CategoryRepository $repository) {
+                    return $repository->createQueryBuilder('c')
+                        ->orderBy('c.position', 'ASC')
+                        ->addOrderBy('c.nom', 'ASC');
+                },
+                'required' => false,
+                'placeholder' => 'category.none',
+                'label' => 'product.form.category',
+            ])
+            ->add('conditionnement',NumberType::class, [
+                'label' => 'product.form.conditionnement',
+                'scale' => 3,
             ])
             ->add('unit',ChoiceType::class, [
                 'choices'  => [
@@ -29,13 +47,14 @@ class ProductType extends AbstractType
                 ],
                 'multiple'=>false,
                 'expanded'=>false,
-                'label' => 'product.form.unit', 
+                'label' => 'product.form.unit',
             ])
-            ->add('prixInit',TextType::class, [
-                'label' => 'product.form.prixInit', 
+            ->add('prixInit',MoneyType::class, [
+                'label' => 'product.form.prixInit',
             ])
-            ->add('prixFinal',TextType::class, [
-                'label' => 'product.form.prixFinal', 
+            ->add('prixFinal',MoneyType::class, [
+                'label' => 'product.form.prixFinal',
+                'required' => false,
             ])
         ;
     }

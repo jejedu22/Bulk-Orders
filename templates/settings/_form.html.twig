@@ -1,69 +1,41 @@
 {{ form_start(form) }}
     {% if form.vars.data.id == 1 %}
-    <table class="colors-table">
-        <tr>
-            <td class="option-color color-blue">{{ form_row(form.value[0])}}</td>
-            <td class="option-color color-indigo">{{ form_row(form.value[4])}}</td>
-            <td class="option-color color-purple">{{ form_row(form.value[11])}}</td>
-            <td class="option-color color-pink">{{ form_row(form.value[7])}}</td>
-            <td class="option-color color-red">{{ form_row(form.value[8])}}</td>
-            <td class="option-color color-orange">{{ form_row(form.value[6])}}</td>
-            <td class="option-color color-yellow">{{ form_row(form.value[5])}}</td>
-            <td class="option-color color-green">{{ form_row(form.value[10])}}</td>
-            <td class="option-color color-teal">{{ form_row(form.value[9])}}</td>
-            <td class="option-color color-cyan">{{ form_row(form.value[1])}}</td>
-            <td class="option-color color-gray">{{ form_row(form.value[2])}}</td>
-            <td class="option-color color-gray-dark">{{ form_row(form.value[3])}}</td>
-        </tr>
-    </table>
+        <p class="text-muted">Couleur principale de l'application (barre du haut, boutons, menus).</p>
+        <div class="swatches" role="radiogroup" aria-label="{{ 'color'|trans }}">
+        {% for choice in form.value %}
+            <label class="swatch color-{{ choice.vars.value }} {{ choice.vars.checked ? 'active' }}" title="{{ choice.vars.label|trans }}">
+                <input type="radio" name="{{ choice.vars.full_name }}" value="{{ choice.vars.value }}" {{ choice.vars.checked ? 'checked' }} aria-label="{{ choice.vars.label|trans }}">
+            </label>
+            {% do choice.setRendered %}
+        {% endfor %}
+        </div>
+        {% do form.value.setRendered %}
     {% elseif form.vars.data.id == 2 %}
-    <div class="text-center">
-        <img src='{{ asset('uploads/logo/' ~ options_settings.get('logo')) }}' alt="logo" class="img-fluid img-circle brand-image img-circle elevation-3 navbar-{{ options_settings.get('color') }}" style="opacity: .8; max-height: 50px;">
-    </div>
-    {{ form_row(form.value, {
-        attr: {
-            'placeholder': 'Choisir une image PNG'
-        }
-    }) }}
+        <div class="d-flex align-items-center mb-3" style="gap: 1rem">
+            <img src="{{ asset('uploads/logo/' ~ options_settings.get('logo')) }}" alt="Logo actuel" class="img-circle elevation-2 navbar-{{ options_settings.get('color') }}" style="max-height: 64px;">
+            <span class="text-muted">Logo actuel</span>
+        </div>
+        {{ form_row(form.value, {'attr': {'placeholder': 'Choisir une image PNG'}}) }}
     {% else %}
-    {{ form_widget(form.value) }}
+        {{ form_row(form.value, {'label': setting.name|trans}) }}
     {% endif %}
-    <button class="btn btn-success">{{ button_label|default('Save') }}</button>
-    
+    {{ form_rest(form) }}
+    <div class="form-actions">
+        <button class="btn btn-accent"><i class="fas fa-check mr-1"></i> {{ button_label|default('Enregistrer') }}</button>
+        <a href="{{ path('settings_index') }}" class="btn btn-soft">Annuler</a>
+    </div>
 {{ form_end(form) }}
 
-{% block javascripts %}
-    <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js" integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh" crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js" integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ" crossorigin="anonymous"></script>
-            
-    <script>
-    $(function () {
-        $('.option-color').click(
-            function () {
-                $(this).addClass('active').siblings().removeClass('active');
-                var $radioBtn = $('.option-color.active input[type="radio"]');
-
-                if ($radioBtn.is(':checked') === true) {
-                    $radioBtn.filter('input[type="radio"]').prop('checked', true);
-                }
-            }
-        );
+<script>
+document.querySelectorAll('.swatch input').forEach(function (input) {
+    input.addEventListener('change', function () {
+        document.querySelectorAll('.swatch').forEach(function (s) { s.classList.toggle('active', s.contains(input)); });
     });
-    </script>
-    <script>
-    $('.custom-file-input').on('change', function(event) {
-        var inputFile = event.currentTarget;
-        $(inputFile).parent()
-            .find('.custom-file-label')
-            .html(inputFile.files[0].name);
+});
+document.querySelectorAll('.custom-file-input').forEach(function (input) {
+    input.addEventListener('change', function () {
+        var label = input.parentNode.querySelector('.custom-file-label');
+        if (label && input.files.length) { label.textContent = input.files[0].name; }
     });
-
-    </script>
-    <script>
-    $(document).on('change', '.custom-file-input', function () {
-        let fileName = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
-        $(this).parent('.custom-file').find('.custom-file-label').text(fileName);
-    });
-    </script>
-{% endblock %}
+});
+</script>

@@ -1,76 +1,51 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}User index{% endblock %}
+{% block title %}Utilisateurs{% endblock %}
+
+{% block titre_page %}{% endblock %}
 
 {% block body %}
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Liste des utilisateurs</h3>
-                <div class="card-tools">
-                    <a href="{{ path('app_register') }}" class="btn btn-tool btn-sm">
-                        <i class="fas fa-plus"></i>
-                    </a>
-                </div>
-            </div>
-            <!-- /.card-header -->
-            <div class="card-body table-responsive p-0">
-
-                <table class="table data-table table-hover text-nowrap" id="tableau">
-                    <thead>
-                        <tr>
-                            <th>id</th>
-                            <th>Email</th>
-                            <th>Nom</th>
-                            <th>Prenom</th>
-                            <th>Téléphone</th>
-                            <th>Role</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% for user in users %}
-                        <tr onclick="document.location = '{{ path('user_show', {'id': user.id}) }}';">
-                            <td>{{ user.id }}</td>
-                            <td>{{ user.mail }}</td>
-                            <td>{{ user.nom }}</td>
-                            <td>{{ user.prenom }}</td>
-                            <td>{{ user.phone }}</td>
-                            <td>
-                                {% for role in user.roles %} {{ role|trans }}</br> {% endfor %}
-                            </td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="5">no records found</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+<div class="col-12" data-filter-scope>
+    <div class="page-head">
+        <div>
+            <h1>Utilisateurs</h1>
+            <p class="subtitle">{{ users|length }} compte{{ users|length > 1 ? 's' }}</p>
+        </div>
+        <div class="actions">
+            <a href="{{ path('app_register') }}" class="btn btn-accent"><i class="fas fa-user-plus mr-1"></i> Nouvel utilisateur</a>
         </div>
     </div>
-{% endblock %}
 
-{% block javascripts %}
-<script src="/plugins/datatables/jquery.dataTables.min.js"></script>
-<script src="/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
-<script src="/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
-<script src="/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
-    <script>
-    $(function () {
-        $('#tableau').DataTable({
-        "paging": true,
-        "lengthChange": false,
-        "searching": true,
-        "ordering": true,
-        "info": true,
-        "autoWidth": false,
-        "responsive": true,
-        "language": {
-            "url": "/French.json"
-        },
-        "order": [[ 0, "asc" ]],
-        });
-    });
-    </script>
+    <div class="toolbar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="search" data-filter-search placeholder="Nom, e-mail, téléphone…" aria-label="Rechercher un utilisateur">
+        </div>
+        <div class="chips">
+            <button type="button" class="chip active" data-filter-value="">Tous</button>
+            <button type="button" class="chip" data-filter-value="ROLE_ADMIN">{{ 'ROLE_ADMIN'|trans }}s</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <ul class="rows">
+        {% for user in users|sort((a, b) => a.nom|lower <=> b.nom|lower) %}
+            <li data-filter-item data-status="{{ user.roles|join(' ') }}" data-search="{{ user.prenom }} {{ user.nom }} {{ user.mail }} {{ user.phone }}">
+                <a href="{{ path('user_show', {'id': user.id}) }}" class="row-item">
+                    <span class="avatar">{{ user.prenom|initials(user.nom) }}</span>
+                    <span class="row-main">
+                        <span class="row-title d-block">{{ user.prenom }} {{ user.nom }}</span>
+                        <span class="row-meta d-block text-truncate">
+                            <span>{{ user.mail }}</span>
+                            {% if user.phone %}<span class="hide-xs">{{ user.phone }}</span>{% endif %}
+                        </span>
+                    </span>
+                    {% if 'ROLE_ADMIN' in user.roles %}<span class="pill pill-accent">{{ 'ROLE_ADMIN'|trans }}</span>{% endif %}
+                </a>
+            </li>
+        {% endfor %}
+        </ul>
+        <div class="empty-state is-hidden" data-filter-empty><i class="fas fa-user-slash"></i><h3>Aucun utilisateur ne correspond</h3></div>
+    </div>
+</div>
 {% endblock %}

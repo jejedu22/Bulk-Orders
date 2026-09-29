@@ -1,5 +1,5 @@
-<form method="post" action="{{ path('ligne_commande_delete', {'id': ligne_commande.id}) }}">
+<form method="post" action="{{ path('ligne_commande_delete', {'id': ligne_commande.id}) }}" data-confirm="Voulez-vous vraiment retirer {{ ligne_commande.product.nom }} de la commande ?">
     <input type="hidden" name="_method" value="DELETE">
     <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ ligne_commande.id) }}">
-    <button class="btn" onclick="return confirm('Voulez-vous vraiment supprimer cette ligne ?')"><i class="fas fa-trash-alt"></i></button>
+    <button class="btn btn-sm btn-link text-muted p-0 ml-2" title="Retirer ce produit" aria-label="Retirer {{ ligne_commande.product.nom }}"><i class="fas fa-times"></i></button>
 </form>

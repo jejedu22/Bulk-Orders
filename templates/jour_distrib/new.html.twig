@@ -1,23 +1,17 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Ajout d'un jour{% endblock %}
+{% block title %}Nouvelle vente{% endblock %}
+
+{% block titre_page %}{% endblock %}
 
 {% block body %}
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Ajout d'un jour de commande</h3>
-            </div>
-            <!-- /.card-header -->
-            <div class="card-body">
-                {{ include('jour_distrib/_form.html.twig') }}
-
-                <a href="{{ path('jour_distrib_index') }}"><i class="fas fa-angle-double-left"></i></a>
-            </div>
+<div class="col-12">
+    <a href="{{ path('jour_distrib_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Jours de commande</a>
+    <div class="page-head"><h1>Nouvelle vente</h1></div>
+    <div class="panel" style="max-width: 960px">
+        <div class="panel-body">
+            {{ include('jour_distrib/_form.html.twig') }}
         </div>
     </div>
-{% endblock %}
-
-{% block javascripts %}
-
+</div>
 {% endblock %}

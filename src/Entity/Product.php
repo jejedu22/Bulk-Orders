@@ -53,6 +53,12 @@ class Product
      */
     private $unit;
 
+    /**
+     * @ORM\ManyToOne(targetEntity="App\Entity\Category", inversedBy="products")
+     * @ORM\JoinColumn(nullable=true, onDelete="SET NULL")
+     */
+    private $category;
+
     public function __construct()
     {
         $this->ligneCommandes = new ArrayCollection();
@@ -177,6 +183,18 @@ class Product
     public function setUnit(string $unit): self
     {
         $this->unit = $unit;
+
+        return $this;
+    }
+
+    public function getCategory(): ?Category
+    {
+        return $this->category;
+    }
+
+    public function setCategory(?Category $category): self
+    {
+        $this->category = $category;
 
         return $this;
     }

@@ -1,21 +1,17 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Edit Settings{% endblock %}
+{% block title %}{{ setting.name|trans }}{% endblock %}
+
+{% block titre_page %}{% endblock %}
 
 {% block body %}
-
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Modifier {{ setting.name |trans}}</h3>          
-            </div>
-            <!-- /.card-header -->
-            <div class="card-body">
-
-                {{ include('settings/_form.html.twig', {'button_label': 'Valider'}) }}
-                <a href="{{ path('settings_index') }}"><i class="fas fa-angle-double-left"></i></a>
-            </div>
+<div class="col-12">
+    <a href="{{ path('settings_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Configuration</a>
+    <div class="page-head"><h1>{{ setting.name|trans }}</h1></div>
+    <div class="panel form-panel">
+        <div class="panel-body">
+            {{ include('settings/_form.html.twig') }}
         </div>
     </div>
-
+</div>
 {% endblock %}

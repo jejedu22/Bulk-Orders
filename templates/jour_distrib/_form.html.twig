@@ -1,4 +1,51 @@
 {{ form_start(form) }}
-    {{ form_widget(form) }}
-    <button class="btn btn-block btn-success">{{ button_label|default('Enregistrer') }}</button>
+    <div class="form-row">
+        <div class="col-sm-6">{{ form_row(form.date) }}</div>
+        <div class="col-sm-6">{{ form_row(form.datelivraison) }}</div>
+    </div>
+    {{ form_row(form.total) }}
+    <div class="d-flex flex-wrap" style="gap: 0 2rem">
+        {{ form_row(form.limite) }}
+        {{ form_row(form.closed) }}
+    </div>
+
+    {# Produits proposés, regroupés par catégorie (group_by sur le champ) #}
+    <fieldset class="mt-2">
+        <legend class="col-form-label font-weight-bold pt-0">{{ form.products.vars.label|trans }}</legend>
+        {% for group_label, group in form.products.vars.choices %}
+            {% set choices = group.choices is defined ? group.choices : {(group_label): group} %}
+            <div class="choice-group" data-choice-group>
+                <div class="choice-group-head">
+                    <strong>{{ group.choices is defined ? group_label : '' }}</strong>
+                    <span class="small">
+                        <a href="#" data-check="1">Tout cocher</a> · <a href="#" data-check="0">Tout décocher</a>
+                    </span>
+                </div>
+                <div class="choice-grid">
+                {% for key, choice in choices %}
+                    {{ form_widget(form.products[key]) }}
+                {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+        {{ form_errors(form.products) }}
+        {% do form.products.setRendered %}
+    </fieldset>
+
+    {{ form_rest(form) }}
+    <div class="form-actions">
+        <button class="btn btn-accent"><i class="fas fa-check mr-1"></i> {{ button_label|default('Enregistrer') }}</button>
+        <a href="{{ path('jour_distrib_index') }}" class="btn btn-soft">Annuler</a>
+    </div>
 {{ form_end(form) }}
+<script>
+document.querySelectorAll('[data-choice-group] [data-check]').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+        e.preventDefault();
+        var checked = link.getAttribute('data-check') === '1';
+        link.closest('[data-choice-group]').querySelectorAll('input[type="checkbox"]').forEach(function (box) {
+            box.checked = checked;
+        });
+    });
+});
+</script>

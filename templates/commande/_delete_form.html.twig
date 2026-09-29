@@ -1,5 +1,9 @@
-<form method="post" action="{{ path('commande_delete', {'id': commande.id}) }}">
+<form method="post" action="{{ path('commande_delete', {'id': commande.id}) }}" data-confirm="{{ 'alert_message.confirm_delete_command'|trans }}">
     <input type="hidden" name="_method" value="DELETE">
     <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ commande.id) }}">
-    <button class="btn" onclick="return confirm({{ 'alert_message.confirm_delete_command'|trans}})"><i class="fas fa-trash-alt"></i></button>
+    {% if compact ?? false %}
+        <button class="btn btn-sm btn-link text-danger p-0" title="Supprimer la commande" aria-label="Supprimer la commande n°{{ commande.id }}"><i class="fas fa-trash-alt"></i></button>
+    {% else %}
+        <button class="btn btn-outline-danger"><i class="fas fa-trash-alt mr-1"></i> Annuler la commande</button>
+    {% endif %}
 </form>

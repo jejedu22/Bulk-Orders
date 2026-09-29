@@ -78,7 +78,7 @@ cp .env.docker.example .env.docker
 
 Renseigner `.env.docker` :
 
-- `APP_HOST` / `APP_HOST_REGEX` : le domaine actuel ;
+- `APP_HOST` : le domaine actuel, tel que tapé dans le navigateur (avec `www.` le cas échéant) ;
 - `APP_SECRET` : `openssl rand -hex 32` ;
 - `MYSQL_*` : nouveaux mots de passe ;
 - `MAILER_DSN` : repris de l'ancienne config (`.env.local` ou variables Apache),

@@ -1,6 +1,12 @@
 #!/bin/sh
 set -e
 
+# TRUSTED_HOSTS calculé depuis APP_HOST (points échappés) s'il n'est pas fourni
+if [ -z "${TRUSTED_HOSTS:-}" ] && [ -n "${APP_HOST:-}" ]; then
+    TRUSTED_HOSTS="^$(printf '%s' "$APP_HOST" | sed 's/\./\\./g')\$"
+    export TRUSTED_HOSTS
+fi
+
 console() {
     su -s /bin/sh www-data -c "php bin/console $*"
 }

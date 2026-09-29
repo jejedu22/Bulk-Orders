@@ -13,7 +13,8 @@ services:
       MAILER_DSN: ${MAILER_DSN:-null://null}
       # Traefik est sur le réseau Docker "proxy"
       TRUSTED_PROXIES: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
-      TRUSTED_HOSTS: ^${APP_HOST_REGEX:?APP_HOST_REGEX manquant}$$
+      # TRUSTED_HOSTS est dérivé de APP_HOST au démarrage
+      APP_HOST: ${APP_HOST:?APP_HOST manquant}
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-1}
     volumes:
       - uploads:/var/www/html/public/uploads

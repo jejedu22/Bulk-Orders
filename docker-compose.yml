@@ -1,0 +1,59 @@
+services:
+  app:
+    build: .
+    image: bulk-orders:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: prod
+      APP_SECRET: ${APP_SECRET:?APP_SECRET manquant}
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}?serverVersion=8.0&charset=utf8mb4
+      MAILER_DSN: ${MAILER_DSN:-null://null}
+      # Traefik est sur le réseau Docker "proxy"
+      TRUSTED_PROXIES: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+      TRUSTED_HOSTS: ^${APP_HOST_REGEX:?APP_HOST_REGEX manquant}$$
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-1}
+    volumes:
+      - uploads:/var/www/html/public/uploads
+      - sessions:/var/www/html/var/sessions
+    networks:
+      - proxy
+      - default
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.bulk-orders.rule=Host(`${APP_HOST}`)
+      - traefik.http.routers.bulk-orders.entrypoints=websecure
+      - traefik.http.routers.bulk-orders.tls.certresolver=letsencrypt
+      - traefik.http.routers.bulk-orders.middlewares=default@file
+      - traefik.http.services.bulk-orders.loadbalancer.server.port=80
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes:
+      - db:/var/lib/mysql
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db:
+  uploads:
+  sessions:
+
+networks:
+  proxy:
+    external: true   # créé par le dépôt traefik

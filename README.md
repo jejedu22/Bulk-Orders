@@ -215,3 +215,15 @@ sudo systemctl enable --now apache2
 
 (et remettre l'ancien DNS s'il a changé). Conserver l'ancienne installation
 et `dump.sql` quelques semaines.
+
+## Contribuer
+
+Voir [CONTRIBUTING.md](CONTRIBUTING.md). Pour signaler une faille de sécurité : [SECURITY.md](SECURITY.md).
+
+## Licence
+
+Copyright © Jérôme Sourdin et contributeurs.
+
+Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier selon les termes de la [GNU General Public License](LICENSE) telle que publiée par la Free Software Foundation, version 3 de la licence ou (à votre choix) toute version ultérieure.
+
+Il est distribué dans l'espoir qu'il sera utile, mais **sans aucune garantie** ; voir le fichier [LICENSE](LICENSE) pour plus de détails.

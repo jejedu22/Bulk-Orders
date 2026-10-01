@@ -43,6 +43,7 @@ RUN set -eux; \
 
 COPY docker/php/app.ini "$PHP_INI_DIR/conf.d/app.ini"
 COPY docker/apache/vhost.conf /etc/apache2/sites-available/000-default.conf
+COPY docker/apache/mpm_prefork.conf /etc/apache2/mods-available/mpm_prefork.conf
 COPY docker/entrypoint.sh /usr/local/bin/app-entrypoint
 
 WORKDIR /var/www/html

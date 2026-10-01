@@ -3,6 +3,9 @@ services:
     build: .
     image: bulk-orders:latest
     restart: unless-stopped
+    # Serveur 2 CPU / 4 Go partagé : memory_limit PHP = 256M, opcache = 128M
+    mem_limit: 320m
+    cpus: 1.0
     depends_on:
       db:
         condition: service_healthy
@@ -35,12 +38,20 @@ services:
   db:
     image: mysql:8.4
     restart: unless-stopped
+    mem_limit: 384m
+    cpus: 1.0
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      # Empreinte mémoire réduite : performance_schema seul consomme ~200 Mo
+      - --performance-schema=OFF
+      - --innodb-buffer-pool-size=128M
+      - --max-connections=50
     volumes:
       - db:/var/lib/mysql
     networks:

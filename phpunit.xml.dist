@@ -1,21 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- https://phpunit.readthedocs.io/en/latest/configuration.html -->
+<!-- https://docs.phpunit.de/en/11.5/configuration.html -->
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         backupGlobals="false"
          colors="true"
          bootstrap="tests/bootstrap.php"
-         convertDeprecationsToExceptions="false"
+         cacheDirectory=".phpunit.cache"
+         displayDetailsOnTestsThatTriggerDeprecations="true"
+         displayDetailsOnTestsThatTriggerNotices="true"
+         displayDetailsOnTestsThatTriggerWarnings="true"
+         failOnNotice="true"
+         failOnWarning="true"
 >
     <php>
         <ini name="display_errors" value="1" />
         <ini name="error_reporting" value="-1" />
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
-        <!-- Les dépréciations sont listées en fin d'exécution sans faire échouer
-             les tests : c'est la liste de travail de la montée de version. -->
-        <server name="SYMFONY_DEPRECATIONS_HELPER" value="max[self]=999999&amp;max[direct]=999999&amp;verbose=0" />
+        <!-- Dépréciations de Doctrine signalées comme celles de Symfony -->
+        <env name="DOCTRINE_DEPRECATIONS" value="trigger" />
     </php>
 
     <testsuites>
@@ -24,16 +27,23 @@
         </testsuite>
     </testsuites>
 
-    <coverage processUncoveredFiles="true">
+    <!-- Seules les dépréciations déclenchées par le code de src/ sont
+         signalées (pas celles internes aux dépendances). -->
+    <source ignoreSuppressionOfDeprecations="true" ignoreIndirectDeprecations="true" restrictNotices="true" restrictWarnings="true">
         <include>
-            <directory suffix=".php">src</directory>
+            <directory>src</directory>
         </include>
         <exclude>
             <directory>src/Migrations</directory>
         </exclude>
-    </coverage>
+        <deprecationTrigger>
+            <method>Doctrine\Deprecations\Deprecation::trigger</method>
+            <method>Doctrine\Deprecations\Deprecation::delegateTriggerToBackend</method>
+            <function>trigger_deprecation</function>
+        </deprecationTrigger>
+    </source>
 
-    <listeners>
-        <listener class="Symfony\Bridge\PhpUnit\SymfonyTestsListener" />
-    </listeners>
+    <extensions>
+        <bootstrap class="Symfony\Bridge\PhpUnit\SymfonyExtension" />
+    </extensions>
 </phpunit>

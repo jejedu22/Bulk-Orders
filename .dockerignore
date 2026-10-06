@@ -15,7 +15,7 @@ README.md
 tests/
 phpunit.xml.dist
 .env.test
-.phpunit.result.cache
+.phpunit.cache
 
 # --- Ressources front ---------------------------------------------------------
 # AdminLTE embarque ~75 Mo de plugins, presque tous inutilisés. Seuls les

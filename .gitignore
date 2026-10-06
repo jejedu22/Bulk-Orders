@@ -19,13 +19,9 @@ yarn-error.log
 /public/uploads/
 /.env.docker
 
-###> symfony/phpunit-bridge ###
-.phpunit.result.cache
-###< symfony/phpunit-bridge ###
-
 ###> phpunit/phpunit ###
 /phpunit.xml
-.phpunit.result.cache
+/.phpunit.cache/
 ###< phpunit/phpunit ###
 
 # Formes de configuration générées par Symfony 7.4 en mode debug (aide IDE)

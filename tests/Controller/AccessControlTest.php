@@ -3,6 +3,7 @@
 namespace App\Tests\Controller;
 
 use App\Tests\WebTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Règles d'accès (security.yaml, access_control) : les pages
@@ -30,9 +31,7 @@ class AccessControlTest extends WebTestCase
         yield 'récapitulatif' => ['/recap'];
     }
 
-    /**
-     * @dataProvider adminUrls
-     */
+    #[DataProvider('adminUrls')]
     public function testAnonymousIsRedirectedToLogin(string $url): void
     {
         $this->client->request('GET', $url);
@@ -40,9 +39,7 @@ class AccessControlTest extends WebTestCase
         $this->assertRedirectsTo('/login');
     }
 
-    /**
-     * @dataProvider adminUrls
-     */
+    #[DataProvider('adminUrls')]
     public function testUserIsForbidden(string $url): void
     {
         $this->login($this->createUser());
@@ -52,9 +49,7 @@ class AccessControlTest extends WebTestCase
         $this->assertResponseStatusCodeSame(403);
     }
 
-    /**
-     * @dataProvider adminUrls
-     */
+    #[DataProvider('adminUrls')]
     public function testAdminCanAccess(string $url): void
     {
         $this->login($this->createAdmin());
@@ -72,9 +67,7 @@ class AccessControlTest extends WebTestCase
         yield 'mot de passe oublié' => ['/reset-password'];
     }
 
-    /**
-     * @dataProvider publicUrls
-     */
+    #[DataProvider('publicUrls')]
     public function testPublicPagesAreAccessibleAnonymously(string $url): void
     {
         $this->client->request('GET', $url);
@@ -94,9 +87,7 @@ class AccessControlTest extends WebTestCase
         yield 'remise d\'une ligne' => ['/livree/ligne/%ligne%'];
     }
 
-    /**
-     * @dataProvider adminActions
-     */
+    #[DataProvider('adminActions')]
     public function testAdminActionsAreRefusedToAnonymous(string $url): void
     {
         $url = $this->createOrderAndResolve($url);
@@ -107,9 +98,7 @@ class AccessControlTest extends WebTestCase
         $this->assertOrderUntouched();
     }
 
-    /**
-     * @dataProvider adminActions
-     */
+    #[DataProvider('adminActions')]
     public function testAdminActionsAreForbiddenToUsers(string $url): void
     {
         $url = $this->createOrderAndResolve($url);
@@ -128,9 +117,7 @@ class AccessControlTest extends WebTestCase
         yield 'passer commande' => ['/new/1'];
     }
 
-    /**
-     * @dataProvider userUrls
-     */
+    #[DataProvider('userUrls')]
     public function testUserPagesRequireLogin(string $url): void
     {
         $this->createJourDistrib([$this->createProduct()]);
@@ -152,9 +139,8 @@ class AccessControlTest extends WebTestCase
 
     /**
      * Pages cassées ou générées par le maker et jamais utilisées, supprimées.
-     *
-     * @dataProvider removedUrls
      */
+    #[DataProvider('removedUrls')]
     public function testRemovedPagesDoNotExist(string $method, string $url): void
     {
         $this->login($this->createAdmin());

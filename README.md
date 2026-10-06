@@ -23,8 +23,9 @@ Sans PHP 8.3 en local, via Docker (image avec `intl` et `pdo_sqlite`) :
 docker run --rm -v "$PWD":/app -w /app chialab/php:8.3 php vendor/bin/phpunit
 ```
 
-Les dépréciations Symfony sont listées en fin d'exécution sans faire échouer
-les tests (`SYMFONY_DEPRECATIONS_HELPER` dans `phpunit.xml.dist`).
+Les dépréciations (Symfony et Doctrine) déclenchées par le code de `src/`
+sont listées en fin d'exécution sans faire échouer les tests ; les notices et
+avertissements PHP, eux, les font échouer (`phpunit.xml.dist`).
 
 ## Déploiement Docker (derrière Traefik)
 

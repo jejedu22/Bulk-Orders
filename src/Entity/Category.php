@@ -30,7 +30,7 @@ class Category
     private $icon;
 
     #[ORM\OneToMany(targetEntity: Product::class, mappedBy: 'category')]
-    #[ORM\OrderBy(['nom' => 'ASC'])]
+    #[ORM\OrderBy(['nom' => \SortDirection::Ascending])]
     private $products;
 
     public function __construct()

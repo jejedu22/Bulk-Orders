@@ -60,13 +60,13 @@ class SettingsType extends AbstractType
                     'mapped' => false,
                     'required' => false,
                     'constraints' => [
-                        new File([
-                            'maxSize' => '100k',
-                            'mimeTypes' => [
+                        new File(
+                            maxSize: '100k',
+                            mimeTypes: [
                                 'image/png',
                             ],
-                            'mimeTypesMessage' => 'settings.form.valid_image',
-                        ])
+                            mimeTypesMessage: 'settings.form.valid_image',
+                        )
                     ],
                     'label' => 'settings.form.choice_file',
                 ]);

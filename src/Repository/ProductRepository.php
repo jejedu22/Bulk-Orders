@@ -27,7 +27,7 @@ class ProductRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('p')
             ->leftJoin('p.category', 'c')
             ->addSelect('c')
-            ->orderBy('p.nom', 'ASC')
+            ->orderBy('p.nom', \SortDirection::Ascending)
             ->getQuery()
             ->getResult()
         ;
@@ -42,7 +42,7 @@ class ProductRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('p')
             ->andWhere('p.exampleField = :val')
             ->setParameter('val', $value)
-            ->orderBy('p.id', 'ASC')
+            ->orderBy('p.id', \SortDirection::Ascending)
             ->setMaxResults(10)
             ->getQuery()
             ->getResult()

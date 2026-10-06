@@ -173,7 +173,7 @@ class DefaultController extends AbstractController
         
         $entityManager->persist($commande);
         $entityManager->flush();
-        $message = $entityManager->getRepository(Settings::class)->findOneByName('text_confirm_email')->getValue();
+        $message = $entityManager->getRepository(Settings::class)->findOneBy(['name' => 'text_confirm_email'])->getValue();
         if (!$mailSender->sendCommande($commande, $translator->trans('email.subject.confirm_command'), (string) $message)) {
             $this->addFlash('warning', $translator->trans('alert_message.email_not_sent', ['%email%' => $commande->getUser()->getMail()]));
         }
@@ -185,7 +185,7 @@ class DefaultController extends AbstractController
     public function new(Request $request, int $idJourDistrib, JourDistribRepository $jourDistribRepository, MailSender $mailSender, TranslatorInterface $translator): Response
     {
         $commande = new Commande();
-        $jourDistrib = $jourDistribRepository->findOneById($idJourDistrib);
+        $jourDistrib = $jourDistribRepository->find($idJourDistrib);
         if (null === $jourDistrib) {
             throw $this->createNotFoundException('Vente introuvable.');
         }
@@ -232,7 +232,7 @@ class DefaultController extends AbstractController
         
                         $response = $this->redirectToRoute('commande_index');
     
-                        $textRegisterCommand = $entityManager->getRepository(Settings::class)->findOneByName('text_register_command')->getValue();
+                        $textRegisterCommand = $entityManager->getRepository(Settings::class)->findOneBy(['name' => 'text_register_command'])->getValue();
     
                         $this->addFlash(
                             'success',

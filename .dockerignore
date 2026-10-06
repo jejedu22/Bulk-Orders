@@ -35,3 +35,4 @@ public/dist/js/demo.js
 public/dist/js/pages
 public/French.json
 **/*.map
+config/reference.php

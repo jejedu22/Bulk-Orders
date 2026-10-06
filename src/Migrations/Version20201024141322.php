@@ -20,7 +20,7 @@ final class Version20201024141322 extends AbstractMigration
     public function up(Schema $schema) : void
     {
         // this up() migration is auto-generated, please modify it to your needs
-        $this->abortIf(!$this->connection->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\MySQLPlatform, 'Migration can only be executed safely on \'mysql\'.');
+        $this->abortIf(!$this->connection->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\AbstractMySQLPlatform, 'Migration can only be executed safely on \'mysql\'.');
 
         $this->addSql('CREATE TABLE jour_distrib_product (jour_distrib_id INT NOT NULL, product_id INT NOT NULL, INDEX IDX_75CC6E2264949231 (jour_distrib_id), INDEX IDX_75CC6E224584665A (product_id), PRIMARY KEY(jour_distrib_id, product_id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('ALTER TABLE jour_distrib_product ADD CONSTRAINT FK_75CC6E2264949231 FOREIGN KEY (jour_distrib_id) REFERENCES jour_distrib (id) ON DELETE CASCADE');
@@ -36,7 +36,7 @@ final class Version20201024141322 extends AbstractMigration
     public function down(Schema $schema) : void
     {
         // this down() migration is auto-generated, please modify it to your needs
-        $this->abortIf(!$this->connection->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\MySQLPlatform, 'Migration can only be executed safely on \'mysql\'.');
+        $this->abortIf(!$this->connection->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\AbstractMySQLPlatform, 'Migration can only be executed safely on \'mysql\'.');
 
         $this->addSql('CREATE TABLE product_jour_distrib (product_id INT NOT NULL, jour_distrib_id INT NOT NULL, INDEX IDX_FFD0B16264949231 (jour_distrib_id), INDEX IDX_FFD0B1624584665A (product_id), PRIMARY KEY(product_id, jour_distrib_id)) DEFAULT CHARACTER SET utf8 COLLATE `utf8_unicode_ci` ENGINE = InnoDB COMMENT = \'\' ');
         $this->addSql('ALTER TABLE product_jour_distrib ADD CONSTRAINT FK_FFD0B1624584665A FOREIGN KEY (product_id) REFERENCES product (id) ON DELETE CASCADE');

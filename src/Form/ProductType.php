@@ -28,8 +28,8 @@ class ProductType extends AbstractType
                 'choice_label' => 'nom',
                 'query_builder' => function (CategoryRepository $repository) {
                     return $repository->createQueryBuilder('c')
-                        ->orderBy('c.position', 'ASC')
-                        ->addOrderBy('c.nom', 'ASC');
+                        ->orderBy('c.position', \SortDirection::Ascending)
+                        ->addOrderBy('c.nom', \SortDirection::Ascending);
                 },
                 'required' => false,
                 'placeholder' => 'category.none',

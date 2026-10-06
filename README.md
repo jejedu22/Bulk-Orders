@@ -1,6 +1,6 @@
 # Bulk-Orders
 
-Application Symfony 6.4 de gestion de commandes groupées.
+Application Symfony 7.4 (LTS) de gestion de commandes groupées.
 
 ## Tests
 

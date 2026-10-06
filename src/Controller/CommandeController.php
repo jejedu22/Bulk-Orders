@@ -91,6 +91,11 @@ class CommandeController extends AbstractController
      */
     public function delete(Request $request, Commande $commande): Response
     {
+        // Seuls le client et les administrateurs peuvent annuler une commande
+        if (!$this->isGranted('ROLE_ADMIN') && $commande->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
         if ($this->isCsrfTokenValid('delete'.$commande->getId(), $request->request->get('_token'))) {
             $poidCommande = 0;
             foreach ($commande->getLigneCommandes() as $ligneCommande ){

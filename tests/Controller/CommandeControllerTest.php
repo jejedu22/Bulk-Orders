@@ -103,6 +103,45 @@ class CommandeControllerTest extends WebTestCase
         $this->assertEquals(10, $this->reload(JourDistrib::class, $jour->getId())->getPoidRestant());
     }
 
+    public function testCannotCancelSomeoneElsesOrder(): void
+    {
+        $farine = $this->createProduct('Farine', 5);
+        $commande = $this->createCommande($this->createUser(), $this->createJourDistrib([$farine]), [[$farine, 2]]);
+
+        $this->login($this->createUser('autre@example.com'));
+        $this->client->request('DELETE', '/commande/'.$commande->getId(), ['_token' => 'peu-importe']);
+
+        $this->assertResponseStatusCodeSame(403);
+        $this->assertNotNull($this->reload(Commande::class, $commande->getId()));
+    }
+
+    public function testCannotRemoveLineFromSomeoneElsesOrder(): void
+    {
+        $farine = $this->createProduct('Farine', 5);
+        $commande = $this->createCommande($this->createUser(), $this->createJourDistrib([$farine]), [[$farine, 2]]);
+        $ligne = $commande->getLigneCommandes()->first();
+
+        $this->login($this->createUser('autre@example.com'));
+        $this->client->request('DELETE', '/ligne/commande/'.$ligne->getId(), ['_token' => 'peu-importe']);
+
+        $this->assertResponseStatusCodeSame(403);
+        $this->assertNotNull($this->reload(LigneCommande::class, $ligne->getId()));
+    }
+
+    public function testAdminCanCancelAUsersOrder(): void
+    {
+        $farine = $this->createProduct('Farine', 5);
+        $jour = $this->createJourDistrib([$farine], 100);
+        $commande = $this->createCommande($this->createUser(), $jour, [[$farine, 2]]);
+
+        $this->login($this->createAdmin());
+        $this->submitFormWithAction('/synthese/2', '/commande/'.$commande->getId());
+
+        $this->assertRedirectsTo('/');
+        $this->assertNull($this->reload(Commande::class, $commande->getId()));
+        $this->assertEquals(0, $this->reload(JourDistrib::class, $jour->getId())->getPoidRestant());
+    }
+
     public function testOrderHistory(): void
     {
         $farine = $this->createProduct('Farine', 5);

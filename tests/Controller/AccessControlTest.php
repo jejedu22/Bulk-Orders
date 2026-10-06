@@ -10,6 +10,9 @@ use App\Tests\WebTestCase;
  */
 class AccessControlTest extends WebTestCase
 {
+    /** @var \App\Entity\Commande */
+    private $commande;
+
     public static function adminUrls(): iterable
     {
         yield 'produits' => ['/product/'];
@@ -79,6 +82,64 @@ class AccessControlTest extends WebTestCase
         $this->assertResponseIsSuccessful();
     }
 
+    /**
+     * Actions d'administration qui modifient des données ou exposent des
+     * données personnelles : testées sur des entités existantes.
+     */
+    public static function adminActions(): iterable
+    {
+        yield 'validation du paiement' => ['/confirme/%commande%'];
+        yield 'export CSV' => ['/exportcsv/%jour%'];
+        yield 'remise d\'une commande' => ['/livree/%commande%'];
+        yield 'remise d\'une ligne' => ['/livree/ligne/%ligne%'];
+    }
+
+    /**
+     * @dataProvider adminActions
+     */
+    public function testAdminActionsAreRefusedToAnonymous(string $url): void
+    {
+        $url = $this->createOrderAndResolve($url);
+
+        $this->client->request('GET', $url);
+
+        $this->assertRedirectsTo('/login');
+        $this->assertOrderUntouched();
+    }
+
+    /**
+     * @dataProvider adminActions
+     */
+    public function testAdminActionsAreForbiddenToUsers(string $url): void
+    {
+        $url = $this->createOrderAndResolve($url);
+        $this->login($this->createUser('autre@example.com'));
+
+        $this->client->request('GET', $url);
+
+        $this->assertResponseStatusCodeSame(403);
+        $this->assertOrderUntouched();
+    }
+
+    public static function userUrls(): iterable
+    {
+        yield 'historique' => ['/synthese/0'];
+        yield 'ma commande' => ['/commande/'];
+        yield 'passer commande' => ['/new/1'];
+    }
+
+    /**
+     * @dataProvider userUrls
+     */
+    public function testUserPagesRequireLogin(string $url): void
+    {
+        $this->createJourDistrib([$this->createProduct()]);
+
+        $this->client->request('GET', $url);
+
+        $this->assertRedirectsTo('/login');
+    }
+
     public function testUserCanSeeOwnOrderHistory(): void
     {
         $this->login($this->createUser());
@@ -86,5 +147,27 @@ class AccessControlTest extends WebTestCase
         $this->client->request('GET', '/synthese/0');
 
         $this->assertResponseIsSuccessful();
+    }
+
+    private function createOrderAndResolve(string $url): string
+    {
+        $farine = $this->createProduct();
+        $jour = $this->createJourDistrib([$farine]);
+        $this->commande = $this->createCommande($this->createUser(), $jour, [[$farine, 1]], false);
+
+        return strtr($url, [
+            '%commande%' => $this->commande->getId(),
+            '%jour%' => $jour->getId(),
+            '%ligne%' => $this->commande->getLigneCommandes()->first()->getId(),
+        ]);
+    }
+
+    private function assertOrderUntouched(): void
+    {
+        $commande = $this->reload(\App\Entity\Commande::class, $this->commande->getId());
+        $this->assertFalse($commande->getConfirmed());
+        $this->assertFalse($commande->getLivree());
+        $this->assertFalse($commande->getLigneCommandes()->first()->getLivree());
+        $this->assertEmailCount(0);
     }
 }

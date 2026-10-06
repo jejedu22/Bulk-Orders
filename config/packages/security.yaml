@@ -37,16 +37,20 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
+        # Administration
         - { path: ^/product, roles: ROLE_ADMIN }
         - { path: ^/category, roles: ROLE_ADMIN }
         - { path: ^/jour, roles: ROLE_ADMIN }
-        - { path: ^/synthese/1, roles: ROLE_ADMIN }
-        - { path: ^/synthese/2, roles: ROLE_ADMIN }
-        - { path: ^/synthesepoids, roles: ROLE_ADMIN }
-        # - { path: ^/register, roles: ROLE_ADMIN }
+        - { path: ^/synthese/[12]$, roles: ROLE_ADMIN }
         - { path: ^/settings, roles: ROLE_ADMIN }
         - { path: ^/user, roles: ROLE_ADMIN }
         - { path: ^/livree, roles: ROLE_ADMIN }
         - { path: ^/livraison, roles: ROLE_ADMIN }
         - { path: ^/recap, roles: ROLE_ADMIN }
-
+        - { path: ^/confirme, roles: ROLE_ADMIN }
+        - { path: ^/exportcsv, roles: ROLE_ADMIN }
+        # Utilisateurs connectés
+        - { path: ^/synthese, roles: ROLE_USER }
+        - { path: ^/commande, roles: ROLE_USER }
+        - { path: ^/ligne, roles: ROLE_USER }
+        - { path: ^/new/, roles: ROLE_USER }

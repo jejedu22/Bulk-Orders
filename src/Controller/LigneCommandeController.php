@@ -81,6 +81,11 @@ class LigneCommandeController extends AbstractController
      */
     public function delete(Request $request, LigneCommande $ligneCommande): Response
     {
+        // Seuls le client et les administrateurs peuvent retirer une ligne
+        if (!$this->isGranted('ROLE_ADMIN') && $ligneCommande->getCommande()->getUser() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
         if ($this->isCsrfTokenValid('delete'.$ligneCommande->getId(), $request->request->get('_token'))) {
 
 

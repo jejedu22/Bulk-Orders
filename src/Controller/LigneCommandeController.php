@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\LigneCommande;
 use App\Form\LigneCommandeType;
 use App\Repository\LigneCommandeRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,6 +16,13 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class LigneCommandeController extends AbstractController
 {
+    private $entityManager;
+
+    public function __construct(EntityManagerInterface $entityManager)
+    {
+        $this->entityManager = $entityManager;
+    }
+
     /**
      * @Route("/", name="ligne_commande_index", methods={"GET"})
      */
@@ -35,7 +43,7 @@ class LigneCommandeController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager = $this->entityManager;
             $entityManager->persist($ligneCommande);
             $entityManager->flush();
 
@@ -57,7 +65,7 @@ class LigneCommandeController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->getDoctrine()->getManager()->flush();
+            $this->entityManager->flush();
 
             return $this->redirectToRoute('ligne_commande_index');
         }
@@ -84,7 +92,7 @@ class LigneCommandeController extends AbstractController
 
             $poidRestant = $ligneCommande->getCommande()->getJourDistrib()->setPoidRestant($poidRestant);
 
-            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager = $this->entityManager;
             $entityManager->remove($ligneCommande);
             $entityManager->flush();
         }

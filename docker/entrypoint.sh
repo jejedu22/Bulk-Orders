@@ -32,8 +32,10 @@ if [ "$1" = "apache2-foreground" ]; then
             sleep 2
         done
 
+        # Dernier nombre de la sortie : le format dépend des versions de
+        # PHP/DBAL (var_dump string(1) "5" ou int(5), ou tableau)
         tables=$(console 'doctrine:query:sql "SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_schema = DATABASE()"' \
-            | sed -n 's/.*string([0-9]*) "\([0-9]*\)".*/\1/p')
+            | grep -oE '[0-9]+' | tail -n 1)
 
         if [ "$tables" = "0" ]; then
             # Base vide : les migrations historiques ne rejouent pas depuis zéro,

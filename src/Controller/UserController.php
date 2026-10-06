@@ -6,11 +6,11 @@ use App\Entity\User;
 use App\Form\UserType;
 use App\Form\UserAdminType;
 use App\Repository\UserRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -20,6 +20,13 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 class UserController extends AbstractController
 {
+    private $entityManager;
+
+    public function __construct(EntityManagerInterface $entityManager)
+    {
+        $this->entityManager = $entityManager;
+    }
+
     /**
      * @Route("/", name="user_index", methods={"GET"})
      */
@@ -50,7 +57,7 @@ class UserController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager = $this->entityManager;
             $entityManager->persist($user);
             $entityManager->flush();
 
@@ -65,15 +72,14 @@ class UserController extends AbstractController
     /**
      * @Route("/{id}/edit", name="user_edit", methods={"GET","POST"})
      */
-    public function edit(Request $request, User $user, UserPasswordEncoderInterface $encoder): Response
+    public function edit(Request $request, User $user): Response
     {
 
         $form = $this->createForm(UserAdminType::class, $user);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // $user->setPassword($encoder->encodePassword($user, $user->getPassword()));
-            $this->getDoctrine()->getManager()->flush();
+            $this->entityManager->flush();
             
             return $this->redirectToRoute('user_index');
         }
@@ -90,8 +96,8 @@ class UserController extends AbstractController
     {
         if ($this->isCsrfTokenValid('delete'.$user->getId(), $request->request->get('_token'))) {
 
-            if ($user->getUserName() != $this->get('security.token_storage')->getToken()->getUser()->getUserName() && $user->getId() != 1 ){
-                $entityManager = $this->getDoctrine()->getManager();
+            if ($user->getUserIdentifier() != $this->getUser()->getUserIdentifier() && $user->getId() != 1 ){
+                $entityManager = $this->entityManager;
                 $entityManager->remove($user);
                 $entityManager->flush();
                 $this->addFlash('success', $translator->trans('alert_message.delete_user'));

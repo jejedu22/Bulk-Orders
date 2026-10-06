@@ -1,6 +1,6 @@
 # Bulk-Orders
 
-Application Symfony 4.4 de gestion de commandes groupées.
+Application Symfony 5.4 de gestion de commandes groupées.
 
 ## Tests
 
@@ -10,7 +10,7 @@ administration, mot de passe oublié) et tests unitaires des services.
 Chaque test part d'une base SQLite vide (`var/test.db`, schéma généré depuis
 les entités) : aucun serveur MySQL n'est nécessaire.
 
-Avec PHP 7.4 et les extensions `intl` et `pdo_sqlite` :
+Avec PHP 7.4 (ou 8.x) et les extensions `intl` et `pdo_sqlite` :
 
 ```bash
 composer install

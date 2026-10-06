@@ -11,8 +11,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Version de l'image Docker de production
-        php: ['7.4']
+        # 7.4 : version de l'image Docker de production
+        # 8.3 : version visée par la suite de la migration
+        php: ['7.4', '8.3']
 
     steps:
       - uses: actions/checkout@v4

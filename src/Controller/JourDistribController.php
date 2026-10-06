@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\JourDistrib;
 use App\Form\JourDistribType;
 use App\Repository\JourDistribRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,6 +16,13 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class JourDistribController extends AbstractController
 {
+    private $entityManager;
+
+    public function __construct(EntityManagerInterface $entityManager)
+    {
+        $this->entityManager = $entityManager;
+    }
+
     /**
      * @Route("/", name="jour_distrib_index", methods={"GET"})
      */
@@ -35,7 +43,7 @@ class JourDistribController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
 
-            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager = $this->entityManager;
             $entityManager->persist($jourDistrib);
             $entityManager->flush();
 
@@ -59,7 +67,7 @@ class JourDistribController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->getDoctrine()->getManager()->flush();
+            $this->entityManager->flush();
 
             return $this->redirectToRoute('jour_distrib_index');
         }
@@ -76,7 +84,7 @@ class JourDistribController extends AbstractController
     public function delete(Request $request, JourDistrib $jourDistrib): Response
     {
         if ($this->isCsrfTokenValid('delete'.$jourDistrib->getId(), $request->request->get('_token'))) {
-            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager = $this->entityManager;
             $entityManager->remove($jourDistrib);
             $entityManager->flush();
         }

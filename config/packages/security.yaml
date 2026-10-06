@@ -1,5 +1,7 @@
 security:
-    encoders:
+    enable_authenticator_manager: true
+
+    password_hashers:
         App\Entity\User:
             algorithm: auto
 
@@ -10,21 +12,18 @@ security:
             entity:
                 class: App\Entity\User
                 property: username
-        # used to reload user from session & other features (e.g. switch_user)
-        # used to reload user from session & other features (e.g. switch_user)
-        # used to reload user from session & other features (e.g. switch_user)
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
         main:
-            anonymous: lazy
+            lazy: true
             provider: app_user_provider
             http_basic:
                 realm: Secured Area
-            guard:
-                authenticators:
-                    - App\Security\LoginFormAuthenticator
+            custom_authenticator: App\Security\LoginFormAuthenticator
+            # Accès refusé à un visiteur : redirection vers le formulaire de connexion
+            entry_point: App\Security\LoginFormAuthenticator
             logout:
                 path: app_logout
                 # where to redirect after logout

@@ -12,11 +12,11 @@ use App\Repository\CommandeRepository;
 use App\Repository\JourDistribRepository;
 use App\Repository\ProductRepository;
 
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 use App\Service\MailSender;
 
@@ -24,12 +24,13 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class DefaultController extends AbstractController
 {
-    private $session;
+    private $entityManager;
 
-    public function __construct(SessionInterface $session)
+    public function __construct(EntityManagerInterface $entityManager)
     {
-        $this->session = $session;
+        $this->entityManager = $entityManager;
     }
+
     /**
      * @Route("/", name="passe_commande_index", methods={"GET"})
      */
@@ -139,7 +140,7 @@ class DefaultController extends AbstractController
      */
     public function livreeCommande(CommandeRepository $commandeRepository, Commande $commande ): Response
     {
-        $entityManager = $this->getDoctrine()->getManager();
+        $entityManager = $this->entityManager;
         $commande->setLivree(true);
         foreach ($commande->getLigneCommandes() as $ligneCommande) {
             $ligneCommande->setLivree(true);
@@ -157,7 +158,7 @@ class DefaultController extends AbstractController
      */
     public function livreeLigneCommande(CommandeRepository $commandeRepository, LigneCommande $ligneCommande ): Response
     {
-        $entityManager = $this->getDoctrine()->getManager();
+        $entityManager = $this->entityManager;
         $ligneCommande->setLivree(true);
         $entityManager->persist($ligneCommande);
         $entityManager->flush();
@@ -178,7 +179,7 @@ class DefaultController extends AbstractController
      */
     public function confirmeCommande(CommandeRepository $commandeRepository, Commande $commande, MailSender $mailSender, TranslatorInterface $translator): Response
     {
-        $entityManager = $this->getDoctrine()->getManager();
+        $entityManager = $this->entityManager;
         $commande->setConfirmed(true);
         
         $entityManager->persist($commande);
@@ -233,7 +234,7 @@ class DefaultController extends AbstractController
                         
                         $form->getData()->getJourDistrib()->setPoidRestant($poidRestant);
                         
-                        $entityManager = $this->getDoctrine()->getManager();
+                        $entityManager = $this->entityManager;
                         $commande->setDate(new \DateTime(date("Y-m-d H:i:s")));
                         $commande->setUser($this->getUser());
                         $entityManager->persist($commande);
@@ -315,8 +316,8 @@ class DefaultController extends AbstractController
         fputcsv($output, array('id','nom','prenom', 'commentaire', 'produit', 'conditionnement', 'unite', 'quantitee', 'prix_initial', 'prix_final', 'livre', 'valid'));
         foreach($commandes as $commande) 
         {
-            $commande['prixInit'] = number_format($commande['prixInit'], 2, ',', ' ');
-            $commande['prixFinal'] = number_format($commande['prixFinal'], 2, ',', ' ');
+            $commande['prixInit'] = number_format((float) $commande['prixInit'], 2, ',', ' ');
+            $commande['prixFinal'] = number_format((float) $commande['prixFinal'], 2, ',', ' ');
             fputcsv($output, $commande);
         }
         rewind($output);

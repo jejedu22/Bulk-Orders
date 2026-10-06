@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Commande;
 use App\Form\CommandeType;
 use App\Repository\CommandeRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,6 +18,13 @@ use Symfony\Component\HttpFoundation\Cookie;
  */
 class CommandeController extends AbstractController
 {
+    private $entityManager;
+
+    public function __construct(EntityManagerInterface $entityManager)
+    {
+        $this->entityManager = $entityManager;
+    }
+
     /**
      * @Route("/", name="commande_index", methods={"GET"})
      */
@@ -54,7 +62,7 @@ class CommandeController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
 
-            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager = $this->entityManager;
             $commande->setDate(date());
             $entityManager->persist($commande);
             $entityManager->flush();
@@ -94,7 +102,7 @@ class CommandeController extends AbstractController
 
             $poidRestant = $commande->getJourDistrib()->setPoidRestant($poidRestant);
 
-            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager = $this->entityManager;
             $entityManager->remove($commande);
             $entityManager->flush();
 

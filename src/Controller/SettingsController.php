@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Settings;
 use App\Form\SettingsType;
 use App\Repository\SettingsRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,6 +18,13 @@ use Symfony\Component\HttpFoundation\File\File;
  */
 class SettingsController extends AbstractController
 {
+    private $entityManager;
+
+    public function __construct(EntityManagerInterface $entityManager)
+    {
+        $this->entityManager = $entityManager;
+    }
+
     /**
      * @Route("/", name="settings_index", methods={"GET"})
      */
@@ -62,7 +70,7 @@ class SettingsController extends AbstractController
                     $setting->setValue($newFilename);
                 }
             }
-            $this->getDoctrine()->getManager()->flush();
+            $this->entityManager->flush();
 
             return $this->redirectToRoute('settings_index');
         }

@@ -1,4 +1,7 @@
 framework:
     test: true
     session:
+        # Sessions simulées : pas de gestionnaire natif (son ini_set échoue
+        # une fois la sortie de PHPUnit commencée)
+        handler_id: null
         storage_factory_id: session.storage.factory.mock_file

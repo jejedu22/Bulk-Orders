@@ -1,3 +1,9 @@
 doctrine_migrations:
     migrations_paths:
         'DoctrineMigrations': '%kernel.project_dir%/src/Migrations'
+    storage:
+        # Table historique (doctrine/migrations 2.x) conservée : convertie au
+        # format 3.x par doctrine:migrations:sync-metadata-storage et
+        # app:migrations:upgrade-storage (voir docker/entrypoint.sh)
+        table_storage:
+            table_name: migration_versions

@@ -42,8 +42,12 @@ if [ "$1" = "apache2-foreground" ]; then
             # on crée le schéma depuis les entités et on marque les migrations comme passées.
             echo "Base vide : création du schéma"
             console "doctrine:schema:create --no-interaction"
+            # Crée la table des migrations (doctrine/migrations 3) avant d'y inscrire les versions
+            console "doctrine:migrations:sync-metadata-storage --no-interaction"
             console "doctrine:migrations:version --add --all --no-interaction"
         else
+            # Une table de migrations au format 2.x est convertie (versions
+            # préfixées par l'espace de noms) avant l'exécution des migrations
             console "doctrine:migrations:migrate --no-interaction --allow-no-migration"
         fi
     fi

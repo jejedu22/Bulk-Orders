@@ -6,56 +6,36 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-/**
- * @ORM\Entity(repositoryClass="App\Repository\JourDistribRepository")
- */
+#[ORM\Entity(repositoryClass: \App\Repository\JourDistribRepository::class)]
 class JourDistrib
 {
-    /**
-     * @ORM\Id()
-     * @ORM\GeneratedValue()
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
     private $id;
 
-    /**
-     * @ORM\Column(type="date")
-     */
+    #[ORM\Column(type: 'date')]
     private $date;
 
-    /**
-     * @ORM\OneToMany(targetEntity="App\Entity\Commande", mappedBy="jourDistrib", cascade={"persist", "remove"})
-     */
+    #[ORM\OneToMany(targetEntity: Commande::class, mappedBy: 'jourDistrib', cascade: ['persist', 'remove'])]
     private $commandes;
 
-    /**
-     * @ORM\Column(type="float")
-     */
+    #[ORM\Column(type: 'float')]
     private $total;
 
-    /**
-     * @ORM\Column(type="float", nullable=true)
-     */
+    #[ORM\Column(type: 'float', nullable: true)]
     private $poidRestant;
 
-    /**
-     * @ORM\Column(type="boolean", nullable=true)
-     */
+    #[ORM\Column(type: 'boolean', nullable: true)]
     private $closed;
 
-    /**
-     * @ORM\ManyToMany(targetEntity="App\Entity\Product", inversedBy="jourDistribs")
-     */
+    #[ORM\ManyToMany(targetEntity: Product::class, inversedBy: 'jourDistribs')]
     private $products;
 
-    /**
-     * @ORM\Column(type="date", nullable=true)
-     */
+    #[ORM\Column(type: 'date', nullable: true)]
     private $dateLivraison;
 
-    /**
-     * @ORM\Column(type="boolean")
-     */
+    #[ORM\Column(type: 'boolean')]
     private $limite;
 
     public function __construct()

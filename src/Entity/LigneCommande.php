@@ -4,36 +4,24 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
-/**
- * @ORM\Entity(repositoryClass="App\Repository\LigneCommandeRepository")
- */
+#[ORM\Entity(repositoryClass: \App\Repository\LigneCommandeRepository::class)]
 class LigneCommande
 {
-    /**
-     * @ORM\Id()
-     * @ORM\GeneratedValue()
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
     private $id;
     
-    /**
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Column(type: 'integer')]
     private $quantite;
 
-    /**
-     * @ORM\ManyToOne(targetEntity="App\Entity\Commande", inversedBy="ligneCommandes", cascade={"persist"})
-     */
+    #[ORM\ManyToOne(targetEntity: Commande::class, inversedBy: 'ligneCommandes', cascade: ['persist'])]
     private $commande;
 
-    /**
-     * @ORM\ManyToOne(targetEntity="App\Entity\Product", inversedBy="ligneCommandes")
-     */
+    #[ORM\ManyToOne(targetEntity: Product::class, inversedBy: 'ligneCommandes')]
     private $product;
 
-    /**
-     * @ORM\Column(type="boolean", nullable=false)
-     */
+    #[ORM\Column(type: 'boolean', nullable: false)]
     private $livree;
 
     public function getId(): ?int

@@ -201,7 +201,7 @@ abstract class WebTestCase extends BaseWebTestCase
     protected function login(User $user, string $password = self::PASSWORD): void
     {
         $this->client->request('POST', '/login', [
-            'username' => $user->getUsername(),
+            'username' => $user->getUserIdentifier(),
             'password' => $password,
         ]);
     }

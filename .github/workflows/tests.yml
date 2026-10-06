@@ -11,9 +11,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 7.4 : version de l'image Docker de production
-        # 8.3 : version visée par la suite de la migration
-        php: ['7.4', '8.3']
+        # 8.3 : version de l'image Docker de production
+        # 8.4 : version suivante, pour anticiper
+        php: ['8.3', '8.4']
 
     steps:
       - uses: actions/checkout@v4
@@ -41,3 +41,38 @@ jobs:
 
       - name: Lancer les tests
         run: php vendor/bin/phpunit
+
+  docker:
+    name: Image Docker
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construire l'image
+        run: docker build -t bulk-orders:ci .
+
+      - name: Démarrer MySQL
+        run: |
+          docker network create ci
+          docker run -d --name db --network ci \
+            -e MYSQL_DATABASE=app -e MYSQL_USER=app -e MYSQL_PASSWORD=app -e MYSQL_ROOT_PASSWORD=root \
+            mysql:8.4 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+      - name: Premier démarrage (base vide)
+        run: |
+          docker run -d --name app --network ci -p 8080:80 \
+            -e APP_SECRET=ci -e MAILER_DSN=null://null -e APP_HOST=localhost \
+            -e DATABASE_URL='mysql://app:app@db:3306/app?serverVersion=8.4.0&charset=utf8mb4' \
+            bulk-orders:ci
+          .github/wait-for-app.sh
+
+      - name: Redémarrage (migrations déjà passées)
+        run: |
+          docker restart app
+          .github/wait-for-app.sh
+          docker logs app 2>&1 | grep -q "Already at the latest version"
+
+      - name: Journaux
+        if: always()
+        run: docker logs app || true

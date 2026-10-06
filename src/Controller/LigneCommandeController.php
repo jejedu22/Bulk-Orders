@@ -7,11 +7,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
-/**
- * @Route("/ligne/commande")
- */
+#[Route('/ligne/commande')]
 class LigneCommandeController extends AbstractController
 {
     private $entityManager;
@@ -21,9 +19,7 @@ class LigneCommandeController extends AbstractController
         $this->entityManager = $entityManager;
     }
 
-    /**
-     * @Route("/{id}", name="ligne_commande_delete", methods={"DELETE"})
-     */
+    #[Route('/{id}', name: 'ligne_commande_delete', methods: ['DELETE'])]
     public function delete(Request $request, LigneCommande $ligneCommande): Response
     {
         // Seuls le client et les administrateurs peuvent retirer une ligne

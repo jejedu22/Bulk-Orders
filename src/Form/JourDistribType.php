@@ -17,7 +17,7 @@ use Symfony\Component\Translation\Translator;
 class JourDistribType extends AbstractType
 {
 
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder->add('closed', CheckboxType::class, [
             'label' => 'jour_distrib.form.closed',
@@ -82,7 +82,7 @@ class JourDistribType extends AbstractType
             ;
     }
 
-    public function configureOptions(OptionsResolver $resolver)
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
             'data_class' => JourDistrib::class,

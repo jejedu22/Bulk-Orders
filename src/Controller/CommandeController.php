@@ -8,11 +8,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
-/**
- * @Route("/commande")
- */
+#[Route('/commande')]
 class CommandeController extends AbstractController
 {
     private $entityManager;
@@ -22,9 +20,7 @@ class CommandeController extends AbstractController
         $this->entityManager = $entityManager;
     }
 
-    /**
-     * @Route("/", name="commande_index", methods={"GET"})
-     */
+    #[Route('/', name: 'commande_index', methods: ['GET'])]
     public function index(CommandeRepository $commandeRepository): Response
     {
         $commande = $commandeRepository->findOneBy(['user' => $this->getUser()],['id' => 'desc']); 
@@ -41,9 +37,7 @@ class CommandeController extends AbstractController
         }
     }
 
-    /**
-     * @Route("/{id}", name="commande_delete", methods={"DELETE"})
-     */
+    #[Route('/{id}', name: 'commande_delete', methods: ['DELETE'])]
     public function delete(Request $request, Commande $commande): Response
     {
         // Seuls le client et les administrateurs peuvent annuler une commande

@@ -19,7 +19,7 @@ class RegistrationControllerTest extends WebTestCase
         $user = $this->em()->getRepository(User::class)->findOneBy(['mail' => 'nouveau@example.com']);
         $this->assertNotNull($user);
         // L'identifiant de connexion est l'e-mail
-        $this->assertSame('nouveau@example.com', $user->getUsername());
+        $this->assertSame('nouveau@example.com', $user->getUserIdentifier());
         $this->assertSame(['ROLE_USER'], $user->getRoles());
         $this->assertNotSame('unmotdepasse', $user->getPassword());
 

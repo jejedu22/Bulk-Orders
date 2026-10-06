@@ -43,6 +43,10 @@
         "sort-packages": true,
         "platform": {
             "php": "7.4.33"
+        },
+        "allow-plugins": {
+            "symfony/flex": true,
+            "ocramius/package-versions": true
         }
     },
     "autoload": {

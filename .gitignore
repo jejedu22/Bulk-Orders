@@ -18,3 +18,7 @@ yarn-error.log
 
 /public/uploads/
 /.env.docker
+
+###> symfony/phpunit-bridge ###
+.phpunit.result.cache
+###< symfony/phpunit-bridge ###

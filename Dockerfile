@@ -1,8 +1,9 @@
 # syntax=docker/dockerfile:1
 
 # --- Dépendances PHP ---------------------------------------------------------
-# composer.lock a été généré avec Composer 1 et symfony/flex 1.6 (incompatible
-# avec Composer 2) : on installe donc sans plugins ni scripts.
+# Installation sans plugins ni scripts : les scripts (cache:clear…) ont besoin
+# du code de l'application, copié plus loin, et le cache est préchauffé dans
+# l'image d'exécution.
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock symfony.lock ./

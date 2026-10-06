@@ -2,6 +2,30 @@
 
 Application Symfony 4.4 de gestion de commandes groupées.
 
+## Tests
+
+Tests PHPUnit dans `tests/` : tests fonctionnels des parcours (connexion,
+inscription, prise et annulation de commande, suivi, livraison, export,
+administration, mot de passe oublié) et tests unitaires des services.
+Chaque test part d'une base SQLite vide (`var/test.db`, schéma généré depuis
+les entités) : aucun serveur MySQL n'est nécessaire.
+
+Avec PHP 7.4 et les extensions `intl` et `pdo_sqlite` :
+
+```bash
+composer install
+php vendor/bin/phpunit
+```
+
+Sans PHP 7.4 en local, via Docker (image avec `intl` et `pdo_sqlite`) :
+
+```bash
+docker run --rm -v "$PWD":/app -w /app chialab/php:7.4 php vendor/bin/phpunit
+```
+
+Les dépréciations Symfony sont listées en fin d'exécution sans faire échouer
+les tests (`SYMFONY_DEPRECATIONS_HELPER` dans `phpunit.xml.dist`).
+
 ## Déploiement Docker (derrière Traefik)
 
 L'application est prévue pour tourner derrière le reverse proxy

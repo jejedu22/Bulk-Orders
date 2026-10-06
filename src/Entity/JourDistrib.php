@@ -83,14 +83,6 @@ class JourDistrib
     }
 
     /**
-     * @return Collection|Pain[]
-     */
-    public function getPains(): Collection
-    {
-        return $this->pains;
-    }
-
-    /**
      * @return Collection|Commande[]
      */
     public function getCommandes(): Collection

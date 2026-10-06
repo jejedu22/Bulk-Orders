@@ -140,6 +140,30 @@ class AccessControlTest extends WebTestCase
         $this->assertRedirectsTo('/login');
     }
 
+    public static function removedUrls(): iterable
+    {
+        yield 'contact' => ['GET', '/contact'];
+        yield 'ancienne prise de commande' => ['GET', '/commande/new'];
+        yield 'création d\'utilisateur' => ['GET', '/user/new'];
+        yield 'liste des lignes de commande' => ['GET', '/ligne/commande/'];
+        yield 'nouvelle ligne de commande' => ['GET', '/ligne/commande/new'];
+        yield 'modification de ligne de commande' => ['GET', '/ligne/commande/1/edit'];
+    }
+
+    /**
+     * Pages cassées ou générées par le maker et jamais utilisées, supprimées.
+     *
+     * @dataProvider removedUrls
+     */
+    public function testRemovedPagesDoNotExist(string $method, string $url): void
+    {
+        $this->login($this->createAdmin());
+
+        $this->client->request($method, $url);
+
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [404, 405]);
+    }
+
     public function testUserCanSeeOwnOrderHistory(): void
     {
         $this->login($this->createUser());

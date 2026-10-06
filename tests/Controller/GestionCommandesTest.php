@@ -32,24 +32,25 @@ class GestionCommandesTest extends WebTestCase
     }
 
     /**
-     * Comportement actuel : « Suivi de livraison » (/synthese/1) n'affiche que
-     * les commandes non livrées de l'administrateur connecté (filtre
-     * « c.user == app.user » de passe_commande/synthese.html.twig).
+     * « Suivi de livraison » : les commandes restant à livrer, de tous les
+     * clients (n'affichait auparavant que celles de l'administrateur connecté).
      */
-    public function testDeliveryFollowUpOnlyListsOwnOrders(): void
+    public function testDeliveryFollowUpListsUndeliveredOrdersOfAllUsers(): void
     {
         $farine = $this->createProduct('Farine', 5);
         $jour = $this->createJourDistrib([$farine]);
-        $this->createCommande($this->createUser('jean@example.com', [], 'Martin', 'Jean'), $jour, [[$farine, 2]]);
-        $admin = $this->em()->getRepository(\App\Entity\User::class)->findOneBy(['username' => 'admin@example.com']);
-        $this->createCommande($admin, $jour, [[$farine, 1]]);
+        $this->createCommande($this->createUser('jean@example.com', [], 'Martin', 'Jean'), $jour, [[$farine, 2]], true);
+        $this->createCommande($this->createUser('paul@example.com', [], 'Durand', 'Paul'), $jour, [[$farine, 1]]);
+        $this->createCommande($this->createUser('luc@example.com', [], 'Bernard', 'Luc'), $jour, [[$farine, 1]], true, true);
 
         $this->client->request('GET', '/synthese/1');
 
         $this->assertResponseIsSuccessful();
         $content = $this->client->getResponse()->getContent();
-        $this->assertStringNotContainsString('Martin', $content);
-        $this->assertStringContainsString('Alice Admin', $content);
+        $this->assertStringContainsString('Jean Martin', $content);
+        $this->assertStringContainsString('Paul Durand', $content);
+        // Déjà livrée
+        $this->assertStringNotContainsString('Luc Bernard', $content);
     }
 
     public function testConfirmPayment(): void

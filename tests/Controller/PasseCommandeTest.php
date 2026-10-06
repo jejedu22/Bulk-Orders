@@ -150,6 +150,15 @@ class PasseCommandeTest extends WebTestCase
         $this->assertSelectorExists('.alert-warning');
     }
 
+    public function testUnknownDistributionDayReturns404(): void
+    {
+        $this->login($this->createUser());
+
+        $this->client->request('GET', '/new/999');
+
+        $this->assertResponseStatusCodeSame(404);
+    }
+
     public function testOrderIsSavedEvenIfEmailCannotBeSent(): void
     {
         // Aucun expéditeur : ni MAILER_FROM ni e-mail de contact

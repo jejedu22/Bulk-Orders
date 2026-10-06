@@ -199,6 +199,9 @@ class DefaultController extends AbstractController
     {
         $commande = new Commande();
         $jourDistrib = $jourDistribRepository->findOneById($idJourDistrib);
+        if (null === $jourDistrib) {
+            throw $this->createNotFoundException('Vente introuvable.');
+        }
         $products = $jourDistrib->getProducts();
         if ( $jourDistrib->getClosed() === false ) {
     

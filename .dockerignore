@@ -12,6 +12,10 @@ public/uploads/
 docker-compose*.yml
 Dockerfile
 README.md
+tests/
+phpunit.xml.dist
+.env.test
+.phpunit.cache
 
 # --- Ressources front ---------------------------------------------------------
 # AdminLTE embarque ~75 Mo de plugins, presque tous inutilisés. Seuls les
@@ -31,3 +35,4 @@ public/dist/js/demo.js
 public/dist/js/pages
 public/French.json
 **/*.map
+config/reference.php

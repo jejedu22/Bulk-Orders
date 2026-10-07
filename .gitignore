@@ -18,3 +18,11 @@ yarn-error.log
 
 /public/uploads/
 /.env.docker
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###
+
+# Formes de configuration générées par Symfony 7.4 en mode debug (aide IDE)
+/config/reference.php

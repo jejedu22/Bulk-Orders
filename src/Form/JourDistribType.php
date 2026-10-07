@@ -17,7 +17,7 @@ use Symfony\Component\Translation\Translator;
 class JourDistribType extends AbstractType
 {
 
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder->add('closed', CheckboxType::class, [
             'label' => 'jour_distrib.form.closed',
@@ -34,10 +34,10 @@ class JourDistribType extends AbstractType
                 return $repository->createQueryBuilder('p')
                     ->leftJoin('p.category', 'c')
                     ->addSelect('CASE WHEN c.id IS NULL THEN 1 ELSE 0 END AS HIDDEN sansCategorie')
-                    ->orderBy('sansCategorie', 'ASC')
-                    ->addOrderBy('c.position', 'ASC')
-                    ->addOrderBy('c.nom', 'ASC')
-                    ->addOrderBy('p.nom', 'ASC');
+                    ->orderBy('sansCategorie', \SortDirection::Ascending)
+                    ->addOrderBy('c.position', \SortDirection::Ascending)
+                    ->addOrderBy('c.nom', \SortDirection::Ascending)
+                    ->addOrderBy('p.nom', \SortDirection::Ascending);
             },
             'group_by' => function (Product $product) {
                 return $product->getCategory() ? $product->getCategory()->getNom() : 'Sans catégorie';
@@ -82,7 +82,7 @@ class JourDistribType extends AbstractType
             ;
     }
 
-    public function configureOptions(OptionsResolver $resolver)
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
             'data_class' => JourDistrib::class,

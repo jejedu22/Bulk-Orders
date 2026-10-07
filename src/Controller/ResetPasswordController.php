@@ -11,32 +11,32 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mime\Address;
-use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
+use Symfony\Component\Routing\Attribute\Route;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use SymfonyCasts\Bundle\ResetPassword\Controller\ResetPasswordControllerTrait;
 use SymfonyCasts\Bundle\ResetPassword\Exception\ResetPasswordExceptionInterface;
 use SymfonyCasts\Bundle\ResetPassword\ResetPasswordHelperInterface;
 use App\Service\MailSender;
 
-/**
- * @Route("/reset-password")
- */
+#[Route('/reset-password')]
 class ResetPasswordController extends AbstractController
 {
     use ResetPasswordControllerTrait;
 
     private $resetPasswordHelper;
+    private $entityManager;
 
-    public function __construct(ResetPasswordHelperInterface $resetPasswordHelper)
+    public function __construct(ResetPasswordHelperInterface $resetPasswordHelper, EntityManagerInterface $entityManager)
     {
         $this->resetPasswordHelper = $resetPasswordHelper;
+        $this->entityManager = $entityManager;
     }
 
     /**
      * Display & process form to request a password reset.
-     *
-     * @Route("", name="app_forgot_password_request")
-     */
+     **/
+    #[Route('', name: 'app_forgot_password_request')]
     public function request(Request $request, MailSender $mailSender): Response
     {
         $form = $this->createForm(ResetPasswordRequestFormType::class);
@@ -56,9 +56,8 @@ class ResetPasswordController extends AbstractController
 
     /**
      * Confirmation page after a user has requested a password reset.
-     *
-     * @Route("/check-email", name="app_check_email")
-     */
+     **/
+    #[Route('/check-email', name: 'app_check_email')]
     public function checkEmail(): Response
     {
         // We prevent users from directly accessing this page
@@ -73,10 +72,9 @@ class ResetPasswordController extends AbstractController
 
     /**
      * Validates and process the reset URL that the user clicked in their email.
-     *
-     * @Route("/reset/{token}", name="app_reset_password")
-     */
-    public function reset(Request $request, UserPasswordEncoderInterface $passwordEncoder, string $token = null): Response
+     **/
+    #[Route('/reset/{token}', name: 'app_reset_password')]
+    public function reset(Request $request, UserPasswordHasherInterface $passwordHasher, string $token = null): Response
     {
         if ($token) {
             // We store the token in session and remove it from the URL, to avoid the URL being
@@ -110,14 +108,14 @@ class ResetPasswordController extends AbstractController
             // A password reset token should be used only once, remove it.
             $this->resetPasswordHelper->removeResetRequest($token);
 
-            // Encode the plain password, and set it.
-            $encodedPassword = $passwordEncoder->encodePassword(
+            // Hash the plain password, and set it.
+            $encodedPassword = $passwordHasher->hashPassword(
                 $user,
                 $form->get('plainPassword')->getData()
             );
 
             $user->setPassword($encodedPassword);
-            $this->getDoctrine()->getManager()->flush();
+            $this->entityManager->flush();
 
             // The session is cleaned up after the password has been changed.
             $this->cleanSessionAfterReset();
@@ -132,7 +130,7 @@ class ResetPasswordController extends AbstractController
 
     private function processSendingPasswordResetEmail(string $emailFormData, MailSender $mailSender): RedirectResponse
     {
-        $user = $this->getDoctrine()->getRepository(User::class)->findOneBy([
+        $user = $this->entityManager->getRepository(User::class)->findOneBy([
             'mail' => $emailFormData,
         ]);
 

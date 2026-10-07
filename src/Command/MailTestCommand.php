@@ -3,6 +3,7 @@
 namespace App\Command;
 
 use App\Service\MailSender;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -16,10 +17,9 @@ use Symfony\Component\Mime\Email;
  * Diagnostic de l'envoi d'e-mails : envoie un message de test et affiche
  * l'erreur exacte du serveur SMTP en cas d'échec.
  */
+#[AsCommand(name: 'app:mail:test', description: 'Envoie un e-mail de test pour vérifier MAILER_DSN')]
 class MailTestCommand extends Command
 {
-    protected static $defaultName = 'app:mail:test';
-
     private $mailer;
     private $mailSender;
 
@@ -30,10 +30,9 @@ class MailTestCommand extends Command
         $this->mailSender = $mailSender;
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
-            ->setDescription('Envoie un e-mail de test pour vérifier MAILER_DSN')
             ->addArgument('destinataire', InputArgument::REQUIRED, 'Adresse qui recevra le test');
     }
 

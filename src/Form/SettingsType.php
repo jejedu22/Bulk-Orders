@@ -19,7 +19,7 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 
 class SettingsType extends AbstractType
 {
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
             ->add('name', HiddenType::class,[])
@@ -60,13 +60,13 @@ class SettingsType extends AbstractType
                     'mapped' => false,
                     'required' => false,
                     'constraints' => [
-                        new File([
-                            'maxSize' => '100k',
-                            'mimeTypes' => [
+                        new File(
+                            maxSize: '100k',
+                            mimeTypes: [
                                 'image/png',
                             ],
-                            'mimeTypesMessage' => 'settings.form.valid_image',
-                        ])
+                            mimeTypesMessage: 'settings.form.valid_image',
+                        )
                     ],
                     'label' => 'settings.form.choice_file',
                 ]);
@@ -85,7 +85,7 @@ class SettingsType extends AbstractType
         });
     }
 
-    public function configureOptions(OptionsResolver $resolver)
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
             'data_class' => Settings::class,

@@ -7,7 +7,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 class PwaController extends AbstractController
 {
@@ -94,9 +94,7 @@ class PwaController extends AbstractController
         return $img ?: null;
     }
 
-    /**
-     * @Route("/icon/{size}-{purpose}.png", name="pwa_icon", requirements={"size": "180|192|512", "purpose": "any|maskable"})
-     */
+    #[Route('/icon/{size}-{purpose}.png', name: 'pwa_icon', requirements: ['size' => '180|192|512', 'purpose' => 'any|maskable'])]
     public function icon(Request $request, OptionsSettings $options, int $size, string $purpose): Response
     {
         $logo = $this->logoImage($options->get('logo'));
@@ -135,9 +133,7 @@ class PwaController extends AbstractController
         return $response;
     }
 
-    /**
-     * @Route("/manifest.webmanifest", name="pwa_manifest")
-     */
+    #[Route('/manifest.webmanifest', name: 'pwa_manifest')]
     public function manifest(OptionsSettings $options): JsonResponse
     {
         $icons = $this->generatedIcons($options) ?: $this->logoIcons($options->get('logo')) ?: self::DEFAULT_ICONS;
@@ -162,9 +158,7 @@ class PwaController extends AbstractController
         return $response;
     }
 
-    /**
-     * @Route("/offline", name="pwa_offline")
-     */
+    #[Route('/offline', name: 'pwa_offline')]
     public function offline(): Response
     {
         return $this->render('pwa/offline.html.twig');

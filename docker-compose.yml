@@ -12,7 +12,7 @@ services:
     environment:
       APP_ENV: prod
       APP_SECRET: ${APP_SECRET:?APP_SECRET manquant}
-      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}?serverVersion=8.0&charset=utf8mb4
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}?serverVersion=8.4.0&charset=utf8mb4
       MAILER_DSN: ${MAILER_DSN:-null://null}
       MAILER_FROM: ${MAILER_FROM:-}
       # Traefik est sur le réseau Docker "proxy"

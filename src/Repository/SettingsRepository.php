@@ -28,7 +28,7 @@ class SettingsRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('s')
             ->andWhere('s.exampleField = :val')
             ->setParameter('val', $value)
-            ->orderBy('s.id', 'ASC')
+            ->orderBy('s.id', \SortDirection::Ascending)
             ->setMaxResults(10)
             ->getQuery()
             ->getResult()

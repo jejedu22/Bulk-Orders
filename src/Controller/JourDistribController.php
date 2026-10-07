@@ -5,19 +5,23 @@ namespace App\Controller;
 use App\Entity\JourDistrib;
 use App\Form\JourDistribType;
 use App\Repository\JourDistribRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
-/**
- * @Route("/jour/distrib")
- */
+#[Route('/jour/distrib')]
 class JourDistribController extends AbstractController
 {
-    /**
-     * @Route("/", name="jour_distrib_index", methods={"GET"})
-     */
+    private $entityManager;
+
+    public function __construct(EntityManagerInterface $entityManager)
+    {
+        $this->entityManager = $entityManager;
+    }
+
+    #[Route('/', name: 'jour_distrib_index', methods: ['GET'])]
     public function index(JourDistribRepository $jourDistribRepository): Response
     {
         return $this->render('jour_distrib/index.html.twig', [
@@ -25,9 +29,7 @@ class JourDistribController extends AbstractController
         ]);
     }
 
-    /**
-     * @Route("/new", name="jour_distrib_new", methods={"GET","POST"})
-     */
+    #[Route('/new', name: 'jour_distrib_new', methods: ['GET', 'POST'])]
     public function new(Request $request): Response
     {
         $jourDistrib = new JourDistrib();
@@ -35,7 +37,7 @@ class JourDistribController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
 
-            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager = $this->entityManager;
             $entityManager->persist($jourDistrib);
             $entityManager->flush();
 
@@ -48,9 +50,7 @@ class JourDistribController extends AbstractController
         ]);
     }
 
-    /**
-     * @Route("/{id}/edit", name="jour_distrib_edit", methods={"GET","POST"})
-     */
+    #[Route('/{id}/edit', name: 'jour_distrib_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, JourDistrib $jourDistrib): Response
     {
         $form = $this->createForm(JourDistribType::class, $jourDistrib, [
@@ -59,7 +59,7 @@ class JourDistribController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->getDoctrine()->getManager()->flush();
+            $this->entityManager->flush();
 
             return $this->redirectToRoute('jour_distrib_index');
         }
@@ -70,13 +70,11 @@ class JourDistribController extends AbstractController
         ]);
     }
 
-    /**
-     * @Route("/{id}", name="jour_distrib_delete", methods={"DELETE"})
-     */
+    #[Route('/{id}', name: 'jour_distrib_delete', methods: ['DELETE'])]
     public function delete(Request $request, JourDistrib $jourDistrib): Response
     {
         if ($this->isCsrfTokenValid('delete'.$jourDistrib->getId(), $request->request->get('_token'))) {
-            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager = $this->entityManager;
             $entityManager->remove($jourDistrib);
             $entityManager->flush();
         }

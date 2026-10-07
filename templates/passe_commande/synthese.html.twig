@@ -37,7 +37,8 @@
     {% endif %}
 
 {% for jour_distrib in jour_distribs %}
-    {% set commandes = (jour_distrib.commandes ?? [])|filter(c => ((c.livree == false or suivi == 0) and c.user == app.user) or suivi == 2) %}
+    {# 0 : mes commandes ; 1 : commandes restant à livrer ; 2 : toutes les commandes #}
+    {% set commandes = (jour_distrib.commandes ?? [])|filter(c => (suivi == 0 and c.user == app.user) or (suivi == 1 and not c.livree) or suivi == 2) %}
     {% set nb_unpaid = commandes|filter(c => not c.confirmed)|length %}
     {% set nb_paid = commandes|filter(c => c.confirmed and not c.livree)|length %}
     {% set nb_delivered = commandes|filter(c => c.livree)|length %}

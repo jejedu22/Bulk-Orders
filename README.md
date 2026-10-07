@@ -1,6 +1,31 @@
 # Bulk-Orders
 
-Application Symfony 4.4 de gestion de commandes groupées.
+Application Symfony 7.4 (LTS) de gestion de commandes groupées.
+
+## Tests
+
+Tests PHPUnit dans `tests/` : tests fonctionnels des parcours (connexion,
+inscription, prise et annulation de commande, suivi, livraison, export,
+administration, mot de passe oublié) et tests unitaires des services.
+Chaque test part d'une base SQLite vide (`var/test.db`, schéma généré depuis
+les entités) : aucun serveur MySQL n'est nécessaire.
+
+Avec PHP 8.3 (ou plus récent) et les extensions `intl` et `pdo_sqlite` :
+
+```bash
+composer install
+php vendor/bin/phpunit
+```
+
+Sans PHP 8.3 en local, via Docker (image avec `intl` et `pdo_sqlite`) :
+
+```bash
+docker run --rm -v "$PWD":/app -w /app chialab/php:8.3 php vendor/bin/phpunit
+```
+
+Les dépréciations (Symfony et Doctrine) déclenchées par le code de `src/`
+sont listées en fin d'exécution sans faire échouer les tests ; les notices et
+avertissements PHP, eux, les font échouer (`phpunit.xml.dist`).
 
 ## Déploiement Docker (derrière Traefik)
 
@@ -21,7 +46,7 @@ docker compose --env-file .env.docker up -d --build
 
 Services :
 
-- `app` : PHP 7.4 + Apache, exposé uniquement via Traefik (`Host(APP_HOST)`, HTTPS).
+- `app` : PHP 8.3 + Apache, exposé uniquement via Traefik (`Host(APP_HOST)`, HTTPS).
 - `db` : MySQL 8.4, sur un réseau interne non exposé.
 
 Volumes : `db` (données MySQL), `uploads` (logo téléversé), `sessions`.
@@ -32,7 +57,10 @@ Au démarrage (`RUN_MIGRATIONS=1`, par défaut) :
 
 - base vide : le schéma est créé depuis les entités et toutes les migrations
   sont marquées comme exécutées (l'historique ne rejoue pas depuis zéro) ;
-- base existante : `doctrine:migrations:migrate`.
+- base existante : `doctrine:migrations:migrate`. Une table `migration_versions`
+  au format de doctrine/migrations 2.x (versions `20201024132528`…) est
+  convertie automatiquement au format 3.x (`DoctrineMigrations\Version…`),
+  sans rejouer les migrations déjà passées.
 
 Sauvegarde :
 
@@ -160,8 +188,11 @@ attendue : `20210218223845`) :
 
 ```bash
 docker compose --env-file .env.docker run --rm --no-deps -e RUN_MIGRATIONS=0 app \
-    php bin/console doctrine:migrations:status
+    sh -c 'php bin/console doctrine:migrations:sync-metadata-storage -n && php bin/console doctrine:migrations:status'
 ```
+
+(`sync-metadata-storage` convertit la table au format de doctrine/migrations 3,
+comme le fait le démarrage de l'application.)
 
 - `New Migrations: 0` : rien à faire ;
 - sinon elles seront appliquées au démarrage. Vérifier qu'elles correspondent
@@ -195,7 +226,7 @@ docker compose --env-file .env.docker exec app chown -R www-data:www-data public
 ### 4. Vérifications
 
 ```bash
-docker compose --env-file .env.docker logs app | tail -30   # « No migrations to execute. »
+docker compose --env-file .env.docker logs app | tail -30   # « Already at the latest version »
 docker logs traefik 2>&1 | grep -i acme                     # certificat obtenu
 ```
 

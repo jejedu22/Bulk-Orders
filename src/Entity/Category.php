@@ -6,41 +6,31 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-/**
- * @ORM\Entity(repositoryClass="App\Repository\CategoryRepository")
- */
+#[ORM\Entity(repositoryClass: \App\Repository\CategoryRepository::class)]
 class Category
 {
-    /**
-     * @ORM\Id()
-     * @ORM\GeneratedValue()
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
     private $id;
 
-    /**
-     * @ORM\Column(type="string", length=100)
-     */
+    #[ORM\Column(type: 'string', length: 100)]
     private $nom;
 
     /**
      * Ordre d'affichage (croissant)
-     *
-     * @ORM\Column(type="integer", options={"default": 0})
-     */
+     **/
+    #[ORM\Column(type: 'integer', options: ['default' => 0])]
     private $position = 0;
 
     /**
      * Icône Font Awesome (ex. "fas fa-apple-alt")
-     *
-     * @ORM\Column(type="string", length=50, nullable=true)
-     */
+     **/
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
     private $icon;
 
-    /**
-     * @ORM\OneToMany(targetEntity="App\Entity\Product", mappedBy="category")
-     * @ORM\OrderBy({"nom" = "ASC"})
-     */
+    #[ORM\OneToMany(targetEntity: Product::class, mappedBy: 'category')]
+    #[ORM\OrderBy(['nom' => \SortDirection::Ascending])]
     private $products;
 
     public function __construct()

@@ -12,11 +12,12 @@ use App\Repository\CommandeRepository;
 use App\Repository\JourDistribRepository;
 use App\Repository\ProductRepository;
 
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Symfony\Component\Routing\Attribute\Route;
 
 use App\Service\MailSender;
 
@@ -24,15 +25,14 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class DefaultController extends AbstractController
 {
-    private $session;
+    private $entityManager;
 
-    public function __construct(SessionInterface $session)
+    public function __construct(EntityManagerInterface $entityManager)
     {
-        $this->session = $session;
+        $this->entityManager = $entityManager;
     }
-    /**
-     * @Route("/", name="passe_commande_index", methods={"GET"})
-     */
+
+    #[Route('/', name: 'passe_commande_index', methods: ['GET'])]
     public function index(JourDistribRepository $jourDistribRepository): Response
     {
         $jourDistribs = $jourDistribRepository->findAllActive();
@@ -60,9 +60,7 @@ class DefaultController extends AbstractController
         ]);
     }
 
-    /**
-     * @Route("/synthese/{suivi}", name="synthese_index", methods={"GET"})
-     */
+    #[Route('/synthese/{suivi}', name: 'synthese_index', methods: ['GET'])]
     public function synthese(JourDistribRepository $jourDistribRepository, int $suivi ): Response
     {
         switch ($suivi) {
@@ -89,9 +87,7 @@ class DefaultController extends AbstractController
             'suivi' => $suivi
         ]);
     }
-    /**
-     * @Route("/livraison/{type}", name="livraison", methods={"GET"})
-     */
+    #[Route('/livraison/{type}', name: 'livraison', methods: ['GET'])]
     public function livraison(JourDistribRepository $jourDistribRepository, string $type): Response
     {
         $jourDistribs = $jourDistribRepository->findAllActiveByCommand();
@@ -134,12 +130,10 @@ class DefaultController extends AbstractController
         }
     }
 
-    /**
-     * @Route("/livree/{commande}", name="livree_commande", methods={"GET"})
-     */
-    public function livreeCommande(CommandeRepository $commandeRepository, Commande $commande ): Response
+    #[Route('/livree/{commande}', name: 'livree_commande', methods: ['GET'])]
+    public function livreeCommande(CommandeRepository $commandeRepository, #[MapEntity(id: 'commande')] Commande $commande): Response
     {
-        $entityManager = $this->getDoctrine()->getManager();
+        $entityManager = $this->entityManager;
         $commande->setLivree(true);
         foreach ($commande->getLigneCommandes() as $ligneCommande) {
             $ligneCommande->setLivree(true);
@@ -152,12 +146,10 @@ class DefaultController extends AbstractController
         return $this->redirectToRoute('livraison',['type' => "command"]);
     }
 
-    /**
-     * @Route("/livree/ligne/{ligneCommande}", name="livree_ligne_commande", methods={"GET"})
-     */
-    public function livreeLigneCommande(CommandeRepository $commandeRepository, LigneCommande $ligneCommande ): Response
+    #[Route('/livree/ligne/{ligneCommande}', name: 'livree_ligne_commande', methods: ['GET'])]
+    public function livreeLigneCommande(CommandeRepository $commandeRepository, #[MapEntity(id: 'ligneCommande')] LigneCommande $ligneCommande): Response
     {
-        $entityManager = $this->getDoctrine()->getManager();
+        $entityManager = $this->entityManager;
         $ligneCommande->setLivree(true);
         $entityManager->persist($ligneCommande);
         $entityManager->flush();
@@ -173,17 +165,15 @@ class DefaultController extends AbstractController
         return $this->redirectToRoute('livraison',['type' => 'product']);
     }
 
-    /**
-     * @Route("/confirme/{commande}", name="livree_confirme", methods={"GET"})
-     */
-    public function confirmeCommande(CommandeRepository $commandeRepository, Commande $commande, MailSender $mailSender, TranslatorInterface $translator): Response
+    #[Route('/confirme/{commande}', name: 'livree_confirme', methods: ['GET'])]
+    public function confirmeCommande(CommandeRepository $commandeRepository, #[MapEntity(id: 'commande')] Commande $commande, MailSender $mailSender, TranslatorInterface $translator): Response
     {
-        $entityManager = $this->getDoctrine()->getManager();
+        $entityManager = $this->entityManager;
         $commande->setConfirmed(true);
         
         $entityManager->persist($commande);
         $entityManager->flush();
-        $message = $entityManager->getRepository(Settings::class)->findOneByName('text_confirm_email')->getValue();
+        $message = $entityManager->getRepository(Settings::class)->findOneBy(['name' => 'text_confirm_email'])->getValue();
         if (!$mailSender->sendCommande($commande, $translator->trans('email.subject.confirm_command'), (string) $message)) {
             $this->addFlash('warning', $translator->trans('alert_message.email_not_sent', ['%email%' => $commande->getUser()->getMail()]));
         }
@@ -191,13 +181,14 @@ class DefaultController extends AbstractController
         return $this->redirectToRoute('synthese_index',['suivi' => 2]);
     }
 
-    /**
-     * @Route("/new/{idJourDistrib}", name="passe_commande_new", methods={"GET","POST"})
-     */
+    #[Route('/new/{idJourDistrib}', name: 'passe_commande_new', methods: ['GET', 'POST'])]
     public function new(Request $request, int $idJourDistrib, JourDistribRepository $jourDistribRepository, MailSender $mailSender, TranslatorInterface $translator): Response
     {
         $commande = new Commande();
-        $jourDistrib = $jourDistribRepository->findOneById($idJourDistrib);
+        $jourDistrib = $jourDistribRepository->find($idJourDistrib);
+        if (null === $jourDistrib) {
+            throw $this->createNotFoundException('Vente introuvable.');
+        }
         $products = $jourDistrib->getProducts();
         if ( $jourDistrib->getClosed() === false ) {
     
@@ -233,7 +224,7 @@ class DefaultController extends AbstractController
                         
                         $form->getData()->getJourDistrib()->setPoidRestant($poidRestant);
                         
-                        $entityManager = $this->getDoctrine()->getManager();
+                        $entityManager = $this->entityManager;
                         $commande->setDate(new \DateTime(date("Y-m-d H:i:s")));
                         $commande->setUser($this->getUser());
                         $entityManager->persist($commande);
@@ -241,7 +232,7 @@ class DefaultController extends AbstractController
         
                         $response = $this->redirectToRoute('commande_index');
     
-                        $textRegisterCommand = $entityManager->getRepository(Settings::class)->findOneByName('text_register_command')->getValue();
+                        $textRegisterCommand = $entityManager->getRepository(Settings::class)->findOneBy(['name' => 'text_register_command'])->getValue();
     
                         $this->addFlash(
                             'success',
@@ -289,9 +280,7 @@ class DefaultController extends AbstractController
         }
 
     }
-    /**
-     * @Route("/recap", name="recap", methods={"GET"})
-     */
+    #[Route('/recap', name: 'recap', methods: ['GET'])]
     public function recap(JourDistribRepository $jourDistribRepository): Response
     {
         $jourDistribs = $jourDistribRepository->findAll();
@@ -304,9 +293,7 @@ class DefaultController extends AbstractController
         ]);
     }
 
-    /**
-     * @Route("/exportcsv/{id}", name="export_csv", methods={"GET"})
-     */
+    #[Route('/exportcsv/{id}', name: 'export_csv', methods: ['GET'])]
     public function exportCsv(JourDistrib $jourDistrib, JourDistribRepository $jourDistribRepository): Response
     {
         $commandes = $jourDistribRepository->export($jourDistrib);
@@ -315,8 +302,8 @@ class DefaultController extends AbstractController
         fputcsv($output, array('id','nom','prenom', 'commentaire', 'produit', 'conditionnement', 'unite', 'quantitee', 'prix_initial', 'prix_final', 'livre', 'valid'));
         foreach($commandes as $commande) 
         {
-            $commande['prixInit'] = number_format($commande['prixInit'], 2, ',', ' ');
-            $commande['prixFinal'] = number_format($commande['prixFinal'], 2, ',', ' ');
+            $commande['prixInit'] = number_format((float) $commande['prixInit'], 2, ',', ' ');
+            $commande['prixFinal'] = number_format((float) $commande['prixFinal'], 2, ',', ' ');
             fputcsv($output, $commande);
         }
         rewind($output);

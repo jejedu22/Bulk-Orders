@@ -5,7 +5,7 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class OptionsSettings
 {
-    /** @var \PDO */
+    /** @var \Doctrine\DBAL\Connection */
     private $db;
     private $em;
 
@@ -21,9 +21,9 @@ class OptionsSettings
      */
     public function get(string $name, $default=''): string
     {
-            $stmt = $this->db->prepare("SELECT `value` FROM `settings` WHERE `name`=?;");
-            $stmt->execute([$name]);
-            return $stmt->fetchColumn() ?: $default;
+        $value = $this->db->fetchOne('SELECT `value` FROM `settings` WHERE `name` = ?', [$name]);
+
+        return $value ?: $default;
     }
 
     /**
@@ -32,8 +32,7 @@ class OptionsSettings
      */
     public function set(string $name, string $value)
     {
-        $this->db->prepare("INSERT INTO settings (`name`, `value`) VALUES (?,?) ON DUPLICATE KEY UPDATE `value`=?;")
-            ->execute([$name, $value, $value]);
+        $this->db->executeStatement('INSERT INTO settings (`name`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?', [$name, $value, $value]);
     }
 
     public function getObfuscatedEmailAddress($email)

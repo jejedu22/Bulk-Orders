@@ -6,57 +6,37 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-/**
- * @ORM\Entity(repositoryClass="App\Repository\ProductRepository")
- */
+#[ORM\Entity(repositoryClass: \App\Repository\ProductRepository::class)]
 class Product
 {
-    /**
-     * @ORM\Id()
-     * @ORM\GeneratedValue()
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
     private $id;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     */
+    #[ORM\Column(type: 'string', length: 255)]
     private $nom;
 
-    /**
-     * @ORM\Column(type="float")
-     */
+    #[ORM\Column(type: 'float')]
     private $conditionnement;
 
-    /**
-     * @ORM\Column(type="float")
-     */
+    #[ORM\Column(type: 'float')]
     private $prixInit;
 
-    /**
-     * @ORM\Column(type="float", nullable=true)
-     */
+    #[ORM\Column(type: 'float', nullable: true)]
     private $prixFinal;
 
-    /**
-     * @ORM\OneToMany(targetEntity="App\Entity\LigneCommande", mappedBy="product")
-     */
+    #[ORM\OneToMany(targetEntity: LigneCommande::class, mappedBy: 'product')]
     private $ligneCommandes;
 
-    /**
-     * @ORM\ManyToMany(targetEntity="App\Entity\JourDistrib", mappedBy="products")
-     */
+    #[ORM\ManyToMany(targetEntity: JourDistrib::class, mappedBy: 'products')]
     private $jourDistribs;
 
-    /**
-     * @ORM\Column(type="string", length=10)
-     */
+    #[ORM\Column(type: 'string', length: 10)]
     private $unit;
 
-    /**
-     * @ORM\ManyToOne(targetEntity="App\Entity\Category", inversedBy="products")
-     * @ORM\JoinColumn(nullable=true, onDelete="SET NULL")
-     */
+    #[ORM\ManyToOne(targetEntity: Category::class, inversedBy: 'products')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private $category;
 
     public function __construct()

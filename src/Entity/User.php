@@ -5,81 +5,55 @@ namespace App\Entity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
-/**
- * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
- * @UniqueEntity(
- *  fields={"mail"},
- *  message="L'email renseigné est déjà utilisé."
- * )
- * @UniqueEntity(
- *  fields={"username"},
- *  message="Le login renseigné est déjà utilisé."
- * )
- */
- 
-class User implements UserInterface
+#[ORM\Entity(repositoryClass: \App\Repository\UserRepository::class)]
+#[UniqueEntity(fields: ['mail'], message: 'L\'email renseigné est déjà utilisé.')]
+#[UniqueEntity(fields: ['username'], message: 'Le login renseigné est déjà utilisé.')]
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
-    /**
-     * @ORM\Id()
-     * @ORM\GeneratedValue()
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
     private $id;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     */
+    #[ORM\Column(type: 'string', length: 255)]
     private $username;
 
-    /**
-     * @ORM\Column(type="json")
-     */
+    #[ORM\Column(type: 'json')]
     private $roles = [];
 
     /**
      * @var string The hashed password
-     * @Assert\NotBlank
-     * @ORM\Column(type="string", length=255)
-     * @Assert\Length(min=8, minMessage="Votre mot de passe doit faire au moins {{ limit }} caractères.")
      */
+    #[Assert\NotBlank]
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\Length(min: 8, minMessage: 'Votre mot de passe doit faire au moins {{ limit }} caractères.')]
     private $password;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     * @Assert\Email()
-     * @Assert\NotBlank
-     */
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\Email]
+    #[Assert\NotBlank]
     private $mail;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     * @Assert\NotBlank
-     */
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\NotBlank]
     private $phone;
 
-    /**
-     * @Assert\EqualTo(propertyPath="password", message="Votre mot de passe est différent de celui de confirmation.")
-     */
+    #[Assert\EqualTo(propertyPath: 'password', message: 'Votre mot de passe est différent de celui de confirmation.')]
     private $confirmPassword;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     * @Assert\NotBlank(message="Vous devez renseigner un nom.")
-     */
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\NotBlank(message: 'Vous devez renseigner un nom.')]
     private $nom;
 
-    /**
-     * @ORM\Column(type="string", length=255)
-     * @Assert\NotBlank(message="Vous devez renseigner un prenom.")
-     */
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\NotBlank(message: 'Vous devez renseigner un prenom.')]
     private $prenom;
 
-    /**
-     * @ORM\OneToMany(targetEntity="App\Entity\Commande", mappedBy="user")
-     */
+    #[ORM\OneToMany(targetEntity: Commande::class, mappedBy: 'user')]
     private $commandes;
 
     public function __construct()
@@ -97,10 +71,11 @@ class User implements UserInterface
      *
      * @see UserInterface
      */
-    public function getUsername(): string
+    public function getUserIdentifier(): string
     {
         return (string) $this->username;
     }
+
 
     public function setUsername(string $username): self
     {
@@ -129,7 +104,7 @@ class User implements UserInterface
     }
 
     /**
-     * @see UserInterface
+     * @see PasswordAuthenticatedUserInterface
      */
     public function getPassword(): string
     {
@@ -146,15 +121,17 @@ class User implements UserInterface
     /**
      * @see UserInterface
      */
-    public function getSalt()
+    public function getSalt(): ?string
     {
         // not needed when using the "bcrypt" algorithm in security.yaml
+        return null;
     }
 
     /**
      * @see UserInterface
      */
-    public function eraseCredentials()
+    #[\Deprecated]
+    public function eraseCredentials(): void
     {
         // If you store any temporary, sensitive data on the user, clear it here
         // $this->plainPassword = null;

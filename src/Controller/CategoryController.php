@@ -5,19 +5,23 @@ namespace App\Controller;
 use App\Entity\Category;
 use App\Form\CategoryType;
 use App\Repository\CategoryRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
-/**
- * @Route("/category")
- */
+#[Route('/category')]
 class CategoryController extends AbstractController
 {
-    /**
-     * @Route("/", name="category_index", methods={"GET"})
-     */
+    private $entityManager;
+
+    public function __construct(EntityManagerInterface $entityManager)
+    {
+        $this->entityManager = $entityManager;
+    }
+
+    #[Route('/', name: 'category_index', methods: ['GET'])]
     public function index(CategoryRepository $categoryRepository): Response
     {
         return $this->render('category/index.html.twig', [
@@ -25,9 +29,7 @@ class CategoryController extends AbstractController
         ]);
     }
 
-    /**
-     * @Route("/new", name="category_new", methods={"GET","POST"})
-     */
+    #[Route('/new', name: 'category_new', methods: ['GET', 'POST'])]
     public function new(Request $request): Response
     {
         $category = new Category();
@@ -35,7 +37,7 @@ class CategoryController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager = $this->entityManager;
             $entityManager->persist($category);
             $entityManager->flush();
 
@@ -48,16 +50,14 @@ class CategoryController extends AbstractController
         ]);
     }
 
-    /**
-     * @Route("/{id}/edit", name="category_edit", methods={"GET","POST"})
-     */
+    #[Route('/{id}/edit', name: 'category_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, Category $category): Response
     {
         $form = $this->createForm(CategoryType::class, $category);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->getDoctrine()->getManager()->flush();
+            $this->entityManager->flush();
 
             return $this->redirectToRoute('category_index');
         }
@@ -68,9 +68,7 @@ class CategoryController extends AbstractController
         ]);
     }
 
-    /**
-     * @Route("/{id}", name="category_delete", methods={"DELETE"})
-     */
+    #[Route('/{id}', name: 'category_delete', methods: ['DELETE'])]
     public function delete(Request $request, Category $category): Response
     {
         if ($this->isCsrfTokenValid('delete'.$category->getId(), $request->request->get('_token'))) {
@@ -78,7 +76,7 @@ class CategoryController extends AbstractController
             foreach ($category->getProducts() as $product) {
                 $product->setCategory(null);
             }
-            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager = $this->entityManager;
             $entityManager->remove($category);
             $entityManager->flush();
         }

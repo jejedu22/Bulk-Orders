@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Service\OptionsSettings;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -53,11 +54,93 @@ class PwaController extends AbstractController
     }
 
     /**
+     * Icônes PNG générées : logo des paramètres centré sur la couleur du thème.
+     * Retourne [] si aucun logo raster lisible par GD n'est disponible.
+     */
+    private function generatedIcons(OptionsSettings $options): array
+    {
+        if ($this->logoImage($options->get('logo')) === null) {
+            return [];
+        }
+        $v = $this->iconVersion($options);
+
+        return [
+            ['src' => $this->generateUrl('pwa_icon', ['size' => 192, 'purpose' => 'any', 'v' => $v]), 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
+            ['src' => $this->generateUrl('pwa_icon', ['size' => 512, 'purpose' => 'any', 'v' => $v]), 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'],
+            ['src' => $this->generateUrl('pwa_icon', ['size' => 512, 'purpose' => 'maskable', 'v' => $v]), 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'],
+        ];
+    }
+
+    private function iconVersion(OptionsSettings $options): string
+    {
+        $logo = $options->get('logo');
+        $path = $this->getParameter('logo_directory') . '/' . basename($logo);
+
+        return substr(md5($logo . '|' . $options->get('color') . '|' . (@filemtime($path) ?: 0)), 0, 10);
+    }
+
+    /** @return resource|\GdImage|null */
+    private function logoImage(string $logo)
+    {
+        if ($logo === '' || !function_exists('imagecreatefromstring')) {
+            return null;
+        }
+        $path = $this->getParameter('logo_directory') . '/' . basename($logo);
+        if (!is_file($path)) {
+            return null;
+        }
+        $img = @imagecreatefromstring((string) file_get_contents($path));
+
+        return $img ?: null;
+    }
+
+    /**
+     * @Route("/icon/{size}-{purpose}.png", name="pwa_icon", requirements={"size": "180|192|512", "purpose": "any|maskable"})
+     */
+    public function icon(Request $request, OptionsSettings $options, int $size, string $purpose): Response
+    {
+        $logo = $this->logoImage($options->get('logo'));
+        if ($logo === null) {
+            return $this->redirect('/pwa/icon-' . ($purpose === 'maskable' ? 'maskable-' : '') . ($size === 180 ? 192 : $size) . '.png');
+        }
+
+        $response = new Response();
+        $response->setEtag(md5($this->iconVersion($options) . "|$size|$purpose"));
+        $response->setPublic();
+        $response->setMaxAge(3600);
+        if ($response->isNotModified($request)) {
+            return $response;
+        }
+
+        $hex = self::COLORS[$options->get('color')] ?? self::COLORS['green'];
+        $canvas = imagecreatetruecolor($size, $size);
+        $bg = imagecolorallocate($canvas, hexdec(substr($hex, 1, 2)), hexdec(substr($hex, 3, 2)), hexdec(substr($hex, 5, 2)));
+        imagefill($canvas, 0, 0, $bg);
+
+        // Zone sûre des icônes « maskable » : cercle central de 80 % ; on reste à 60 % pour ne pas rogner le logo
+        $box = (int) round($size * ($purpose === 'maskable' ? 0.6 : 0.72));
+        $w = imagesx($logo);
+        $h = imagesy($logo);
+        $ratio = min($box / $w, $box / $h);
+        $dw = max(1, (int) round($w * $ratio));
+        $dh = max(1, (int) round($h * $ratio));
+        imagealphablending($canvas, true);
+        imagecopyresampled($canvas, $logo, (int) (($size - $dw) / 2), (int) (($size - $dh) / 2), 0, 0, $dw, $dh, $w, $h);
+
+        ob_start();
+        imagepng($canvas);
+        $response->setContent(ob_get_clean());
+        $response->headers->set('Content-Type', 'image/png');
+
+        return $response;
+    }
+
+    /**
      * @Route("/manifest.webmanifest", name="pwa_manifest")
      */
     public function manifest(OptionsSettings $options): JsonResponse
     {
-        $icons = $this->logoIcons($options->get('logo')) ?: self::DEFAULT_ICONS;
+        $icons = $this->generatedIcons($options) ?: $this->logoIcons($options->get('logo')) ?: self::DEFAULT_ICONS;
 
         $name = $options->get('name', 'Bulk Orders');
         $color = self::COLORS[$options->get('color')] ?? self::COLORS['green'];

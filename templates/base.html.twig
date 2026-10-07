@@ -27,7 +27,7 @@
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-title" content="{{ options_settings.get('name') }}">
-        <link rel="apple-touch-icon" href="{{ options_settings.get('logo') ? asset('uploads/logo/' ~ options_settings.get('logo')) : asset('pwa/apple-touch-icon.png') }}">
+        <link rel="apple-touch-icon" href="{{ options_settings.get('logo') ? path('pwa_icon', {size: 180, purpose: 'any'}) : asset('pwa/apple-touch-icon.png') }}">
         <link rel="shortcut icon" href="{{ asset('uploads/logo/' ~ options_settings.get('logo')) }}">
         {% block stylesheets %}
         {% endblock %}

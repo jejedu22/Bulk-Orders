@@ -28,16 +28,17 @@ FROM php:7.4-apache
 # principal ne le sert plus, on bascule sur archive.debian.org.
 RUN set -eux; \
     install_icu_dev() { \
-        apt-get update && apt-get install -y --no-install-recommends libicu-dev; \
+        apt-get update && apt-get install -y --no-install-recommends libicu-dev libpng-dev libjpeg-dev; \
     }; \
     echo 'deb http://deb.debian.org/debian bullseye main' > /etc/apt/sources.list; \
     if ! install_icu_dev; then \
         echo 'deb http://archive.debian.org/debian bullseye main' > /etc/apt/sources.list; \
         install_icu_dev; \
     fi; \
-    apt-mark manual libicu67; \
-    docker-php-ext-install -j"$(nproc)" intl pdo_mysql opcache; \
-    apt-get purge -y --auto-remove libicu-dev; \
+    apt-mark manual libicu67 libpng16-16 libjpeg62-turbo; \
+    docker-php-ext-configure gd --with-jpeg; \
+    docker-php-ext-install -j"$(nproc)" intl pdo_mysql opcache gd; \
+    apt-get purge -y --auto-remove libicu-dev libpng-dev libjpeg-dev; \
     rm -rf /var/lib/apt/lists/*; \
     a2enmod rewrite headers remoteip
 

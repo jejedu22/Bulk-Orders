@@ -60,9 +60,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private $newsletter = true;
 
+    #[ORM\ManyToMany(targetEntity: NewsletterGroup::class, mappedBy: 'users')]
+    #[ORM\OrderBy(['name' => 'ASC'])]
+    private $newsletterGroups;
+
     public function __construct()
     {
         $this->commandes = new ArrayCollection();
+        $this->newsletterGroups = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -240,6 +245,34 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setNewsletter(bool $newsletter): self
     {
         $this->newsletter = $newsletter;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|NewsletterGroup[]
+     */
+    public function getNewsletterGroups(): Collection
+    {
+        return $this->newsletterGroups;
+    }
+
+    // Côté propriétaire : NewsletterGroup::$users
+    public function addNewsletterGroup(NewsletterGroup $group): self
+    {
+        if (!$this->newsletterGroups->contains($group)) {
+            $this->newsletterGroups[] = $group;
+            $group->addUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeNewsletterGroup(NewsletterGroup $group): self
+    {
+        if ($this->newsletterGroups->removeElement($group)) {
+            $group->removeUser($this);
+        }
 
         return $this;
     }

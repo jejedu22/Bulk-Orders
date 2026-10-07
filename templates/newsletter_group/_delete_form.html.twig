@@ -1,0 +1,5 @@
+<form method="post" action="{{ path('newsletter_group_delete', {'id': group.id}) }}" data-confirm="Supprimer ce groupe ? Ses membres restent abonnés à la newsletter.">
+    <input type="hidden" name="_method" value="DELETE">
+    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ group.id) }}">
+    <button class="btn btn-outline-danger"><i class="fas fa-trash-alt mr-1"></i> Supprimer</button>
+</form>

@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouveau groupe{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <a href="{{ path('newsletter_group_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Groupes</a>
+    <div class="page-head"><h1>Nouveau groupe</h1></div>
+    <div class="panel form-panel overflow-visible">
+        <div class="panel-body">
+            {{ include('newsletter_group/_form.html.twig') }}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ include('newsletter_group/_select2.html.twig') }}
+{% endblock %}

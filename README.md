@@ -136,6 +136,13 @@ Sans configuration dans l'administration, les newsletters partent par la
 variable `NEWSLETTER_MAILER_DSN` de `.env.docker` si elle est définie
 (ex. `mailjet+api://CLE_PUBLIQUE:CLE_PRIVEE@default`).
 
+Les newsletters peuvent cibler des **groupes** (bouton « Groupes » de la
+page Newsletters) : l'administrateur crée les groupes et y place les
+utilisateurs, depuis le groupe ou la fiche de l'utilisateur. Sans groupe
+coché, une newsletter part à tous les abonnés ; sinon aux abonnés membres
+d'au moins un des groupes (une seule fois chacun). Un groupe destinataire
+d'une newsletter non envoyée ne peut pas être supprimé.
+
 Tous les utilisateurs sont abonnés par défaut. Chaque newsletter contient un
 lien de désinscription (et l'en-tête `List-Unsubscribe` pour le bouton
 « Se désabonner » des messageries). Un administrateur peut aussi modifier

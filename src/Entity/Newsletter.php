@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -34,9 +36,40 @@ class Newsletter
     #[ORM\Column(type: 'integer', nullable: true)]
     private $failedCount;
 
+    // Groupes destinataires ; aucun = tous les abonnés
+    #[ORM\ManyToMany(targetEntity: NewsletterGroup::class)]
+    #[ORM\JoinTable(name: 'newsletter_target_group')]
+    #[ORM\OrderBy(['name' => 'ASC'])]
+    private $groups;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
+        $this->groups = new ArrayCollection();
+    }
+
+    /**
+     * @return Collection|NewsletterGroup[]
+     */
+    public function getGroups(): Collection
+    {
+        return $this->groups;
+    }
+
+    public function addGroup(NewsletterGroup $group): self
+    {
+        if (!$this->groups->contains($group)) {
+            $this->groups[] = $group;
+        }
+
+        return $this;
+    }
+
+    public function removeGroup(NewsletterGroup $group): self
+    {
+        $this->groups->removeElement($group);
+
+        return $this;
     }
 
     public function getId(): ?int

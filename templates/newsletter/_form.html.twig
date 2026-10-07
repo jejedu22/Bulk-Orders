@@ -1,5 +1,14 @@
 {{ form_start(form) }}
     {{ form_row(form.subject) }}
+    {% if form.groups.children is empty %}
+        <div class="form-group">
+            {{ form_label(form.groups) }}
+            <p class="text-muted mb-0">Tous les abonnés. <a href="{{ path('newsletter_group_index') }}">Créer des groupes</a> pour cibler une partie des abonnés.</p>
+        </div>
+        {% do form.groups.setRendered %}
+    {% else %}
+        {{ form_row(form.groups) }}
+    {% endif %}
     {{ form_row(form.content) }}
     {{ form_rest(form) }}
     <div class="form-actions">

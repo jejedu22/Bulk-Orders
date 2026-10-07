@@ -60,7 +60,7 @@ class NewsletterController extends AbstractController
     {
         return $this->render('newsletter/show.html.twig', [
             'newsletter' => $newsletter,
-            'subscribers' => $userRepository->countNewsletterSubscribers(),
+            'subscribers' => $userRepository->countNewsletterSubscribers($newsletter->getGroups()),
         ]);
     }
 
@@ -116,9 +116,11 @@ class NewsletterController extends AbstractController
             return $this->redirectToRoute('newsletter_show', ['id' => $newsletter->getId()]);
         }
 
-        $recipients = $userRepository->findNewsletterSubscribers();
+        $recipients = $userRepository->findNewsletterSubscribers($newsletter->getGroups());
         if (!$recipients) {
-            $this->addFlash('warning', 'Aucun utilisateur n\'est abonné à la newsletter.');
+            $this->addFlash('warning', $newsletter->getGroups()->isEmpty()
+                ? 'Aucun utilisateur n\'est abonné à la newsletter.'
+                : 'Aucun abonné dans les groupes destinataires.');
 
             return $this->redirectToRoute('newsletter_show', ['id' => $newsletter->getId()]);
         }

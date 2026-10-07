@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Newsletter;
+use App\Entity\NewsletterGroup;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -29,6 +30,22 @@ class NewsletterRepository extends ServiceEntityRepository
             ->orderBy('sent', 'ASC')
             ->addOrderBy('n.sentAt', 'DESC')
             ->addOrderBy('n.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Brouillons qui ciblent ce groupe.
+     *
+     * @return Newsletter[]
+     */
+    public function findDraftsTargeting(NewsletterGroup $group): array
+    {
+        return $this->createQueryBuilder('n')
+            ->join('n.groups', 'g')
+            ->where('g = :group')
+            ->andWhere('n.sentAt IS NULL')
+            ->setParameter('group', $group)
             ->getQuery()
             ->getResult();
     }

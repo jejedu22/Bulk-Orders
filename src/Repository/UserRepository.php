@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\NewsletterGroup;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -37,18 +38,49 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
-     * Destinataires des newsletters.
+     * Destinataires des newsletters : abonnés, membres d'au moins un des
+     * groupes s'il y en a (une seule fois chacun), sinon tous les abonnés.
+     *
+     * @param iterable<NewsletterGroup> $groups
      *
      * @return User[]
      */
-    public function findNewsletterSubscribers(): array
+    public function findNewsletterSubscribers(iterable $groups = []): array
     {
-        return $this->findBy(['newsletter' => true], ['nom' => 'ASC', 'prenom' => 'ASC']);
+        return $this->subscribersQuery($groups)
+            ->orderBy('u.nom', 'ASC')
+            ->addOrderBy('u.prenom', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
-    public function countNewsletterSubscribers(): int
+    /**
+     * @param iterable<NewsletterGroup> $groups
+     */
+    public function countNewsletterSubscribers(iterable $groups = []): int
     {
-        return $this->count(['newsletter' => true]);
+        return (int) $this->subscribersQuery($groups)
+            ->select('COUNT(u.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    private function subscribersQuery(iterable $groups): \Doctrine\ORM\QueryBuilder
+    {
+        $groups = \is_array($groups) ? $groups : iterator_to_array($groups, false);
+        $qb = $this->createQueryBuilder('u')->andWhere('u.newsletter = true');
+        if ($groups) {
+            // Sous-requête : un membre de plusieurs groupes ne compte qu'une fois
+            $members = $this->getEntityManager()->createQueryBuilder()
+                ->select('m.id')
+                ->from(NewsletterGroup::class, 'g')
+                ->join('g.users', 'm')
+                ->where('g IN (:groups)');
+            $qb->andWhere($qb->expr()->in('u.id', $members->getDQL()))
+                ->setParameter('groups', $groups);
+        }
+
+        return $qb;
     }
 
     // /**

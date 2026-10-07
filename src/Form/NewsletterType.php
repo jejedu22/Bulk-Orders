@@ -17,6 +17,9 @@ class NewsletterType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        // Vente déjà choisie : gardée dans la liste même si elle est passée
+        $current = $options['data'] instanceof Newsletter ? $options['data']->getJourDistrib() : null;
+
         $builder
             ->add('subject', TextType::class, [
                 'label' => 'Sujet',
@@ -39,13 +42,28 @@ class NewsletterType extends AbstractType
                 'class' => JourDistrib::class,
                 'required' => false,
                 'placeholder' => 'Pas de filtre : abonnés avec ou sans commande',
-                'query_builder' => function (EntityRepository $repository) {
-                    return $repository->createQueryBuilder('j')->orderBy('j.date', 'DESC');
+                // Ventes à venir : distribution aujourd'hui ou plus tard
+                'query_builder' => function (EntityRepository $repository) use ($current) {
+                    $qb = $repository->createQueryBuilder('j')
+                        ->where('COALESCE(j.dateLivraison, j.date) >= :today')
+                        ->setParameter('today', new \DateTime('today'))
+                        ->orderBy('j.date', 'ASC');
+                    if (null !== $current) {
+                        $qb->orWhere('j = :current')->setParameter('current', $current);
+                    }
+
+                    return $qb;
                 },
                 'choice_label' => function (JourDistrib $jour) {
-                    return sprintf('Vente du %s (%d commande%s)', $jour->getDate()->format('d/m/Y'), $jour->getCommandes()->count(), $jour->getCommandes()->count() > 1 ? 's' : '');
+                    $count = $jour->getCommandes()->count();
+                    $label = sprintf('Vente du %s', $jour->getDate()->format('d/m/Y'));
+                    if (null !== $jour->getDateLivraison()) {
+                        $label .= sprintf(', distribution le %s', $jour->getDateLivraison()->format('d/m/Y'));
+                    }
+
+                    return $label . sprintf(' (%d commande%s)', $count, $count > 1 ? 's' : '');
                 },
-                'help' => 'Uniquement les abonnés qui ont passé une commande sur cette vente.',
+                'help' => 'Ventes à venir uniquement. Seuls les abonnés qui ont commandé sur la vente choisie reçoivent la newsletter.',
             ])
             ->add('content', TextareaType::class, [
                 'label' => 'Contenu',

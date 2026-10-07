@@ -2,8 +2,8 @@
 
 namespace App\Service;
 
-use App\Controller\PwaController;
 use App\Entity\Newsletter;
+use App\Entity\NewsletterDelivery;
 use App\Entity\User;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\UriSigner;
@@ -28,13 +28,9 @@ class NewsletterSender
     private $uriSigner;
     private $mailjet;
     private $logger;
-    private $settings;
-    private $logoDirectory;
 
-    public function __construct(MailSender $mailSender, Environment $twig, UrlGeneratorInterface $urlGenerator, UriSigner $uriSigner, Mailjet $mailjet, LoggerInterface $logger, OptionsSettings $settings, string $logoDirectory)
+    public function __construct(MailSender $mailSender, Environment $twig, UrlGeneratorInterface $urlGenerator, UriSigner $uriSigner, Mailjet $mailjet, LoggerInterface $logger)
     {
-        $this->settings = $settings;
-        $this->logoDirectory = $logoDirectory;
         $this->mailSender = $mailSender;
         $this->twig = $twig;
         $this->urlGenerator = $urlGenerator;
@@ -54,39 +50,41 @@ class NewsletterSender
     }
 
     /**
-     * Envoie la newsletter à chacun des destinataires ; retourne le nombre d'échecs.
+     * Envoie la newsletter à chacun des destinataires. Retourne un envoi par
+     * destinataire (historique), à enregistrer par l'appelant.
      *
      * @param User[] $recipients
+     *
+     * @return NewsletterDelivery[]
      */
-    public function send(Newsletter $newsletter, array $recipients): int
+    public function send(Newsletter $newsletter, array $recipients): array
     {
         $transport = $this->transport();
-        $failed = 0;
+        $deliveries = [];
         foreach ($recipients as $user) {
-            if (!$this->sendTo($newsletter, $user, $transport)) {
-                ++$failed;
-            }
+            $deliveries[] = $this->sendTo($newsletter, $user, $transport);
         }
 
-        return $failed;
+        return $deliveries;
     }
 
-    public function sendTo(Newsletter $newsletter, User $user, ?TransportInterface $transport = null): bool
+    public function sendTo(Newsletter $newsletter, User $user, ?TransportInterface $transport = null, bool $test = false): NewsletterDelivery
+    {
+        return new NewsletterDelivery($newsletter, $user, $this->deliver($newsletter, $user, $transport), $test);
+    }
+
+    /**
+     * Retourne null si l'e-mail est parti, sinon le message d'erreur.
+     */
+    private function deliver(Newsletter $newsletter, User $user, ?TransportInterface $transport): ?string
     {
         try {
             $email = $this->mailSender->withSender(new Email(), $this->mailjet->sender());
         } catch (\LogicException $e) {
-            return false;
+            return $e->getMessage();
         }
 
         $unsubscribeUrl = $this->unsubscribeUrl($user);
-        // Logo des paramètres joint à l'e-mail (affiché même si la messagerie bloque les images distantes)
-        $logoCid = null;
-        $logo = $this->logoPath();
-        if (null !== $logo) {
-            $email->embedFromPath($logo, 'logo');
-            $logoCid = 'cid:logo';
-        }
         $email
             ->to($user->getMail())
             ->subject($newsletter->getSubject())
@@ -95,8 +93,7 @@ class NewsletterSender
                 'content' => $this->absoluteUrls((string) $newsletter->getContent()),
                 'user' => $user,
                 'unsubscribe_url' => $unsubscribeUrl,
-                'logo_cid' => $logoCid,
-                'accent' => PwaController::COLORS[$this->settings->get('color')] ?? PwaController::COLORS['green'],
+                'brand' => $this->mailSender->brand($email),
             ]));
         $email->getHeaders()
             ->addTextHeader('List-Unsubscribe', '<' . $unsubscribeUrl . '>')
@@ -106,13 +103,13 @@ class NewsletterSender
         if (null === $transport) {
             $email->getHeaders()->addTextHeader('X-Transport', 'newsletter');
 
-            return $this->mailSender->send($email);
+            return $this->mailSender->send($email) ? null : 'Échec de l\'envoi (détail dans les journaux de l\'application).';
         }
 
         try {
             $transport->send($email);
 
-            return true;
+            return null;
         } catch (TransportExceptionInterface $e) {
             $this->logger->error('Échec de l\'envoi de la newsletter « {subject} » à {to} par Mailjet : {error}', [
                 'subject' => $newsletter->getSubject(),
@@ -121,16 +118,8 @@ class NewsletterSender
                 'exception' => $e,
             ]);
 
-            return false;
+            return $e->getMessage();
         }
-    }
-
-    private function logoPath(): ?string
-    {
-        $logo = basename($this->settings->get('logo'));
-        $path = $this->logoDirectory . '/' . $logo;
-
-        return '' !== $logo && is_file($path) && false !== @getimagesize($path) ? $path : null;
     }
 
     /**

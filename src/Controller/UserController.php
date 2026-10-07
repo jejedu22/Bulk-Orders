@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Form\UserAdminType;
+use App\Repository\NewsletterDeliveryRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -33,10 +34,11 @@ class UserController extends AbstractController
     }
 
     #[Route('/{id}', name: 'user_show', methods: ['GET'])]
-    public function show(User $user): Response
+    public function show(User $user, NewsletterDeliveryRepository $deliveryRepository): Response
     {
         return $this->render('user/show.html.twig', [
             'user' => $user,
+            'deliveries' => $deliveryRepository->findForUser($user),
         ]);
     }
     #[Route('/{id}/edit', name: 'user_edit', methods: ['GET', 'POST'])]

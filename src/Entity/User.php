@@ -60,6 +60,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private $newsletter = true;
 
+    // Historique des newsletters reçues : supprimé avec l'utilisateur
+    #[ORM\OneToMany(targetEntity: NewsletterDelivery::class, mappedBy: 'user', cascade: ['remove'])]
+    private $newsletterDeliveries;
+
     #[ORM\ManyToMany(targetEntity: NewsletterGroup::class, mappedBy: 'users')]
     #[ORM\OrderBy(['name' => 'ASC'])]
     private $newsletterGroups;
@@ -68,6 +72,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->commandes = new ArrayCollection();
         $this->newsletterGroups = new ArrayCollection();
+        $this->newsletterDeliveries = new ArrayCollection();
     }
 
     public function getId(): ?int

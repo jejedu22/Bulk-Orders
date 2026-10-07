@@ -28,9 +28,9 @@ class NewsletterSenderTest extends TestCase
             $sent[] = $email;
         });
 
-        $failed = $this->newsletterSender($mailer)->send($this->newsletter(), [$this->user(1, 'a@example.com'), $this->user(2, 'b@example.com')]);
+        $deliveries = $this->newsletterSender($mailer)->send($this->newsletter(), [$this->user(1, 'a@example.com'), $this->user(2, 'b@example.com')]);
 
-        $this->assertSame(0, $failed);
+        $this->assertSame([null, null], array_map(function ($d) { return $d->getError(); }, $deliveries));
         $this->assertCount(2, $sent);
         $email = $sent[1];
         $this->assertSame('b@example.com', $email->getTo()[0]->getAddress());
@@ -57,9 +57,9 @@ class NewsletterSenderTest extends TestCase
         // Un seul transport pour tout l'envoi
         $mailjet->expects($this->once())->method('transport')->willReturn($transport);
 
-        $failed = $this->newsletterSender($mailer, $mailjet)->send($this->newsletter(), [$this->user(1, 'a@example.com'), $this->user(2, 'b@example.com')]);
+        $deliveries = $this->newsletterSender($mailer, $mailjet)->send($this->newsletter(), [$this->user(1, 'a@example.com'), $this->user(2, 'b@example.com')]);
 
-        $this->assertSame(0, $failed);
+        $this->assertSame([null, null], array_map(function ($d) { return $d->getError(); }, $deliveries));
         $this->assertCount(2, $sent);
         $this->assertSame('news@example.com', $sent[0]->getFrom()[0]->getAddress());
         $this->assertSame('contact@example.com', $sent[0]->getReplyTo()[0]->getAddress());
@@ -75,9 +75,12 @@ class NewsletterSenderTest extends TestCase
         $mailjet->method('isConfigured')->willReturn(true);
         $mailjet->method('transport')->willReturn($transport);
 
-        $failed = $this->newsletterSender($this->createMock(MailerInterface::class), $mailjet)->send($this->newsletter(), [$this->user(1, 'a@example.com')]);
+        $deliveries = $this->newsletterSender($this->createMock(MailerInterface::class), $mailjet)->send($this->newsletter(), [$this->user(1, 'a@example.com')]);
 
-        $this->assertSame(1, $failed);
+        $this->assertCount(1, $deliveries);
+        $this->assertFalse($deliveries[0]->isSuccessful());
+        $this->assertSame('Unauthorized', $deliveries[0]->getError());
+        $this->assertSame('a@example.com', $deliveries[0]->getEmail());
     }
 
     public function testLogoIsEmbeddedAndColorUsed(): void
@@ -126,9 +129,11 @@ class NewsletterSenderTest extends TestCase
         $mailer = $this->createMock(MailerInterface::class);
         $mailer->method('send')->willThrowException(new \Symfony\Component\Mailer\Exception\TransportException('Clé Mailjet refusée'));
 
-        $failed = $this->newsletterSender($mailer)->send($this->newsletter(), [$this->user(1, 'a@example.com')]);
+        $deliveries = $this->newsletterSender($mailer)->send($this->newsletter(), [$this->user(1, 'a@example.com')]);
 
-        $this->assertSame(1, $failed);
+        $this->assertCount(1, $deliveries);
+        $this->assertFalse($deliveries[0]->isSuccessful());
+        $this->assertFalse($deliveries[0]->isTest());
     }
 
     private function newsletterSender(MailerInterface $mailer, ?Mailjet $mailjet = null, string $logo = ''): NewsletterSender
@@ -149,10 +154,12 @@ class NewsletterSenderTest extends TestCase
             return 'newsletter_unsubscribe' === $route ? 'https://example.org/desinscription/'.$params['id'] : 'https://example.org/';
         });
         $twig = new Environment(new ArrayLoader([
-            'newsletter/email.html.twig' => '{% if logo_cid %}<img src="{{ logo_cid }}">{% endif %}<div style="border-color: {{ accent }}">{{ content|raw }}</div> <a href="{{ unsubscribe_url }}">Se désinscrire</a>',
+            'newsletter/email.html.twig' => '{% if brand.logo_cid %}<img src="{{ brand.logo_cid }}">{% endif %}<div style="border-color: {{ brand.accent }}">{{ content|raw }}</div> <a href="{{ unsubscribe_url }}">Se désinscrire</a>',
         ]));
 
-        return new NewsletterSender(new MailSender($mailer, $settings, new NullLogger()), $twig, $urlGenerator, new UriSigner('secret'), $mailjet, new NullLogger(), $settings, \dirname(__DIR__, 2).'/public/dist/img');
+        $mailSender = new MailSender($mailer, $settings, new NullLogger(), '', $twig, $urlGenerator, \dirname(__DIR__, 2).'/public/dist/img');
+
+        return new NewsletterSender($mailSender, $twig, $urlGenerator, new UriSigner('secret'), $mailjet, new NullLogger());
     }
 
     private function newsletter(): Newsletter

@@ -155,6 +155,11 @@ vidéos, code HTML. Les images insérées sont enregistrées dans
 e-mail affiche en en-tête le logo de la configuration (joint à l'e-mail) sur
 la couleur du thème.
 
+Chaque envoi est conservé : la fiche d'un utilisateur liste les newsletters
+qu'il a reçues (date, adresse utilisée, échec éventuel avec le message du
+serveur d'envoi, envois de test), et la page d'une newsletter liste ses
+destinataires, échecs en tête.
+
 Tous les utilisateurs sont abonnés par défaut. Chaque newsletter contient un
 lien de désinscription (et l'en-tête `List-Unsubscribe` pour le bouton
 « Se désabonner » des messageries). Un administrateur peut aussi modifier

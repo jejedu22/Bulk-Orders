@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Newsletter;
 use App\Entity\User;
 use App\Form\NewsletterType;
+use App\Repository\NewsletterDeliveryRepository;
 use App\Repository\NewsletterRepository;
 use App\Repository\UserRepository;
 use App\Service\Mailjet;
@@ -105,11 +106,12 @@ class NewsletterController extends AbstractController
     }
 
     #[Route('/newsletter/{id}', name: 'newsletter_show', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function show(Newsletter $newsletter, UserRepository $userRepository): Response
+    public function show(Newsletter $newsletter, UserRepository $userRepository, NewsletterDeliveryRepository $deliveryRepository): Response
     {
         return $this->render('newsletter/show.html.twig', [
             'newsletter' => $newsletter,
             'subscribers' => $userRepository->countNewsletterRecipients($newsletter),
+            'deliveries' => $deliveryRepository->findForNewsletter($newsletter),
         ]);
     }
 
@@ -143,7 +145,10 @@ class NewsletterController extends AbstractController
         if ($this->isCsrfTokenValid('test'.$newsletter->getId(), $request->request->get('_token'))) {
             /** @var User $user */
             $user = $this->getUser();
-            if ($sender->sendTo($newsletter, $user)) {
+            $delivery = $sender->sendTo($newsletter, $user, null, true);
+            $this->entityManager->persist($delivery);
+            $this->entityManager->flush();
+            if ($delivery->isSuccessful()) {
                 $this->addFlash('success', 'E-mail de test envoyé à ' . htmlspecialchars($user->getMail()) . '.');
             } else {
                 $this->addFlash('danger', 'L\'e-mail de test n\'a pas pu être envoyé. Vérifiez la configuration Mailjet (Paramètres → Mailjet).');
@@ -176,7 +181,13 @@ class NewsletterController extends AbstractController
 
         // Un e-mail par abonné : la durée dépend du nombre d'abonnés
         set_time_limit(0);
-        $failed = $sender->send($newsletter, $recipients);
+        $failed = 0;
+        foreach ($sender->send($newsletter, $recipients) as $delivery) {
+            $this->entityManager->persist($delivery);
+            if (!$delivery->isSuccessful()) {
+                ++$failed;
+            }
+        }
         $newsletter->markSent(\count($recipients), $failed);
         $this->entityManager->flush();
 

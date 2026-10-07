@@ -42,6 +42,10 @@ class Newsletter
     #[ORM\OrderBy(['name' => 'ASC'])]
     private $groups;
 
+    // Historique : supprimé avec la newsletter
+    #[ORM\OneToMany(targetEntity: NewsletterDelivery::class, mappedBy: 'newsletter', cascade: ['remove'])]
+    private $deliveries;
+
     // Uniquement les clients de cette vente (en plus des groupes éventuels)
     #[ORM\ManyToOne(targetEntity: JourDistrib::class)]
     #[ORM\JoinColumn(onDelete: 'SET NULL')]
@@ -51,6 +55,7 @@ class Newsletter
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->groups = new ArrayCollection();
+        $this->deliveries = new ArrayCollection();
     }
 
     public function getJourDistrib(): ?JourDistrib

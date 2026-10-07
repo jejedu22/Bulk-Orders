@@ -9,7 +9,14 @@
     <div class="page-head">
         <div>
             <h1>Newsletters</h1>
-            <p class="subtitle">{{ subscribers }} abonné{{ subscribers > 1 ? 's' }} · envoi par Mailjet</p>
+            <p class="subtitle">
+                {{ subscribers }} abonné{{ subscribers > 1 ? 's' }} ·
+                {% if mailjet_configured %}
+                    <a href="{{ path('settings_mailjet') }}"><i class="fas fa-check text-success"></i> Mailjet configuré</a>
+                {% else %}
+                    <a href="{{ path('settings_mailjet') }}"><i class="fas fa-exclamation-triangle text-warning"></i> Configurer Mailjet</a>
+                {% endif %}
+            </p>
         </div>
         <div class="actions">
             <a href="{{ path('newsletter_new') }}" class="btn btn-accent"><i class="fas fa-plus mr-1"></i> Nouvelle newsletter</a>

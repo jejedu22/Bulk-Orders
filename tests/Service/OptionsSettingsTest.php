@@ -17,6 +17,19 @@ class OptionsSettingsTest extends WebTestCase
         $this->assertSame('défaut', $settings->get('favicon', 'défaut'));
     }
 
+    public function testSetUpdatesOrCreates(): void
+    {
+        $settings = new OptionsSettings($this->em());
+
+        $settings->set('name', 'Nouveau nom');
+        $settings->set('mailjet_api_key', 'cle');
+        $settings->set('mailjet_api_key', 'cle2');
+
+        $this->assertSame('Nouveau nom', $settings->get('name'));
+        $this->assertSame('cle2', $settings->get('mailjet_api_key'));
+        $this->assertSame(1, (int) $this->em()->getConnection()->fetchOne("SELECT COUNT(*) FROM settings WHERE name = 'mailjet_api_key'"));
+    }
+
     public function testObfuscatedEmailLink(): void
     {
         $settings = new OptionsSettings($this->em());

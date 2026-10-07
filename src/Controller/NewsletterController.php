@@ -7,6 +7,7 @@ use App\Entity\User;
 use App\Form\NewsletterType;
 use App\Repository\NewsletterRepository;
 use App\Repository\UserRepository;
+use App\Service\Mailjet;
 use App\Service\NewsletterSender;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -25,11 +26,12 @@ class NewsletterController extends AbstractController
     }
 
     #[Route('/newsletter/', name: 'newsletter_index', methods: ['GET'])]
-    public function index(NewsletterRepository $newsletterRepository, UserRepository $userRepository): Response
+    public function index(NewsletterRepository $newsletterRepository, UserRepository $userRepository, Mailjet $mailjet): Response
     {
         return $this->render('newsletter/index.html.twig', [
             'newsletters' => $newsletterRepository->findAllForIndex(),
             'subscribers' => $userRepository->countNewsletterSubscribers(),
+            'mailjet_configured' => $mailjet->isConfigured(),
         ]);
     }
 
@@ -95,7 +97,7 @@ class NewsletterController extends AbstractController
             if ($sender->sendTo($newsletter, $user)) {
                 $this->addFlash('success', 'E-mail de test envoyé à ' . htmlspecialchars($user->getMail()) . '.');
             } else {
-                $this->addFlash('danger', 'L\'e-mail de test n\'a pas pu être envoyé. Vérifiez la configuration Mailjet.');
+                $this->addFlash('danger', 'L\'e-mail de test n\'a pas pu être envoyé. Vérifiez la configuration Mailjet (Paramètres → Mailjet).');
             }
         }
 

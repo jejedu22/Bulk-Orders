@@ -30,9 +30,14 @@ class OptionsSettings
      * Sets a setting value. 
      * If the setting doesn't exists, it creates it. Otherwise, it replaces the db value
      */
-    public function set(string $name, string $value)
+    public function set(string $name, string $value): void
     {
-        $this->db->executeStatement('INSERT INTO settings (`name`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?', [$name, $value, $value]);
+        // La colonne name n'est pas unique : pas d'« ON DUPLICATE KEY »
+        if (false !== $this->db->fetchOne('SELECT `id` FROM `settings` WHERE `name` = ?', [$name])) {
+            $this->db->executeStatement('UPDATE `settings` SET `value` = ? WHERE `name` = ?', [$value, $name]);
+        } else {
+            $this->db->executeStatement('INSERT INTO `settings` (`name`, `value`) VALUES (?, ?)', [$name, $value]);
+        }
     }
 
     public function getObfuscatedEmailAddress($email)

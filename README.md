@@ -120,18 +120,21 @@ l'erreur apparaît dans `docker compose logs app`.
 
 Les administrateurs rédigent et envoient les newsletters depuis le menu
 **Newsletters**. Elles partent par l'API Mailjet, configurée dans
-`.env.docker` :
+**Paramètres → Mailjet** :
 
-```
-NEWSLETTER_MAILER_DSN=mailjet+api://CLE_PUBLIQUE:CLE_PRIVEE@default
-```
+- clé API et clé secrète : Mailjet → Paramètres du compte → Gestion des
+  clés API (la clé secrète n'est jamais réaffichée ; laisser le champ vide
+  pour la conserver) ;
+- expéditeur : adresse ou domaine **validé dans Mailjet** (sinon Mailjet
+  refuse l'envoi). Vide : `MAILER_FROM`, sinon l'e-mail de contact ;
+- le bouton « Vérifier la connexion » contrôle les clés et l'état de
+  l'expéditeur auprès de Mailjet, sans rien enregistrer ;
+- le bouton « M'envoyer un test » d'une newsletter l'envoie à
+  l'administrateur connecté avant l'envoi à tous.
 
-- les clés se trouvent dans Mailjet → Paramètres du compte → Gestion des
-  clés API ;
-- l'expéditeur (`MAILER_FROM`, sinon l'e-mail de contact) doit être une
-  adresse ou un domaine **validé dans Mailjet**, sinon Mailjet refuse l'envoi ;
-- le bouton « M'envoyer un test » envoie la newsletter à l'administrateur
-  connecté avant l'envoi à tous.
+Sans configuration dans l'administration, les newsletters partent par la
+variable `NEWSLETTER_MAILER_DSN` de `.env.docker` si elle est définie
+(ex. `mailjet+api://CLE_PUBLIQUE:CLE_PRIVEE@default`).
 
 Tous les utilisateurs sont abonnés par défaut. Chaque newsletter contient un
 lien de désinscription (et l'en-tête `List-Unsubscribe` pour le bouton

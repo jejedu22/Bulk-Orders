@@ -54,6 +54,7 @@ menu:
       title: Paramètres
       config: Configuration
       user: Utilisateurs
+      mailjet: Mailjet
   my_last_command: Ma dernière commande
   synthesis: Toutes mes commandes
   order: Passer commande

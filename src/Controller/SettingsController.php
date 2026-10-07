@@ -3,7 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\Settings;
+use App\Form\MailjetType;
 use App\Form\SettingsType;
+use App\Service\Mailjet;
+use App\Service\OptionsSettings;
 use App\Repository\SettingsRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -26,8 +29,51 @@ class SettingsController extends AbstractController
     #[Route('/', name: 'settings_index', methods: ['GET'])]
     public function index(SettingsRepository $settingsRepository): Response
     {
+        // Les réglages Mailjet ont leur propre page (la clé secrète n'est jamais affichée)
+        $settings = array_filter($settingsRepository->findAll(), function (Settings $setting) {
+            return !str_starts_with((string) $setting->getName(), 'mailjet_');
+        });
+
         return $this->render('settings/index.html.twig', [
-            'settings' => $settingsRepository->findAll(),
+            'settings' => $settings,
+        ]);
+    }
+
+    #[Route('/mailjet', name: 'settings_mailjet', methods: ['GET', 'POST'])]
+    public function mailjet(Request $request, Mailjet $mailjet, OptionsSettings $options): Response
+    {
+        $form = $this->createForm(MailjetType::class, [
+            'apiKey' => $mailjet->apiKey(),
+            'sender' => $mailjet->sender(),
+        ], ['has_secret' => '' !== $mailjet->secretKey()]);
+        $form->handleRequest($request);
+
+        $checks = null;
+        if ($form->isSubmitted() && $form->isValid()) {
+            $data = $form->getData();
+            $apiKey = trim((string) $data['apiKey']);
+            // Clé secrète vide : on garde celle enregistrée
+            $secretKey = trim((string) $data['secretKey']) ?: $mailjet->secretKey();
+            $sender = trim((string) $data['sender']);
+
+            if ($request->request->has('check')) {
+                // Vérification des valeurs saisies, sans les enregistrer
+                $checks = $mailjet->check($apiKey, $secretKey, $sender ?: $this->defaultSender($options));
+            } else {
+                $options->set(Mailjet::API_KEY, $apiKey);
+                $options->set(Mailjet::SECRET_KEY, '' === $apiKey ? '' : $secretKey);
+                $options->set(Mailjet::SENDER, $sender);
+                $this->addFlash('success', '' === $apiKey ? 'Configuration Mailjet supprimée.' : 'Configuration Mailjet enregistrée.');
+
+                return $this->redirectToRoute('settings_mailjet');
+            }
+        }
+
+        return $this->render('settings/mailjet.html.twig', [
+            'form' => $form->createView(),
+            'configured' => $mailjet->isConfigured(),
+            'checks' => $checks,
+            'default_sender' => $this->defaultSender($options),
         ]);
     }
 
@@ -75,4 +121,10 @@ class SettingsController extends AbstractController
         ]);
     }
 
+    private function defaultSender(OptionsSettings $options): string
+    {
+        $from = trim((string) $this->getParameter('mailer_from'));
+
+        return '' !== $from ? $from : trim($options->get('contact_email'));
+    }
 }

@@ -4,14 +4,18 @@ namespace App\Service;
 
 use App\Entity\Newsletter;
 use App\Entity\User;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\UriSigner;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
+use Symfony\Component\Mailer\Transport\TransportInterface;
+use Symfony\Component\Mime\Email;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Twig\Environment;
-use Symfony\Component\Mime\Email;
 
 /**
- * Envoi des newsletters, un e-mail par abonné, par le transport « newsletter »
- * (Mailjet, voir NEWSLETTER_MAILER_DSN). Chaque e-mail porte un lien de
+ * Envoi des newsletters, un e-mail par abonné, par l'API Mailjet configurée
+ * dans l'administration (Paramètres → Mailjet) ; à défaut, par le transport
+ * « newsletter » (NEWSLETTER_MAILER_DSN). Chaque e-mail porte un lien de
  * désinscription signé, aussi exposé dans l'en-tête List-Unsubscribe pour le
  * bouton « Se désabonner » des messageries.
  */
@@ -21,13 +25,17 @@ class NewsletterSender
     private $twig;
     private $urlGenerator;
     private $uriSigner;
+    private $mailjet;
+    private $logger;
 
-    public function __construct(MailSender $mailSender, Environment $twig, UrlGeneratorInterface $urlGenerator, UriSigner $uriSigner)
+    public function __construct(MailSender $mailSender, Environment $twig, UrlGeneratorInterface $urlGenerator, UriSigner $uriSigner, Mailjet $mailjet, LoggerInterface $logger)
     {
         $this->mailSender = $mailSender;
         $this->twig = $twig;
         $this->urlGenerator = $urlGenerator;
         $this->uriSigner = $uriSigner;
+        $this->mailjet = $mailjet;
+        $this->logger = $logger;
     }
 
     /**
@@ -47,9 +55,10 @@ class NewsletterSender
      */
     public function send(Newsletter $newsletter, array $recipients): int
     {
+        $transport = $this->transport();
         $failed = 0;
         foreach ($recipients as $user) {
-            if (!$this->sendTo($newsletter, $user)) {
+            if (!$this->sendTo($newsletter, $user, $transport)) {
                 ++$failed;
             }
         }
@@ -57,10 +66,10 @@ class NewsletterSender
         return $failed;
     }
 
-    public function sendTo(Newsletter $newsletter, User $user): bool
+    public function sendTo(Newsletter $newsletter, User $user, ?TransportInterface $transport = null): bool
     {
         try {
-            $email = $this->mailSender->withSender(new Email());
+            $email = $this->mailSender->withSender(new Email(), $this->mailjet->sender());
         } catch (\LogicException $e) {
             return false;
         }
@@ -75,10 +84,37 @@ class NewsletterSender
                 'unsubscribe_url' => $unsubscribeUrl,
             ]));
         $email->getHeaders()
-            ->addTextHeader('X-Transport', 'newsletter')
             ->addTextHeader('List-Unsubscribe', '<' . $unsubscribeUrl . '>')
             ->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
 
-        return $this->mailSender->send($email);
+        $transport = $transport ?? $this->transport();
+        if (null === $transport) {
+            $email->getHeaders()->addTextHeader('X-Transport', 'newsletter');
+
+            return $this->mailSender->send($email);
+        }
+
+        try {
+            $transport->send($email);
+
+            return true;
+        } catch (TransportExceptionInterface $e) {
+            $this->logger->error('Échec de l\'envoi de la newsletter « {subject} » à {to} par Mailjet : {error}', [
+                'subject' => $newsletter->getSubject(),
+                'to' => $user->getMail(),
+                'error' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Transport Mailjet de l'administration, ou null pour le transport « newsletter » du mailer.
+     */
+    private function transport(): ?TransportInterface
+    {
+        return $this->mailjet->isConfigured() ? $this->mailjet->transport() : null;
     }
 }

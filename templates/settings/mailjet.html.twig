@@ -1,0 +1,65 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mailjet{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+{% set check_icons = { 'success': 'fa-check-circle', 'warning': 'fa-exclamation-triangle', 'danger': 'fa-times-circle' } %}
+<div class="col-12">
+    <div class="page-head">
+        <div>
+            <h1>Mailjet</h1>
+            <p class="subtitle">Envoi des newsletters par l'API Mailjet.</p>
+        </div>
+        <div class="actions">
+            {% if configured %}
+                <span class="pill pill-success"><i class="fas fa-check"></i> Configuré</span>
+            {% else %}
+                <span class="pill pill-muted">Non configuré</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if checks is not null %}
+    <div class="panel form-panel">
+        <div class="panel-head"><h3>Vérification</h3></div>
+        <ul class="rows">
+        {% for check in checks %}
+            <li class="row-item">
+                <i class="fas {{ check_icons[check[0]] }} fa-fw text-{{ check[0] }}"></i>
+                <span class="row-main">{{ check[1] }}</span>
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="panel form-panel">
+        <div class="panel-body">
+            <p class="text-muted">
+                Les clés se trouvent dans Mailjet → Paramètres du compte → <strong>Gestion des clés API</strong>.
+                L'expéditeur doit être une adresse ou un domaine validé dans Mailjet → Paramètres du compte →
+                <strong>Adresses et domaines d'expéditeur</strong>.
+            </p>
+            {{ form_start(form) }}
+                {{ form_row(form.apiKey) }}
+                {{ form_row(form.secretKey) }}
+                {{ form_row(form.sender, {'attr': {'placeholder': default_sender}}) }}
+                {{ form_rest(form) }}
+                <div class="form-actions">
+                    <button class="btn btn-accent" name="save"><i class="fas fa-check mr-1"></i> Enregistrer</button>
+                    <button class="btn btn-soft" name="check" value="1"><i class="fas fa-plug mr-1"></i> Vérifier la connexion</button>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+
+    {% if not configured %}
+    <p class="text-muted small">
+        Sans clés enregistrées ici, les newsletters partent par la variable d'environnement
+        <code>NEWSLETTER_MAILER_DSN</code> si elle est définie.
+    </p>
+    {% endif %}
+</div>
+{% endblock %}

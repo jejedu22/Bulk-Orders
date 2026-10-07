@@ -49,10 +49,12 @@ menu:
     all_command: Toutes les commandes
     synthesis: Synthèse
     recap: Récapitulatif
+    newsletter: Newsletters
     parameter:
       title: Paramètres
       config: Configuration
       user: Utilisateurs
+      mailjet: Mailjet
   my_last_command: Ma dernière commande
   synthesis: Toutes mes commandes
   order: Passer commande

@@ -34,12 +34,16 @@ class MailSender
     /**
      * Expéditeur : MAILER_FROM s'il est défini (adresse du compte SMTP, certains
      * fournisseurs refusent tout autre expéditeur), sinon l'e-mail de contact.
-     * L'e-mail de contact reste l'adresse de réponse.
+     * L'e-mail de contact reste l'adresse de réponse. $from remplace les deux
+     * (expéditeur validé dans Mailjet pour les newsletters).
      */
-    public function withSender(Email $email): Email
+    public function withSender(Email $email, ?string $from = null): Email
     {
         $contact = trim($this->settings->get('contact_email'));
-        $from = '' !== $this->mailerFrom ? $this->mailerFrom : $contact;
+        $from = trim((string) $from);
+        if ('' === $from) {
+            $from = '' !== $this->mailerFrom ? $this->mailerFrom : $contact;
+        }
         if ('' === $from) {
             $message = 'E-mail non envoyé : aucun expéditeur, renseigner MAILER_FROM ou l\'e-mail de contact dans la configuration.';
             $this->logger->error($message);

@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Newsletter{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+<div class="panel mx-auto" style="max-width: 480px">
+<div class="panel-body text-center">
+    <i class="fas fa-envelope-open-text fa-3x text-muted mb-3"></i>
+    {% if done == 'unsubscribed' %}
+        <h1 class="h4">Vous êtes désinscrit·e</h1>
+        <p class="text-muted">Vous ne recevrez plus la newsletter de {{ options_settings.get('name') }}. Les e-mails liés à vos commandes continueront d'être envoyés.</p>
+    {% elseif done == 'subscribed' %}
+        <h1 class="h4">Vous êtes réabonné·e</h1>
+        <p class="text-muted">Vous recevrez de nouveau la newsletter de {{ options_settings.get('name') }}.</p>
+    {% elseif user.newsletter %}
+        <h1 class="h4">Se désinscrire de la newsletter ?</h1>
+        <p class="text-muted">Adresse : {{ user.mail }}</p>
+    {% else %}
+        <h1 class="h4">Vous n'êtes pas abonné·e</h1>
+        <p class="text-muted">Adresse : {{ user.mail }}</p>
+    {% endif %}
+
+    <form method="post" action="{{ action_url }}">
+        {% if user.newsletter %}
+            <input type="hidden" name="action" value="unsubscribe">
+            <button class="btn btn-accent">Me désinscrire</button>
+        {% else %}
+            <input type="hidden" name="action" value="subscribe">
+            <button class="btn btn-soft">Me réabonner</button>
+        {% endif %}
+    </form>
+</div>
+</div>
+</div>
+{% endblock %}

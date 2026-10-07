@@ -1,3 +1,8 @@
 framework:
     mailer:
-        dsn: '%env(MAILER_DSN)%'
+        transports:
+            # Transport par défaut : e-mails de commande, mot de passe oublié…
+            main: '%env(MAILER_DSN)%'
+            # Newsletters (e-mails portant l'en-tête « X-Transport: newsletter »),
+            # ex. mailjet+api://CLE_PUBLIQUE:CLE_PRIVEE@default
+            newsletter: '%env(NEWSLETTER_MAILER_DSN)%'

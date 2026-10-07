@@ -6,7 +6,10 @@
 parameters:
     # Expéditeur des e-mails (facultatif, par défaut l'e-mail de contact)
     env(MAILER_FROM): ''
+    # Envoi des newsletters (Mailjet) ; null://null = aucun envoi
+    env(NEWSLETTER_MAILER_DSN): 'null://null'
     logo_directory: '%kernel.project_dir%/public/uploads/logo'
+    mailer_from: '%env(MAILER_FROM)%'
 services:
     # default configuration for services in *this* file
     _defaults:

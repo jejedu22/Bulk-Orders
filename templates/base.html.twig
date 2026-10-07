@@ -167,6 +167,12 @@
                                     <p>{{ 'menu.admin.category'|trans }}</p>
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="{{ path('newsletter_index') }}" class="nav-link {{ current_route starts with 'newsletter_' and current_route != 'newsletter_unsubscribe' ? 'active' }}">
+                                    <i class="fas fa-paper-plane nav-icon"></i>
+                                    <p>{{ 'menu.admin.newsletter'|trans }}</p>
+                                </a>
+                            </li>
                             {% set settings_open = current_route starts with 'settings_' or current_route starts with 'user_' %}
                             <li class="nav-item has-treeview {{ settings_open ? 'menu-open' }}">
                                 <a href="#" class="nav-link {{ settings_open ? 'active' }}">
@@ -175,9 +181,15 @@
                                 </a>
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item">
-                                        <a href="{{ path('settings_index') }}" class="nav-link {{ current_route starts with 'settings_' ? 'active' }}">
+                                        <a href="{{ path('settings_index') }}" class="nav-link {{ current_route starts with 'settings_' and current_route != 'settings_mailjet' ? 'active' }}">
                                             <i class="fas fa-sliders-h nav-icon"></i>
                                             <p>{{ 'menu.admin.parameter.config'|trans }}</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ path('settings_mailjet') }}" class="nav-link {{ current_route == 'settings_mailjet' ? 'active' }}">
+                                            <i class="fas fa-paper-plane nav-icon"></i>
+                                            <p>{{ 'menu.admin.parameter.mailjet'|trans }}</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">

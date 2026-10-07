@@ -67,6 +67,15 @@ jobs:
             bulk-orders:ci
           .github/wait-for-app.sh
 
+      - name: Ressources front présentes dans l'image
+        run: |
+          # Chaque fichier /plugins/ chargé par un template doit être servi (sinon .dockerignore l'exclut)
+          for path in $(grep -rhoE "asset\('/?plugins/[^']+'\)" templates | sed -E "s#asset\('/?##; s#'\)##" | sort -u); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8080/$path")
+            echo "/$path : $code"
+            test "$code" = 200
+          done
+
       - name: Redémarrage (migrations déjà passées)
         run: |
           docker restart app

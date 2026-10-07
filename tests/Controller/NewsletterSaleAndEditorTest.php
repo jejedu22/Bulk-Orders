@@ -78,6 +78,36 @@ class NewsletterSaleAndEditorTest extends WebTestCase
         $this->assertSame(['alice@example.com'], $this->sentTo());
     }
 
+    public function testOnlyUpcomingSalesAreListed(): void
+    {
+        $passee = $this->createJourDistrib([], 0, false, true, '-20 days');
+        $enCours = $this->createJourDistrib([], 0, false, true, '-2 days');
+        $aVenir = $this->createJourDistrib([], 0, false, false, '+7 days');
+
+        $this->login($this->admin);
+        $crawler = $this->client->request('GET', '/newsletter/new');
+        $options = $crawler->filter('#newsletter_jourDistrib option')->each(function ($option) { return $option->attr('value'); });
+
+        // Vente close mais distribution dans 1 jour : toujours à venir
+        $this->assertSame(['', (string) $enCours->getId(), (string) $aVenir->getId()], $options);
+        $this->assertNotContains((string) $passee->getId(), $options);
+    }
+
+    public function testPastSaleAlreadyChosenStaysSelected(): void
+    {
+        $passee = $this->createJourDistrib([], 0, false, true, '-20 days');
+        $newsletter = new Newsletter();
+        $newsletter->setSubject('Ancienne vente');
+        $newsletter->setContent('<p>x</p>');
+        $newsletter->setJourDistrib($passee);
+        $this->persist($newsletter);
+
+        $this->login($this->admin);
+        $crawler = $this->client->request('GET', '/newsletter/'.$newsletter->getId().'/edit');
+
+        $this->assertSame((string) $passee->getId(), $crawler->filter('#newsletter_jourDistrib option[selected]')->attr('value'));
+    }
+
     public function testSaleCombinedWithGroups(): void
     {
         $product = $this->createProduct();

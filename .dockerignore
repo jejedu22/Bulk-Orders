@@ -19,13 +19,19 @@ phpunit.xml.dist
 
 # --- Ressources front ---------------------------------------------------------
 # AdminLTE embarque ~75 Mo de plugins, presque tous inutilisés. Seuls les
-# fichiers chargés par templates/base.html.twig sont copiés dans l'image :
-# pour utiliser un autre plugin, l'ajouter ci-dessous.
+# fichiers chargés par les templates sont copiés dans l'image : pour utiliser
+# un autre plugin, l'ajouter ci-dessous (vérifié par tests/DockerignoreTest.php).
 public/plugins/*
 !public/plugins/jquery/jquery.min.js
 !public/plugins/bootstrap/js/bootstrap.bundle.min.js
 !public/plugins/fontawesome/css/all.min.css
 !public/plugins/fontawesome/webfonts
+# Éditeur des newsletters (Jodit) et sélection des membres des groupes (Select2)
+!public/plugins/jodit
+!public/plugins/select2/js/select2.full.min.js
+!public/plugins/select2/js/i18n/fr.js
+!public/plugins/select2/css/select2.min.css
+!public/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css
 
 public/dist/img
 public/dist/css/alt

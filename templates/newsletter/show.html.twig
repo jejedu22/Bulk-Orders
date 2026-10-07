@@ -57,5 +57,32 @@
             {{ newsletter.content|raw }}
         </div>
     </div>
+
+    {% if deliveries is not empty %}
+    <div class="panel form-panel">
+        <div class="panel-head">
+            <h3>Envois</h3>
+            <span class="meta">{{ deliveries|filter(d => d.successful and not d.test)|length }} réussi{{ deliveries|filter(d => d.successful and not d.test)|length > 1 ? 's' }}{% set failures = deliveries|filter(d => not d.successful)|length %}{% if failures %} · {{ failures }} échec{{ failures > 1 ? 's' }}{% endif %}</span>
+        </div>
+        <ul class="rows newsletter-history">
+        {% for delivery in deliveries %}
+            <li>
+                <a href="{{ path('user_show', {'id': delivery.user.id}) }}" class="row-item">
+                    <i class="fas {{ delivery.successful ? 'fa-check-circle text-success' : 'fa-times-circle text-danger' }} fa-fw"></i>
+                    <span class="row-main">
+                        <span class="row-title d-block">{{ delivery.user.prenom }} {{ delivery.user.nom }}</span>
+                        <span class="row-meta">
+                            <span>{{ delivery.email }}</span>
+                            <span>{{ delivery.sentAt|date('d/m/Y à H:i') }}</span>
+                            {% if not delivery.successful %}<span class="text-danger">{{ delivery.error }}</span>{% endif %}
+                        </span>
+                    </span>
+                    {% if delivery.test %}<span class="pill pill-muted">Test</span>{% endif %}
+                </a>
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

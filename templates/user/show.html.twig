@@ -27,5 +27,31 @@
             <li class="row-item"><i class="fas fa-paper-plane text-muted fa-fw"></i><span class="row-main">{{ user.newsletter ? 'Abonné·e à la newsletter' : 'Désinscrit·e de la newsletter' }}{% if user.newsletterGroups is not empty %} · {{ user.newsletterGroups|map(g => g.name)|join(', ') }}{% endif %}</span></li>
         </ul>
     </div>
+
+    <div class="panel form-panel">
+        <div class="panel-head"><h3>Newsletters reçues</h3><span class="meta">{{ deliveries|filter(d => not d.test)|length }}</span></div>
+        {% if deliveries is empty %}
+            <p class="panel-body text-muted mb-0">Aucune newsletter envoyée à cet utilisateur.</p>
+        {% else %}
+            <ul class="rows newsletter-history">
+            {% for delivery in deliveries %}
+                <li>
+                    <a href="{{ path('newsletter_show', {'id': delivery.newsletter.id}) }}" class="row-item">
+                        <i class="fas {{ delivery.successful ? 'fa-check-circle text-success' : 'fa-times-circle text-danger' }} fa-fw"></i>
+                        <span class="row-main">
+                            <span class="row-title d-block">{{ delivery.newsletter.subject }}</span>
+                            <span class="row-meta">
+                                <span>{{ delivery.sentAt|date('d/m/Y à H:i') }}</span>
+                                {% if delivery.email != user.mail %}<span>à {{ delivery.email }}</span>{% endif %}
+                                {% if not delivery.successful %}<span class="text-danger">{{ delivery.error }}</span>{% endif %}
+                            </span>
+                        </span>
+                        {% if delivery.test %}<span class="pill pill-muted">Test</span>{% endif %}
+                    </a>
+                </li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

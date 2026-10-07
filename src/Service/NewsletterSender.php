@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Controller\PwaController;
 use App\Entity\Newsletter;
+use App\Entity\NewsletterDelivery;
 use App\Entity\User;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\UriSigner;
@@ -54,29 +55,38 @@ class NewsletterSender
     }
 
     /**
-     * Envoie la newsletter à chacun des destinataires ; retourne le nombre d'échecs.
+     * Envoie la newsletter à chacun des destinataires. Retourne un envoi par
+     * destinataire (historique), à enregistrer par l'appelant.
      *
      * @param User[] $recipients
+     *
+     * @return NewsletterDelivery[]
      */
-    public function send(Newsletter $newsletter, array $recipients): int
+    public function send(Newsletter $newsletter, array $recipients): array
     {
         $transport = $this->transport();
-        $failed = 0;
+        $deliveries = [];
         foreach ($recipients as $user) {
-            if (!$this->sendTo($newsletter, $user, $transport)) {
-                ++$failed;
-            }
+            $deliveries[] = $this->sendTo($newsletter, $user, $transport);
         }
 
-        return $failed;
+        return $deliveries;
     }
 
-    public function sendTo(Newsletter $newsletter, User $user, ?TransportInterface $transport = null): bool
+    public function sendTo(Newsletter $newsletter, User $user, ?TransportInterface $transport = null, bool $test = false): NewsletterDelivery
+    {
+        return new NewsletterDelivery($newsletter, $user, $this->deliver($newsletter, $user, $transport), $test);
+    }
+
+    /**
+     * Retourne null si l'e-mail est parti, sinon le message d'erreur.
+     */
+    private function deliver(Newsletter $newsletter, User $user, ?TransportInterface $transport): ?string
     {
         try {
             $email = $this->mailSender->withSender(new Email(), $this->mailjet->sender());
         } catch (\LogicException $e) {
-            return false;
+            return $e->getMessage();
         }
 
         $unsubscribeUrl = $this->unsubscribeUrl($user);
@@ -106,13 +116,13 @@ class NewsletterSender
         if (null === $transport) {
             $email->getHeaders()->addTextHeader('X-Transport', 'newsletter');
 
-            return $this->mailSender->send($email);
+            return $this->mailSender->send($email) ? null : 'Échec de l\'envoi (détail dans les journaux de l\'application).';
         }
 
         try {
             $transport->send($email);
 
-            return true;
+            return null;
         } catch (TransportExceptionInterface $e) {
             $this->logger->error('Échec de l\'envoi de la newsletter « {subject} » à {to} par Mailjet : {error}', [
                 'subject' => $newsletter->getSubject(),
@@ -121,7 +131,7 @@ class NewsletterSender
                 'exception' => $e,
             ]);
 
-            return false;
+            return $e->getMessage();
         }
     }
 

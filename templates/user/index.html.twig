@@ -12,6 +12,7 @@
             <p class="subtitle">{{ users|length }} compte{{ users|length > 1 ? 's' }}</p>
         </div>
         <div class="actions">
+            <a href="{{ path('user_export') }}" class="btn btn-soft"><i class="fas fa-file-excel mr-1"></i> Exporter (Excel)</a>
             <a href="{{ path('app_register') }}" class="btn btn-accent"><i class="fas fa-user-plus mr-1"></i> Nouvel utilisateur</a>
         </div>
     </div>

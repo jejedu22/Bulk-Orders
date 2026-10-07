@@ -6,10 +6,13 @@ use App\Entity\User;
 use App\Form\UserAdminType;
 use App\Repository\NewsletterDeliveryRepository;
 use App\Repository\UserRepository;
+use App\Service\UserExport;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
@@ -31,6 +34,23 @@ class UserController extends AbstractController
         return $this->render('user/index.html.twig', [
             'users' => $userRepository->findAll(),
         ]);
+    }
+
+    // Avant « /{id} », qui capterait sinon « export »
+    #[Route('/export', name: 'user_export', methods: ['GET'])]
+    public function export(UserExport $export): StreamedResponse
+    {
+        $response = new StreamedResponse(function () use ($export) {
+            $export->write('php://output');
+        });
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', $response->headers->makeDisposition(
+            ResponseHeaderBag::DISPOSITION_ATTACHMENT,
+            sprintf('utilisateurs-%s.xlsx', (new \DateTimeImmutable())->format('Y-m-d'))
+        ));
+        $response->headers->set('Cache-Control', 'private, no-store');
+
+        return $response;
     }
 
     #[Route('/{id}', name: 'user_show', methods: ['GET'])]

@@ -2,12 +2,15 @@
 
 namespace App\Service;
 
+use App\Controller\PwaController;
 use App\Entity\Commande;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Twig\Environment;
 
 /**
  * Envoi des e-mails de l'application.
@@ -22,13 +25,49 @@ class MailSender
     private $settings;
     private $logger;
     private $mailerFrom;
+    private $twig;
+    private $urlGenerator;
+    private $logoDirectory;
 
-    public function __construct(MailerInterface $mailer, OptionsSettings $settings, LoggerInterface $logger, string $mailerFrom = '')
+    public function __construct(MailerInterface $mailer, OptionsSettings $settings, LoggerInterface $logger, string $mailerFrom = '', ?Environment $twig = null, ?UrlGeneratorInterface $urlGenerator = null, string $logoDirectory = '')
     {
         $this->mailer = $mailer;
         $this->settings = $settings;
         $this->logger = $logger;
         $this->mailerFrom = trim($mailerFrom);
+        $this->twig = $twig;
+        $this->urlGenerator = $urlGenerator;
+        $this->logoDirectory = $logoDirectory;
+    }
+
+    /**
+     * Habillage commun des e-mails (templates/emails/layout.html.twig) : joint
+     * le logo de la configuration à l'e-mail et retourne les variables du
+     * bandeau (couleur du thème, nom, logo) et du pied de page.
+     */
+    public function brand(Email $email): array
+    {
+        $logoCid = null;
+        $logo = basename($this->settings->get('logo'));
+        $path = $this->logoDirectory . '/' . $logo;
+        if ('' !== $logo && '' !== $this->logoDirectory && is_file($path) && false !== @getimagesize($path)) {
+            // Joint à l'e-mail : affiché même si la messagerie bloque les images distantes
+            $email->embedFromPath($path, 'logo');
+            $logoCid = 'cid:logo';
+        }
+
+        return [
+            'name' => $this->settings->get('name'),
+            'accent' => PwaController::COLORS[$this->settings->get('color')] ?? PwaController::COLORS['green'],
+            'logo_cid' => $logoCid,
+            'contact_email' => trim($this->settings->get('contact_email')),
+            'site_url' => $this->url('passe_commande_index'),
+        ];
+    }
+
+    private function url(string $route): ?string
+    {
+        return null !== $this->urlGenerator ? $this->urlGenerator->generate($route, [], UrlGeneratorInterface::ABSOLUTE_URL) : null;
     }
 
     /**
@@ -90,25 +129,16 @@ class MailSender
             return false;
         }
 
-        $cell = 'style="border: 1px solid black; padding: 4px 8px"';
-        $html = $message . '<br><br><table style="border-collapse: collapse; border: 1px solid black">'
-            . '<tr><th ' . $cell . '>Produit</th><th ' . $cell . '>Conditionnement</th>'
-            . '<th ' . $cell . '>Prix unitaire initial</th><th ' . $cell . '>Quantité</th></tr>';
-        foreach ($commande->getLigneCommandes() as $ligne) {
-            $product = $ligne->getProduct();
-            $html .= '<tr>'
-                . '<td ' . $cell . '>' . htmlspecialchars($product->getNom()) . '</td>'
-                . '<td ' . $cell . '>' . htmlspecialchars($product->getConditionnement() . $product->getUnit()) . '</td>'
-                . '<td ' . $cell . '>' . number_format($product->getPrixInit(), 2, ',', ' ') . ' €</td>'
-                . '<td ' . $cell . '>' . $ligne->getQuantite() . '</td>'
-                . '</tr>';
-        }
-        $html .= '</table>';
-
         $email
             ->to($commande->getUser()->getMail())
             ->subject($subject)
-            ->html($html);
+            ->html($this->twig->render('emails/commande.html.twig', [
+                'brand' => $this->brand($email),
+                'subject' => $subject,
+                'message' => $message,
+                'commande' => $commande,
+                'commandes_url' => $this->url('commande_index'),
+            ]));
 
         return $this->send($email);
     }

@@ -163,6 +163,8 @@ class ResetPasswordController extends AbstractController
             ->subject('Réinitialisation de votre mot de passe')
             ->htmlTemplate('reset_password/email.html.twig')
             ->context([
+                'brand' => $mailSender->brand($email),
+                'user' => $user,
                 'resetToken' => $resetToken,
                 'tokenLifetime' => $this->resetPasswordHelper->getTokenLifetime(),
             ])

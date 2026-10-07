@@ -20,6 +20,10 @@ class ResetPasswordControllerTest extends WebTestCase
         $this->client->followRedirect();
         $this->assertResponseIsSuccessful();
 
+        // E-mail habillé : bouton et lien de secours
+        $this->assertStringContainsString('Choisir un nouveau mot de passe', $email->getHtmlBody());
+        $this->assertStringContainsString('Ce lien est valable 1 heure', $email->getHtmlBody());
+
         // Lien reçu par e-mail
         $this->assertSame(1, preg_match('#/reset-password/reset/[A-Za-z0-9]+#', $email->getHtmlBody(), $match), 'Lien de réinitialisation absent de l\'e-mail.');
         $this->client->request('GET', $match[0]);

@@ -28,9 +28,6 @@ services:
     App\Service\MailSender:
         arguments:
             $mailerFrom: '%env(MAILER_FROM)%'
-
-    App\Service\NewsletterSender:
-        arguments:
             $logoDirectory: '%logo_directory%'
 
     App\Controller\:

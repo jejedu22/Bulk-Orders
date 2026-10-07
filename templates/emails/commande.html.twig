@@ -1,0 +1,63 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% block title %}{{ subject }}{% endblock %}
+
+{% block content %}
+    {% set cell = 'padding: 8px; border-bottom: 1px solid #e9ecef; text-align: left' %}
+    {% set jour = commande.jourDistrib %}
+    <h1 style="font-size: 20px; margin: 0 0 16px">{{ subject }}</h1>
+    {% if commande.user.prenom %}<p style="margin: 0 0 12px">Bonjour {{ commande.user.prenom }},</p>{% endif %}
+    {% if message %}<div style="margin: 0 0 16px">{{ message|raw }}</div>{% endif %}
+
+    {% if jour %}
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background: #f8f9fa; border-radius: 4px; margin: 0 0 16px">
+        <tr>
+            <td style="padding: 10px 12px; font-size: 14px">
+                <strong>Vente du {{ jour.date|date('d/m/Y') }}</strong>
+                {% if jour.dateLivraison %}<br>Distribution le {{ jour.dateLivraison|format_date('full', locale='fr') }}{% endif %}
+                {% if commande.date %}<br><span style="color: #6c757d">Commande passée le {{ commande.date|date('d/m/Y') }}</span>{% endif %}
+            </td>
+        </tr>
+    </table>
+    {% endif %}
+
+    <table style="width: 100%; border-collapse: collapse; font-size: 14px">
+        <thead>
+            <tr style="background: #f8f9fa">
+                <th style="{{ cell }}">Produit</th>
+                <th style="{{ cell }}; text-align: right">Prix unitaire initial</th>
+                <th style="{{ cell }}; text-align: right">Quantité</th>
+                <th style="{{ cell }}; text-align: right">Montant</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% set total = 0 %}
+        {% for ligne in commande.ligneCommandes %}
+            {% set product = ligne.product %}
+            {% set montant = product.prixInit * ligne.quantite %}
+            {% set total = total + montant %}
+            <tr>
+                <td style="{{ cell }}">{{ product.nom }}<br><span style="color: #6c757d; font-size: 12px">{{ product.conditionnement ~ product.unit }}</span></td>
+                <td style="{{ cell }}; text-align: right; white-space: nowrap">{{ product.prixInit|number_format(2, ',', ' ') }} €</td>
+                <td style="{{ cell }}; text-align: right">{{ ligne.quantite }}</td>
+                <td style="{{ cell }}; text-align: right; white-space: nowrap">{{ montant|number_format(2, ',', ' ') }} €</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" style="padding: 10px 8px; text-align: right; font-weight: bold">Total estimé</td>
+                <td style="padding: 10px 8px; text-align: right; font-weight: bold; white-space: nowrap">{{ total|number_format(2, ',', ' ') }} €</td>
+            </tr>
+        </tfoot>
+    </table>
+    <p style="color: #6c757d; font-size: 12px; margin: 8px 0 0">Montant calculé sur les prix initiaux ; le montant final peut varier selon les prix définitifs.</p>
+
+    {% if commande.commentaire %}
+        <p style="margin: 16px 0 0"><strong>Votre commentaire :</strong> {{ commande.commentaire }}</p>
+    {% endif %}
+
+    {% if commandes_url %}
+        {{ include('emails/_button.html.twig', {url: commandes_url, label: 'Voir mes commandes'}) }}
+    {% endif %}
+{% endblock %}

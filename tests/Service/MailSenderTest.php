@@ -14,6 +14,10 @@ use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Twig\Environment;
+use Twig\Extra\Intl\IntlExtension;
+use Twig\Loader\FilesystemLoader;
 
 class MailSenderTest extends TestCase
 {
@@ -87,11 +91,18 @@ class MailSenderTest extends TestCase
             return $a->getAddress();
         }, $sent->getTo()));
         $html = $sent->getHtmlBody();
-        $this->assertStringStartsWith('Merci !', $html);
+        $this->assertStringContainsString('<div style="margin: 0 0 16px">Merci !</div>', $html);
         $this->assertStringContainsString('Farine &lt;bio&gt;', $html);
         $this->assertStringContainsString('2.5kg', $html);
         $this->assertStringContainsString('1 234,50 €', $html);
         $this->assertStringContainsString('>3</td>', $html);
+        // Total estimé : 3 × 1 234,50 €
+        $this->assertStringContainsString('3 703,50 €', $html);
+        // Habillage : logo joint, couleur du thème, lien vers les commandes
+        $this->assertStringContainsString('<img src="cid:logo"', $html);
+        $this->assertSame('logo', $sent->getAttachments()[0]->getFilename());
+        $this->assertStringContainsString('#007bff', $html);
+        $this->assertStringContainsString('https://example.org/commande/', $html);
     }
 
     public function testSendCommandeWithoutSenderReturnsFalse(): void
@@ -111,8 +122,17 @@ class MailSenderTest extends TestCase
         $settings->method('get')->willReturnMap([
             ['contact_email', '', $contactEmail],
             ['name', '', 'Groupement'],
+            ['color', '', 'blue'],
+            ['logo', '', 'lapallogo.png'],
         ]);
+        // Templates réels de l'application (mise en page des e-mails)
+        $twig = new Environment(new FilesystemLoader(\dirname(__DIR__, 2).'/templates'));
+        $twig->addExtension(new IntlExtension());
+        $urlGenerator = $this->createMock(UrlGeneratorInterface::class);
+        $urlGenerator->method('generate')->willReturnCallback(function (string $route) {
+            return 'commande_index' === $route ? 'https://example.org/commande/' : 'https://example.org/';
+        });
 
-        return new MailSender($mailer, $settings, $logger ?? $this->createMock(LoggerInterface::class), $mailerFrom);
+        return new MailSender($mailer, $settings, $logger ?? $this->createMock(LoggerInterface::class), $mailerFrom, $twig, $urlGenerator, \dirname(__DIR__, 2).'/public/dist/img');
     }
 }

@@ -1,0 +1,33 @@
+{#
+    Mise en page commune des e-mails : bandeau à la couleur du thème avec le
+    logo (joint à l'e-mail) et le nom, contenu, pied de page.
+    Variables : brand (voir MailSender::brand), blocs « content » et « footer ».
+    Styles en ligne uniquement : les messageries ignorent les feuilles de style.
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ brand.name }}{% endblock %}</title>
+</head>
+<body style="margin: 0; padding: 0; background: #f4f6f9; font-family: Arial, Helvetica, sans-serif; color: #212529">
+    <div style="max-width: 640px; margin: 0 auto; padding: 24px 16px">
+        <div style="background: {{ brand.accent }}; border-radius: 6px 6px 0 0; text-align: center; padding: 20px 16px">
+            {% if brand.logo_cid %}
+                <img src="{{ brand.logo_cid }}" alt="" style="max-height: 72px; max-width: 220px; border: 0; display: block; margin: 0 auto 8px">
+            {% endif %}
+            <div style="font-size: 20px; font-weight: bold; color: #ffffff">{{ brand.name }}</div>
+        </div>
+        <div style="background: #ffffff; border-radius: 0 0 6px 6px; padding: 24px; line-height: 1.5; font-size: 15px">
+            {% block content %}{% endblock %}
+        </div>
+        <p style="font-size: 12px; color: #6c757d; text-align: center; margin-top: 16px; line-height: 1.6">
+            {% block footer %}
+                {{ brand.name }}{% if brand.site_url %} · <a href="{{ brand.site_url }}" style="color: #6c757d">{{ brand.site_url|replace({'https://': '', 'http://': ''})|trim('/') }}</a>{% endif %}
+                {% if brand.contact_email %}<br>Une question ? <a href="mailto:{{ brand.contact_email }}" style="color: #6c757d">{{ brand.contact_email }}</a>{% endif %}
+            {% endblock %}
+        </p>
+    </div>
+</body>
+</html>

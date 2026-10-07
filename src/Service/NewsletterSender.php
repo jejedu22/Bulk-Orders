@@ -2,7 +2,6 @@
 
 namespace App\Service;
 
-use App\Controller\PwaController;
 use App\Entity\Newsletter;
 use App\Entity\NewsletterDelivery;
 use App\Entity\User;
@@ -29,13 +28,9 @@ class NewsletterSender
     private $uriSigner;
     private $mailjet;
     private $logger;
-    private $settings;
-    private $logoDirectory;
 
-    public function __construct(MailSender $mailSender, Environment $twig, UrlGeneratorInterface $urlGenerator, UriSigner $uriSigner, Mailjet $mailjet, LoggerInterface $logger, OptionsSettings $settings, string $logoDirectory)
+    public function __construct(MailSender $mailSender, Environment $twig, UrlGeneratorInterface $urlGenerator, UriSigner $uriSigner, Mailjet $mailjet, LoggerInterface $logger)
     {
-        $this->settings = $settings;
-        $this->logoDirectory = $logoDirectory;
         $this->mailSender = $mailSender;
         $this->twig = $twig;
         $this->urlGenerator = $urlGenerator;
@@ -90,13 +85,6 @@ class NewsletterSender
         }
 
         $unsubscribeUrl = $this->unsubscribeUrl($user);
-        // Logo des paramètres joint à l'e-mail (affiché même si la messagerie bloque les images distantes)
-        $logoCid = null;
-        $logo = $this->logoPath();
-        if (null !== $logo) {
-            $email->embedFromPath($logo, 'logo');
-            $logoCid = 'cid:logo';
-        }
         $email
             ->to($user->getMail())
             ->subject($newsletter->getSubject())
@@ -105,8 +93,7 @@ class NewsletterSender
                 'content' => $this->absoluteUrls((string) $newsletter->getContent()),
                 'user' => $user,
                 'unsubscribe_url' => $unsubscribeUrl,
-                'logo_cid' => $logoCid,
-                'accent' => PwaController::COLORS[$this->settings->get('color')] ?? PwaController::COLORS['green'],
+                'brand' => $this->mailSender->brand($email),
             ]));
         $email->getHeaders()
             ->addTextHeader('List-Unsubscribe', '<' . $unsubscribeUrl . '>')
@@ -133,14 +120,6 @@ class NewsletterSender
 
             return $e->getMessage();
         }
-    }
-
-    private function logoPath(): ?string
-    {
-        $logo = basename($this->settings->get('logo'));
-        $path = $this->logoDirectory . '/' . $logo;
-
-        return '' !== $logo && is_file($path) && false !== @getimagesize($path) ? $path : null;
     }
 
     /**

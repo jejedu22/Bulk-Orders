@@ -154,10 +154,12 @@ class NewsletterSenderTest extends TestCase
             return 'newsletter_unsubscribe' === $route ? 'https://example.org/desinscription/'.$params['id'] : 'https://example.org/';
         });
         $twig = new Environment(new ArrayLoader([
-            'newsletter/email.html.twig' => '{% if logo_cid %}<img src="{{ logo_cid }}">{% endif %}<div style="border-color: {{ accent }}">{{ content|raw }}</div> <a href="{{ unsubscribe_url }}">Se désinscrire</a>',
+            'newsletter/email.html.twig' => '{% if brand.logo_cid %}<img src="{{ brand.logo_cid }}">{% endif %}<div style="border-color: {{ brand.accent }}">{{ content|raw }}</div> <a href="{{ unsubscribe_url }}">Se désinscrire</a>',
         ]));
 
-        return new NewsletterSender(new MailSender($mailer, $settings, new NullLogger()), $twig, $urlGenerator, new UriSigner('secret'), $mailjet, new NullLogger(), $settings, \dirname(__DIR__, 2).'/public/dist/img');
+        $mailSender = new MailSender($mailer, $settings, new NullLogger(), '', $twig, $urlGenerator, \dirname(__DIR__, 2).'/public/dist/img');
+
+        return new NewsletterSender($mailSender, $twig, $urlGenerator, new UriSigner('secret'), $mailjet, new NullLogger());
     }
 
     private function newsletter(): Newsletter

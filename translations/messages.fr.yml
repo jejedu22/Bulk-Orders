@@ -49,6 +49,7 @@ menu:
     all_command: Toutes les commandes
     synthesis: Synthèse
     recap: Récapitulatif
+    newsletter: Newsletters
     parameter:
       title: Paramètres
       config: Configuration

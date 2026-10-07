@@ -15,6 +15,7 @@ services:
       DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}?serverVersion=8.4.0&charset=utf8mb4
       MAILER_DSN: ${MAILER_DSN:-null://null}
       MAILER_FROM: ${MAILER_FROM:-}
+      NEWSLETTER_MAILER_DSN: ${NEWSLETTER_MAILER_DSN:-null://null}
       # Traefik est sur le réseau Docker "proxy"
       TRUSTED_PROXIES: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
       # TRUSTED_HOSTS est dérivé de APP_HOST au démarrage

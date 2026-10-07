@@ -116,6 +116,29 @@ configuration devient alors l'adresse de réponse.
 Un échec d'envoi n'interrompt pas la commande : l'utilisateur est averti et
 l'erreur apparaît dans `docker compose logs app`.
 
+### Newsletters (Mailjet)
+
+Les administrateurs rédigent et envoient les newsletters depuis le menu
+**Newsletters**. Elles partent par l'API Mailjet, configurée dans
+`.env.docker` :
+
+```
+NEWSLETTER_MAILER_DSN=mailjet+api://CLE_PUBLIQUE:CLE_PRIVEE@default
+```
+
+- les clés se trouvent dans Mailjet → Paramètres du compte → Gestion des
+  clés API ;
+- l'expéditeur (`MAILER_FROM`, sinon l'e-mail de contact) doit être une
+  adresse ou un domaine **validé dans Mailjet**, sinon Mailjet refuse l'envoi ;
+- le bouton « M'envoyer un test » envoie la newsletter à l'administrateur
+  connecté avant l'envoi à tous.
+
+Tous les utilisateurs sont abonnés par défaut. Chaque newsletter contient un
+lien de désinscription (et l'en-tête `List-Unsubscribe` pour le bouton
+« Se désabonner » des messageries). Un administrateur peut aussi modifier
+l'abonnement depuis la fiche de l'utilisateur. Les e-mails de commande ne
+sont pas concernés et passent toujours par `MAILER_DSN`.
+
 ## Migration depuis l'ancienne installation (Apache + MySQL 5.7)
 
 Deux règles :

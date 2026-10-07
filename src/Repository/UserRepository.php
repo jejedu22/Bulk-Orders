@@ -36,6 +36,21 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->flush();
     }
 
+    /**
+     * Destinataires des newsletters.
+     *
+     * @return User[]
+     */
+    public function findNewsletterSubscribers(): array
+    {
+        return $this->findBy(['newsletter' => true], ['nom' => 'ASC', 'prenom' => 'ASC']);
+    }
+
+    public function countNewsletterSubscribers(): int
+    {
+        return $this->count(['newsletter' => true]);
+    }
+
     // /**
     //  * @return User[] Returns an array of User objects
     //  */

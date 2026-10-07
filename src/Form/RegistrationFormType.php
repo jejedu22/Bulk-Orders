@@ -46,6 +46,10 @@ class RegistrationFormType extends AbstractType
             ->add('phone', TextType::class, [
                 'label' => 'registration.form.phone', 
             ])
+            ->add('newsletter', CheckboxType::class, [
+                'label' => 'Recevoir la newsletter',
+                'required' => false,
+            ])
         ;
     }
 

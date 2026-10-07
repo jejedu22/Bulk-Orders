@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier {{ newsletter.subject }}{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <a href="{{ path('newsletter_show', {'id': newsletter.id}) }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> {{ newsletter.subject }}</a>
+    <div class="page-head"><h1>Modifier la newsletter</h1></div>
+    <div class="panel form-panel overflow-visible">
+        <div class="panel-body">
+            {{ include('newsletter/_form.html.twig', {'cancel_url': path('newsletter_show', {'id': newsletter.id})}) }}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ include('newsletter/_editor.html.twig') }}
+{% endblock %}

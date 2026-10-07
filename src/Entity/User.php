@@ -56,6 +56,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Commande::class, mappedBy: 'user')]
     private $commandes;
 
+    // Abonné par défaut ; désinscription par le lien présent dans chaque newsletter
+    #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    private $newsletter = true;
+
     public function __construct()
     {
         $this->commandes = new ArrayCollection();
@@ -224,6 +228,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $commande->setUser(null);
             }
         }
+
+        return $this;
+    }
+
+    public function isNewsletter(): bool
+    {
+        return $this->newsletter;
+    }
+
+    public function setNewsletter(bool $newsletter): self
+    {
+        $this->newsletter = $newsletter;
 
         return $this;
     }

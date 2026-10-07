@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvelle newsletter{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <a href="{{ path('newsletter_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Newsletters</a>
+    <div class="page-head"><h1>Nouvelle newsletter</h1></div>
+    <div class="panel form-panel overflow-visible">
+        <div class="panel-body">
+            {{ include('newsletter/_form.html.twig', {'cancel_url': path('newsletter_index')}) }}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ include('newsletter/_editor.html.twig') }}
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ newsletter.subject }}{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <a href="{{ path('newsletter_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Newsletters</a>
+    <div class="page-head">
+        <div>
+            <h1>{{ newsletter.subject }}</h1>
+            <p class="subtitle">
+                {% if newsletter.sent %}
+                    Envoyée le {{ newsletter.sentAt|date('d/m/Y à H:i') }} à {{ newsletter.recipientCount }} destinataire{{ newsletter.recipientCount > 1 ? 's' }}{% if newsletter.failedCount %} · {{ newsletter.failedCount }} échec{{ newsletter.failedCount > 1 ? 's' }}{% endif %}
+                {% else %}
+                    Brouillon · {{ subscribers }} abonné{{ subscribers > 1 ? 's' }}
+                {% endif %}
+            </p>
+        </div>
+        <div class="actions">
+            {{ include('newsletter/_delete_form.html.twig') }}
+            {% if not newsletter.sent %}
+                <a href="{{ path('newsletter_edit', {'id': newsletter.id}) }}" class="btn btn-soft"><i class="fas fa-pen mr-1"></i> Modifier</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if not newsletter.sent %}
+    <div class="panel form-panel">
+        <div class="panel-body d-flex flex-wrap" style="gap: .5rem">
+            <form method="post" action="{{ path('newsletter_test', {'id': newsletter.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('test' ~ newsletter.id) }}">
+                <button class="btn btn-soft"><i class="fas fa-vial mr-1"></i> M'envoyer un test</button>
+            </form>
+            <form method="post" action="{{ path('newsletter_send', {'id': newsletter.id}) }}" data-confirm="Envoyer cette newsletter à {{ subscribers }} abonné{{ subscribers > 1 ? 's' }} ? L'envoi ne peut pas être annulé.">
+                <input type="hidden" name="_token" value="{{ csrf_token('send' ~ newsletter.id) }}">
+                <button class="btn btn-accent" {{ subscribers == 0 ? 'disabled' }}><i class="fas fa-paper-plane mr-1"></i> Envoyer à {{ subscribers }} abonné{{ subscribers > 1 ? 's' }}</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="panel form-panel">
+        <div class="panel-head"><h3>Aperçu</h3></div>
+        <div class="panel-body newsletter-preview">
+            {{ newsletter.content|raw }}
+        </div>
+    </div>
+</div>
+{% endblock %}

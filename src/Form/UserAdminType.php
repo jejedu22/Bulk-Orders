@@ -39,6 +39,10 @@ class UserAdminType extends AbstractType
             ->add('mail', EmailType::class, [
                 'label' => 'user.form.mail', 
             ])
+            ->add('newsletter', CheckboxType::class, [
+                'label' => 'Reçoit la newsletter',
+                'required' => false,
+            ])
             ->add('phone',TextType::class, [
                 'label' => 'user.form.phone', 
             ])

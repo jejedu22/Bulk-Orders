@@ -1,0 +1,9 @@
+{{ form_start(form) }}
+    {{ form_row(form.subject) }}
+    {{ form_row(form.content) }}
+    {{ form_rest(form) }}
+    <div class="form-actions">
+        <button class="btn btn-accent"><i class="fas fa-check mr-1"></i> {{ button_label|default('Enregistrer') }}</button>
+        <a href="{{ cancel_url }}" class="btn btn-soft">Annuler</a>
+    </div>
+{{ form_end(form) }}

@@ -1,0 +1,56 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Newsletters{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <div class="page-head">
+        <div>
+            <h1>Newsletters</h1>
+            <p class="subtitle">{{ subscribers }} abonné{{ subscribers > 1 ? 's' }} · envoi par Mailjet</p>
+        </div>
+        <div class="actions">
+            <a href="{{ path('newsletter_new') }}" class="btn btn-accent"><i class="fas fa-plus mr-1"></i> Nouvelle newsletter</a>
+        </div>
+    </div>
+
+    <div class="panel">
+        {% if newsletters is empty %}
+            <div class="empty-state">
+                <i class="fas fa-paper-plane"></i>
+                <h3>Aucune newsletter</h3>
+                <p>Rédigez une newsletter pour informer les adhérents des prochaines ventes.</p>
+                <a href="{{ path('newsletter_new') }}" class="btn btn-accent">Nouvelle newsletter</a>
+            </div>
+        {% else %}
+            <ul class="rows">
+            {% for newsletter in newsletters %}
+                <li>
+                    <a href="{{ path('newsletter_show', {'id': newsletter.id}) }}" class="row-item">
+                        <span class="avatar"><i class="fas {{ newsletter.sent ? 'fa-paper-plane' : 'fa-pen' }}"></i></span>
+                        <span class="row-main">
+                            <span class="row-title d-block">{{ newsletter.subject }}</span>
+                            <span class="row-meta">
+                                {% if newsletter.sent %}
+                                    <span>Envoyée le {{ newsletter.sentAt|date('d/m/Y à H:i') }}</span>
+                                    <span>{{ newsletter.recipientCount }} destinataire{{ newsletter.recipientCount > 1 ? 's' }}</span>
+                                {% else %}
+                                    <span>Créée le {{ newsletter.createdAt|date('d/m/Y') }}</span>
+                                {% endif %}
+                            </span>
+                        </span>
+                        {% if newsletter.sent %}
+                            <span class="pill pill-success"><i class="fas fa-check"></i> Envoyée</span>
+                        {% else %}
+                            <span class="pill pill-muted">Brouillon</span>
+                        {% endif %}
+                    </a>
+                </li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

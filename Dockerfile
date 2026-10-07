@@ -19,14 +19,16 @@ RUN composer dump-autoload --no-dev --classmap-authoritative --no-plugins --no-s
 # --- Image d'exécution -------------------------------------------------------
 FROM php:8.3-apache
 
-# Extensions : intl (formats de dates et de nombres), pdo_mysql, opcache.
+# Extensions : intl (formats de dates et de nombres), pdo_mysql, opcache,
+# gd (icônes PWA générées à partir du logo).
 # Les paquets -dev ne servent qu'à la compilation : seules les bibliothèques
 # utilisées par les extensions sont conservées (méthode des images officielles).
 RUN set -eux; \
     savedAptMark="$(apt-mark showmanual)"; \
     apt-get update; \
-    apt-get install -y --no-install-recommends libicu-dev; \
-    docker-php-ext-install -j"$(nproc)" intl pdo_mysql opcache; \
+    apt-get install -y --no-install-recommends libicu-dev libpng-dev libjpeg62-turbo-dev; \
+    docker-php-ext-configure gd --with-jpeg; \
+    docker-php-ext-install -j"$(nproc)" intl pdo_mysql opcache gd; \
     apt-mark auto '.*' > /dev/null; \
     apt-mark manual $savedAptMark; \
     find /usr/local/lib/php/extensions -name '*.so' -exec ldd '{}' ';' \
@@ -39,6 +41,7 @@ RUN set -eux; \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
     rm -rf /var/lib/apt/lists/*; \
     php -m | grep -q '^intl$'; \
+    php -m | grep -q '^gd$'; \
     a2enmod rewrite headers remoteip
 
 COPY docker/php/app.ini "$PHP_INI_DIR/conf.d/app.ini"

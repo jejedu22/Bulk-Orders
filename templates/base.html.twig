@@ -22,6 +22,12 @@
         <link rel="stylesheet" href="{{ asset('/dist/css/style.css') }}">
         <link rel="stylesheet" href="{{ asset('/dist/css/app.css') }}">
         <style>:root { --accent: {{ theme_colors[theme_color] ?? theme_colors['green'] }}; }</style>
+        <link rel="manifest" href="{{ path('pwa_manifest') }}">
+        <meta name="theme-color" content="{{ theme_colors[theme_color] ?? theme_colors['green'] }}">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-title" content="{{ options_settings.get('name') }}">
+        <link rel="apple-touch-icon" href="{{ options_settings.get('logo') ? path('pwa_icon', {size: 180, purpose: 'any'}) : asset('pwa/apple-touch-icon.png') }}">
         <link rel="shortcut icon" href="{{ asset('uploads/logo/' ~ options_settings.get('logo')) }}">
         {% block stylesheets %}
         {% endblock %}
@@ -236,6 +242,13 @@
         <!-- AdminLTE App -->
         <script src="{{ asset('/dist/js/adminlte.min.js') }}"></script>
         <script src="{{ asset('/dist/js/app.js') }}"></script>
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                });
+            }
+        </script>
         {% block javascripts %}
         {% endblock %}
 

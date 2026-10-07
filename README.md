@@ -166,6 +166,14 @@ lien de désinscription (et l'en-tête `List-Unsubscribe` pour le bouton
 l'abonnement depuis la fiche de l'utilisateur. Les e-mails de commande ne
 sont pas concernés et passent toujours par `MAILER_DSN`.
 
+### Export des utilisateurs
+
+Le bouton « Exporter (Excel) » de la page Utilisateurs télécharge un fichier
+`.xlsx` : nom, prénom, e-mail, téléphone, rôle, abonnement à la newsletter,
+groupes, nombre de commandes et date de la dernière commande (en-tête figé,
+filtres, mise en page A4 paysage). L'extension PHP `zip` est requise (incluse
+dans l'image Docker).
+
 ## Migration depuis l'ancienne installation (Apache + MySQL 5.7)
 
 Deux règles :

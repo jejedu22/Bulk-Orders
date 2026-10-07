@@ -20,15 +20,15 @@ RUN composer dump-autoload --no-dev --classmap-authoritative --no-plugins --no-s
 FROM php:8.3-apache
 
 # Extensions : intl (formats de dates et de nombres), pdo_mysql, opcache,
-# gd (icônes PWA générées à partir du logo).
+# gd (icônes PWA générées à partir du logo), zip (exports Excel).
 # Les paquets -dev ne servent qu'à la compilation : seules les bibliothèques
 # utilisées par les extensions sont conservées (méthode des images officielles).
 RUN set -eux; \
     savedAptMark="$(apt-mark showmanual)"; \
     apt-get update; \
-    apt-get install -y --no-install-recommends libicu-dev libpng-dev libjpeg62-turbo-dev; \
+    apt-get install -y --no-install-recommends libicu-dev libpng-dev libjpeg62-turbo-dev libzip-dev; \
     docker-php-ext-configure gd --with-jpeg; \
-    docker-php-ext-install -j"$(nproc)" intl pdo_mysql opcache gd; \
+    docker-php-ext-install -j"$(nproc)" intl pdo_mysql opcache gd zip; \
     apt-mark auto '.*' > /dev/null; \
     apt-mark manual $savedAptMark; \
     find /usr/local/lib/php/extensions -name '*.so' -exec ldd '{}' ';' \
@@ -42,6 +42,7 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*; \
     php -m | grep -q '^intl$'; \
     php -m | grep -q '^gd$'; \
+    php -m | grep -q '^zip$'; \
     a2enmod rewrite headers remoteip
 
 COPY docker/php/app.ini "$PHP_INI_DIR/conf.d/app.ini"

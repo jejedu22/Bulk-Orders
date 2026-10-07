@@ -11,6 +11,7 @@
         "doctrine/doctrine-migrations-bundle": "^3.4",
         "doctrine/orm": "^3.3",
         "ninsuo/symfony-collection": "dev-master",
+        "openspout/openspout": "^4.28",
         "symfony/apache-pack": "^1.0",
         "symfony/asset": "7.4.*",
         "symfony/console": "7.4.*",

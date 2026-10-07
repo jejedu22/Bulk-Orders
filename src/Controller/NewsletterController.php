@@ -11,6 +11,8 @@ use App\Service\Mailjet;
 use App\Service\NewsletterSender;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\UriSigner;
@@ -18,6 +20,8 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class NewsletterController extends AbstractController
 {
+    private const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
     private $entityManager;
 
     public function __construct(EntityManagerInterface $entityManager)
@@ -55,12 +59,57 @@ class NewsletterController extends AbstractController
         ]);
     }
 
+    /**
+     * Images insérées dans l'éditeur (Jodit), enregistrées dans public/uploads/newsletter.
+     * Réponse au format attendu par l'uploader de Jodit.
+     */
+    #[Route('/newsletter/upload', name: 'newsletter_upload', methods: ['POST'])]
+    public function upload(Request $request): JsonResponse
+    {
+        $error = function (string $message, int $status = 400) {
+            return new JsonResponse(['success' => false, 'data' => ['messages' => [$message], 'files' => []]], $status);
+        };
+        if (!$this->isCsrfTokenValid('newsletter_upload', $request->request->get('_token'))) {
+            return $error('Jeton de sécurité invalide, rechargez la page.', 403);
+        }
+
+        $allowed = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/gif' => 'gif', 'image/webp' => 'webp'];
+        $directory = $this->getParameter('newsletter_upload_directory');
+        $files = [];
+        foreach ($request->files->all('files') as $file) {
+            if (!$file instanceof UploadedFile || !$file->isValid()) {
+                return $error('L\'image n\'a pas pu être envoyée.');
+            }
+            // Type déterminé par le contenu du fichier, pas par son nom
+            $extension = $allowed[$file->getMimeType()] ?? null;
+            if (null === $extension) {
+                return $error('Format non accepté : PNG, JPEG, GIF ou WebP uniquement.');
+            }
+            if ($file->getSize() > self::MAX_IMAGE_SIZE) {
+                return $error('Image trop lourde (5 Mo maximum).');
+            }
+            $name = bin2hex(random_bytes(12)) . '.' . $extension;
+            $file->move($directory, $name);
+            $files[] = $name;
+        }
+        if (!$files) {
+            return $error('Aucune image reçue.');
+        }
+
+        return new JsonResponse(['success' => true, 'data' => [
+            'files' => $files,
+            'baseurl' => $request->getBasePath() . '/uploads/newsletter/',
+            'isImages' => array_fill(0, \count($files), true),
+            'messages' => [],
+        ]]);
+    }
+
     #[Route('/newsletter/{id}', name: 'newsletter_show', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function show(Newsletter $newsletter, UserRepository $userRepository): Response
     {
         return $this->render('newsletter/show.html.twig', [
             'newsletter' => $newsletter,
-            'subscribers' => $userRepository->countNewsletterSubscribers($newsletter->getGroups()),
+            'subscribers' => $userRepository->countNewsletterRecipients($newsletter),
         ]);
     }
 
@@ -116,11 +165,11 @@ class NewsletterController extends AbstractController
             return $this->redirectToRoute('newsletter_show', ['id' => $newsletter->getId()]);
         }
 
-        $recipients = $userRepository->findNewsletterSubscribers($newsletter->getGroups());
+        $recipients = $userRepository->findNewsletterRecipients($newsletter);
         if (!$recipients) {
-            $this->addFlash('warning', $newsletter->getGroups()->isEmpty()
+            $this->addFlash('warning', $newsletter->getGroups()->isEmpty() && null === $newsletter->getJourDistrib()
                 ? 'Aucun utilisateur n\'est abonné à la newsletter.'
-                : 'Aucun abonné dans les groupes destinataires.');
+                : 'Aucun abonné parmi les destinataires choisis.');
 
             return $this->redirectToRoute('newsletter_show', ['id' => $newsletter->getId()]);
         }

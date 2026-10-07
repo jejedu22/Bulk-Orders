@@ -184,7 +184,7 @@ class NewsletterGroupTest extends WebTestCase
         $this->assertEmailCount(0);
         $this->assertFalse($this->reload(Newsletter::class, $newsletter->getId())->isSent());
         $this->client->followRedirect();
-        $this->assertSelectorTextContains('.flash', 'Aucun abonné dans les groupes destinataires');
+        $this->assertSelectorTextContains('.flash', 'Aucun abonné parmi les destinataires choisis');
     }
 
     public function testCannotDeleteGroupTargetedByDraft(): void

@@ -143,6 +143,18 @@ coché, une newsletter part à tous les abonnés ; sinon aux abonnés membres
 d'au moins un des groupes (une seule fois chacun). Un groupe destinataire
 d'une newsletter non envoyée ne peut pas être supprimé.
 
+Une newsletter peut aussi être réservée aux **clients d'une vente** (champ
+« Clients d'une vente ») : seuls les abonnés qui ont commandé sur cette vente
+la reçoivent, en plus du filtre par groupes s'il y en a. Une vente visée par
+une newsletter non envoyée ne peut pas être supprimée.
+
+Le contenu se rédige avec l'éditeur **Jodit** (licence MIT, fichiers dans
+`public/plugins/jodit`) : styles, polices, couleurs, tableaux, liens,
+vidéos, code HTML. Les images insérées sont enregistrées dans
+`public/uploads/newsletter` (PNG, JPEG, GIF ou WebP, 5 Mo maximum). Chaque
+e-mail affiche en en-tête le logo de la configuration (joint à l'e-mail) sur
+la couleur du thème.
+
 Tous les utilisateurs sont abonnés par défaut. Chaque newsletter contient un
 lien de désinscription (et l'en-tête `List-Unsubscribe` pour le bouton
 « Se désabonner » des messageries). Un administrateur peut aussi modifier

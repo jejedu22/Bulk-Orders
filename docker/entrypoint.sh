@@ -17,7 +17,7 @@ console() {
 
 if [ "$1" = "apache2-foreground" ]; then
     # Les volumes montés peuvent appartenir à root
-    mkdir -p var/cache var/log var/sessions public/uploads/logo
+    mkdir -p var/cache var/log var/sessions public/uploads/logo public/uploads/newsletter
     chown -R www-data:www-data var public/uploads
 
     if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then

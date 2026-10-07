@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\JourDistrib;
 use App\Form\JourDistribType;
+use App\Repository\NewsletterRepository;
 use App\Repository\JourDistribRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -71,9 +72,20 @@ class JourDistribController extends AbstractController
     }
 
     #[Route('/{id}', name: 'jour_distrib_delete', methods: ['DELETE'])]
-    public function delete(Request $request, JourDistrib $jourDistrib): Response
+    public function delete(Request $request, JourDistrib $jourDistrib, NewsletterRepository $newsletterRepository): Response
     {
         if ($this->isCsrfTokenValid('delete'.$jourDistrib->getId(), $request->request->get('_token'))) {
+            // Un brouillon réservé aux clients de cette vente partirait sinon à tous les abonnés
+            $drafts = $newsletterRepository->findDraftsTargetingSale($jourDistrib);
+            if ($drafts) {
+                $this->addFlash('danger', sprintf(
+                    'Des newsletters non envoyées sont réservées aux clients de cette vente (%s) : modifiez-les avant de supprimer la vente.',
+                    implode(', ', array_map(function ($newsletter) { return '« ' . htmlspecialchars($newsletter->getSubject()) . ' »'; }, $drafts))
+                ));
+
+                return $this->redirectToRoute('jour_distrib_index');
+            }
+
             $entityManager = $this->entityManager;
             $entityManager->remove($jourDistrib);
             $entityManager->flush();

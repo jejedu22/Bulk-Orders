@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\JourDistrib;
 use App\Entity\Newsletter;
 use App\Entity\NewsletterGroup;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -48,5 +49,15 @@ class NewsletterRepository extends ServiceEntityRepository
             ->setParameter('group', $group)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Brouillons réservés aux clients de cette vente.
+     *
+     * @return Newsletter[]
+     */
+    public function findDraftsTargetingSale(JourDistrib $jourDistrib): array
+    {
+        return $this->findBy(['jourDistrib' => $jourDistrib, 'sentAt' => null]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Controller\PwaController;
 use App\Entity\Newsletter;
 use App\Entity\User;
 use Psr\Log\LoggerInterface;
@@ -27,9 +28,13 @@ class NewsletterSender
     private $uriSigner;
     private $mailjet;
     private $logger;
+    private $settings;
+    private $logoDirectory;
 
-    public function __construct(MailSender $mailSender, Environment $twig, UrlGeneratorInterface $urlGenerator, UriSigner $uriSigner, Mailjet $mailjet, LoggerInterface $logger)
+    public function __construct(MailSender $mailSender, Environment $twig, UrlGeneratorInterface $urlGenerator, UriSigner $uriSigner, Mailjet $mailjet, LoggerInterface $logger, OptionsSettings $settings, string $logoDirectory)
     {
+        $this->settings = $settings;
+        $this->logoDirectory = $logoDirectory;
         $this->mailSender = $mailSender;
         $this->twig = $twig;
         $this->urlGenerator = $urlGenerator;
@@ -75,13 +80,23 @@ class NewsletterSender
         }
 
         $unsubscribeUrl = $this->unsubscribeUrl($user);
+        // Logo des paramètres joint à l'e-mail (affiché même si la messagerie bloque les images distantes)
+        $logoCid = null;
+        $logo = $this->logoPath();
+        if (null !== $logo) {
+            $email->embedFromPath($logo, 'logo');
+            $logoCid = 'cid:logo';
+        }
         $email
             ->to($user->getMail())
             ->subject($newsletter->getSubject())
             ->html($this->twig->render('newsletter/email.html.twig', [
                 'newsletter' => $newsletter,
+                'content' => $this->absoluteUrls((string) $newsletter->getContent()),
                 'user' => $user,
                 'unsubscribe_url' => $unsubscribeUrl,
+                'logo_cid' => $logoCid,
+                'accent' => PwaController::COLORS[$this->settings->get('color')] ?? PwaController::COLORS['green'],
             ]));
         $email->getHeaders()
             ->addTextHeader('List-Unsubscribe', '<' . $unsubscribeUrl . '>')
@@ -108,6 +123,26 @@ class NewsletterSender
 
             return false;
         }
+    }
+
+    private function logoPath(): ?string
+    {
+        $logo = basename($this->settings->get('logo'));
+        $path = $this->logoDirectory . '/' . $logo;
+
+        return '' !== $logo && is_file($path) && false !== @getimagesize($path) ? $path : null;
+    }
+
+    /**
+     * Les images et liens de l'éditeur sont relatifs au site (« /uploads/… ») :
+     * dans un e-mail, ils doivent être absolus.
+     */
+    public function absoluteUrls(string $html): string
+    {
+        $parts = parse_url($this->urlGenerator->generate('passe_commande_index', [], UrlGeneratorInterface::ABSOLUTE_URL));
+        $origin = $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
+
+        return preg_replace('#\b(src|href)=(["\'])/(?!/)#i', '$1=$2' . $origin . '/', $html);
     }
 
     /**

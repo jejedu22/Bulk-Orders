@@ -80,6 +80,47 @@ class NewsletterSenderTest extends TestCase
         $this->assertSame(1, $failed);
     }
 
+    public function testLogoIsEmbeddedAndColorUsed(): void
+    {
+        $sent = [];
+        $mailer = $this->createMock(MailerInterface::class);
+        $mailer->method('send')->willReturnCallback(function (Email $email) use (&$sent) {
+            $sent[] = $email;
+        });
+
+        $this->newsletterSender($mailer, null, 'lapallogo.png')->send($this->newsletter(), [$this->user(1, 'a@example.com')]);
+
+        $email = $sent[0];
+        $this->assertStringContainsString('<img src="cid:', $email->getHtmlBody());
+        $this->assertStringContainsString('#007bff', $email->getHtmlBody());
+        $this->assertCount(1, $email->getAttachments());
+        $this->assertSame('logo', $email->getAttachments()[0]->getFilename());
+        $this->assertSame('inline', $email->getAttachments()[0]->getDisposition());
+    }
+
+    public function testMissingLogoIsSkipped(): void
+    {
+        $sent = [];
+        $mailer = $this->createMock(MailerInterface::class);
+        $mailer->method('send')->willReturnCallback(function (Email $email) use (&$sent) {
+            $sent[] = $email;
+        });
+
+        $this->newsletterSender($mailer, null, 'inexistant.png')->send($this->newsletter(), [$this->user(1, 'a@example.com')]);
+
+        $this->assertStringNotContainsString('<img', $sent[0]->getHtmlBody());
+        $this->assertCount(0, $sent[0]->getAttachments());
+    }
+
+    public function testRelativeUrlsBecomeAbsolute(): void
+    {
+        $html = $this->newsletterSender($this->createMock(MailerInterface::class))->absoluteUrls(
+            '<img src="/uploads/newsletter/a.png"><a href=\'/commande\'>x</a><a href="https://autre.org/b">y</a><img src="//cdn.org/c.png">'
+        );
+
+        $this->assertSame('<img src="https://example.org/uploads/newsletter/a.png"><a href=\'https://example.org/commande\'>x</a><a href="https://autre.org/b">y</a><img src="//cdn.org/c.png">', $html);
+    }
+
     public function testCountsFailures(): void
     {
         $mailer = $this->createMock(MailerInterface::class);
@@ -90,7 +131,7 @@ class NewsletterSenderTest extends TestCase
         $this->assertSame(1, $failed);
     }
 
-    private function newsletterSender(MailerInterface $mailer, ?Mailjet $mailjet = null): NewsletterSender
+    private function newsletterSender(MailerInterface $mailer, ?Mailjet $mailjet = null, string $logo = ''): NewsletterSender
     {
         if (null === $mailjet) {
             $mailjet = $this->createMock(Mailjet::class);
@@ -100,16 +141,18 @@ class NewsletterSenderTest extends TestCase
         $settings->method('get')->willReturnMap([
             ['contact_email', '', 'contact@example.com'],
             ['name', '', 'Groupement'],
+            ['color', '', 'blue'],
+            ['logo', '', $logo],
         ]);
         $urlGenerator = $this->createMock(UrlGeneratorInterface::class);
         $urlGenerator->method('generate')->willReturnCallback(function (string $route, array $params) {
-            return 'https://example.org/desinscription/'.$params['id'];
+            return 'newsletter_unsubscribe' === $route ? 'https://example.org/desinscription/'.$params['id'] : 'https://example.org/';
         });
         $twig = new Environment(new ArrayLoader([
-            'newsletter/email.html.twig' => '{{ newsletter.content|raw }} <a href="{{ unsubscribe_url }}">Se désinscrire</a>',
+            'newsletter/email.html.twig' => '{% if logo_cid %}<img src="{{ logo_cid }}">{% endif %}<div style="border-color: {{ accent }}">{{ content|raw }}</div> <a href="{{ unsubscribe_url }}">Se désinscrire</a>',
         ]));
 
-        return new NewsletterSender(new MailSender($mailer, $settings, new NullLogger()), $twig, $urlGenerator, new UriSigner('secret'), $mailjet, new NullLogger());
+        return new NewsletterSender(new MailSender($mailer, $settings, new NullLogger()), $twig, $urlGenerator, new UriSigner('secret'), $mailjet, new NullLogger(), $settings, \dirname(__DIR__, 2).'/public/dist/img');
     }
 
     private function newsletter(): Newsletter

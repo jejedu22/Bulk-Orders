@@ -24,7 +24,7 @@
         <ul class="rows">
             <li class="row-item"><i class="fas fa-envelope text-muted fa-fw"></i><span class="row-main"><a href="mailto:{{ user.mail }}">{{ user.mail }}</a></span></li>
             <li class="row-item"><i class="fas fa-phone-alt text-muted fa-fw"></i><span class="row-main">{% if user.phone %}<a href="tel:{{ user.phone }}">{{ user.phone }}</a>{% else %}<span class="text-muted">Non renseigné</span>{% endif %}</span></li>
-            <li class="row-item"><i class="fas fa-paper-plane text-muted fa-fw"></i><span class="row-main">{{ user.newsletter ? 'Abonné·e à la newsletter' : 'Désinscrit·e de la newsletter' }}</span></li>
+            <li class="row-item"><i class="fas fa-paper-plane text-muted fa-fw"></i><span class="row-main">{{ user.newsletter ? 'Abonné·e à la newsletter' : 'Désinscrit·e de la newsletter' }}{% if user.newsletterGroups is not empty %} · {{ user.newsletterGroups|map(g => g.name)|join(', ') }}{% endif %}</span></li>
         </ul>
     </div>
 </div>

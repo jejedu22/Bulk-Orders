@@ -59,7 +59,7 @@ COPY . .
 
 # Préchauffage du cache prod. Les %env()% sont résolus à l'exécution :
 # des valeurs factices suffisent ici.
-RUN mkdir -p var/cache var/log var/sessions public/uploads/logo \
+RUN mkdir -p var/cache var/log var/sessions public/uploads/logo public/uploads/newsletter \
     && chown -R www-data:www-data var public/uploads \
     && su -s /bin/sh www-data -c "APP_SECRET=build MAILER_DSN=null://null \
         DATABASE_URL='mysql://build:build@127.0.0.1:3306/build?serverVersion=8.4.0' \

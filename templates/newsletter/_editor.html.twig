@@ -1,20 +1,35 @@
-{# Éditeur de texte riche (Summernote) pour le contenu de la newsletter #}
-<link rel="stylesheet" href="{{ asset('/plugins/summernote/summernote-bs4.min.css') }}">
-<script src="{{ asset('/plugins/summernote/summernote-bs4.min.js') }}"></script>
-<script src="{{ asset('/plugins/summernote/lang/summernote-fr-FR.min.js') }}"></script>
+{# Éditeur avancé (Jodit, licence MIT) pour le contenu de la newsletter #}
+<link rel="stylesheet" href="{{ asset('/plugins/jodit/jodit.min.css') }}">
+<script src="{{ asset('/plugins/jodit/jodit.min.js') }}"></script>
 <script>
-    $(function () {
-        $('textarea.summernote').summernote({
-            lang: 'fr-FR',
-            height: 320,
-            toolbar: [
-                ['style', ['style']],
-                ['font', ['bold', 'italic', 'underline', 'clear']],
-                ['color', ['color']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['insert', ['link', 'picture', 'hr']],
-                ['view', ['codeview']]
-            ]
+    document.querySelectorAll('textarea.newsletter-editor').forEach(function (textarea) {
+        Jodit.make(textarea, {
+            language: 'fr',
+            height: 520,
+            minHeight: 320,
+            // Barre complète à toutes les largeurs (sinon image et tableau sont masqués dans « ⋮ »)
+            toolbarAdaptive: false,
+            toolbarSticky: true,
+            askBeforePasteHTML: false,
+            askBeforePasteFromWord: false,
+            defaultActionOnPaste: 'insert_clear_html',
+            buttons: [
+                'undo', 'redo', '|',
+                'paragraph', 'font', 'fontsize', '|',
+                'bold', 'italic', 'underline', 'strikethrough', 'eraser', '|',
+                'brush', '|',
+                'ul', 'ol', 'indent', 'outdent', 'align', '|',
+                'image', 'table', 'link', 'video', 'hr', 'symbols', '|',
+                'source', 'preview', 'fullsize'
+            ],
+            uploader: {
+                url: {{ path('newsletter_upload')|json_encode|raw }},
+                data: { _token: {{ csrf_token('newsletter_upload')|json_encode|raw }} },
+                imagesExtensions: ['jpg', 'jpeg', 'png', 'gif', 'webp']
+            },
+            image: { editSrc: true, editLink: true, editSize: true, editAlign: true },
+            // Les messageries ignorent les feuilles de style : styles en ligne uniquement
+            cleanHTML: { fillEmptyParagraph: false }
         });
     });
 </script>

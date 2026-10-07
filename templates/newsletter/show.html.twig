@@ -17,6 +17,16 @@
                     Brouillon · {{ subscribers }} abonné{{ subscribers > 1 ? 's' }}
                 {% endif %}
             </p>
+            <p class="mb-0">
+                {% for group in newsletter.groups %}
+                    <span class="pill pill-info"><i class="fas fa-users"></i> {{ group.name }}</span>
+                {% else %}
+                    {% if not newsletter.jourDistrib %}<span class="pill pill-muted"><i class="fas fa-users"></i> Tous les abonnés</span>{% endif %}
+                {% endfor %}
+                {% if newsletter.jourDistrib %}
+                    <span class="pill pill-warning"><i class="fas fa-shopping-basket"></i> Clients de la vente du {{ newsletter.jourDistrib.date|date('d/m/Y') }}</span>
+                {% endif %}
+            </p>
         </div>
         <div class="actions">
             {{ include('newsletter/_delete_form.html.twig') }}

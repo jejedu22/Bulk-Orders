@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Groupes de newsletter{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <a href="{{ path('newsletter_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Newsletters</a>
+    <div class="page-head">
+        <div>
+            <h1>Groupes</h1>
+            <p class="subtitle">Ils permettent d'envoyer une newsletter à une partie des abonnés.</p>
+        </div>
+        <div class="actions">
+            <a href="{{ path('newsletter_group_new') }}" class="btn btn-accent"><i class="fas fa-plus mr-1"></i> Nouveau groupe</a>
+        </div>
+    </div>
+
+    <div class="panel">
+        {% if groups is empty %}
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h3>Aucun groupe</h3>
+                <p>Créez des groupes (bureau, quartier, producteurs…) et choisissez-les comme destinataires d'une newsletter.</p>
+                <a href="{{ path('newsletter_group_new') }}" class="btn btn-accent">Nouveau groupe</a>
+            </div>
+        {% else %}
+            <ul class="rows">
+            {% for group in groups %}
+                <li>
+                    <a href="{{ path('newsletter_group_edit', {'id': group.id}) }}" class="row-item">
+                        <span class="avatar"><i class="fas fa-users"></i></span>
+                        <span class="row-main">
+                            <span class="row-title d-block">{{ group.name }}</span>
+                            <span class="row-meta">
+                                <span>{{ group.users|length }} membre{{ group.users|length > 1 ? 's' }}</span>
+                                <span>{{ subscribers[group.id] }} abonné{{ subscribers[group.id] > 1 ? 's' }}</span>
+                            </span>
+                        </span>
+                    </a>
+                </li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -2,7 +2,10 @@
 
 namespace App\Form;
 
+use App\Entity\NewsletterGroup;
 use App\Entity\User;
+use Doctrine\ORM\EntityRepository;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
@@ -42,6 +45,18 @@ class UserAdminType extends AbstractType
             ->add('newsletter', CheckboxType::class, [
                 'label' => 'Reçoit la newsletter',
                 'required' => false,
+            ])
+            ->add('newsletterGroups', EntityType::class, [
+                'label' => 'Groupes de newsletter',
+                'class' => NewsletterGroup::class,
+                'multiple' => true,
+                'expanded' => true,
+                'required' => false,
+                'by_reference' => false,
+                'query_builder' => function (EntityRepository $repository) {
+                    return $repository->createQueryBuilder('g')->orderBy('g.name', 'ASC');
+                },
+                'choice_label' => 'name',
             ])
             ->add('phone',TextType::class, [
                 'label' => 'user.form.phone', 

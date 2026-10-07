@@ -2,7 +2,9 @@
 
 namespace App\Repository;
 
+use App\Entity\JourDistrib;
 use App\Entity\Newsletter;
+use App\Entity\NewsletterGroup;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -31,5 +33,31 @@ class NewsletterRepository extends ServiceEntityRepository
             ->addOrderBy('n.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Brouillons qui ciblent ce groupe.
+     *
+     * @return Newsletter[]
+     */
+    public function findDraftsTargeting(NewsletterGroup $group): array
+    {
+        return $this->createQueryBuilder('n')
+            ->join('n.groups', 'g')
+            ->where('g = :group')
+            ->andWhere('n.sentAt IS NULL')
+            ->setParameter('group', $group)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Brouillons réservés aux clients de cette vente.
+     *
+     * @return Newsletter[]
+     */
+    public function findDraftsTargetingSale(JourDistrib $jourDistrib): array
+    {
+        return $this->findBy(['jourDistrib' => $jourDistrib, 'sentAt' => null]);
     }
 }

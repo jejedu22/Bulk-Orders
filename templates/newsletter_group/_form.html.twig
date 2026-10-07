@@ -1,0 +1,9 @@
+{{ form_start(form) }}
+    {{ form_row(form.name) }}
+    {{ form_row(form.users) }}
+    {{ form_rest(form) }}
+    <div class="form-actions">
+        <button class="btn btn-accent"><i class="fas fa-check mr-1"></i> {{ button_label|default('Enregistrer') }}</button>
+        <a href="{{ path('newsletter_group_index') }}" class="btn btn-soft">Annuler</a>
+    </div>
+{{ form_end(form) }}

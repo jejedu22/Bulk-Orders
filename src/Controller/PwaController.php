@@ -11,7 +11,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class PwaController extends AbstractController
 {
-    private const COLORS = [
+    public const COLORS = [
         'blue' => '#007bff', 'cyan' => '#17a2b8', 'gray' => '#6c757d', 'gray-dark' => '#343a40',
         'indigo' => '#6610f2', 'yellow' => '#e0a800', 'orange' => '#fd7e14', 'pink' => '#e83e8c',
         'red' => '#dc3545', 'teal' => '#20c997', 'green' => '#28a745', 'purple' => '#6f42c1',

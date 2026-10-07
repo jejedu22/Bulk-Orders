@@ -9,6 +9,7 @@ parameters:
     # Envoi des newsletters (Mailjet) ; null://null = aucun envoi
     env(NEWSLETTER_MAILER_DSN): 'null://null'
     logo_directory: '%kernel.project_dir%/public/uploads/logo'
+    newsletter_upload_directory: '%kernel.project_dir%/public/uploads/newsletter'
     mailer_from: '%env(MAILER_FROM)%'
 services:
     # default configuration for services in *this* file
@@ -27,6 +28,10 @@ services:
     App\Service\MailSender:
         arguments:
             $mailerFrom: '%env(MAILER_FROM)%'
+
+    App\Service\NewsletterSender:
+        arguments:
+            $logoDirectory: '%logo_directory%'
 
     App\Controller\:
         resource: '../src/Controller'

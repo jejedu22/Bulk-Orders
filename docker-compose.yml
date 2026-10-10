@@ -33,7 +33,7 @@ services:
       - traefik.http.routers.bulk-orders.rule=Host(`${APP_HOST}`)
       - traefik.http.routers.bulk-orders.entrypoints=websecure
       - traefik.http.routers.bulk-orders.tls.certresolver=letsencrypt
-      - traefik.http.routers.bulk-orders.middlewares=default@file
+      - traefik.http.routers.bulk-orders.middlewares=custom-errors@docker,default@file
       - traefik.http.services.bulk-orders.loadbalancer.server.port=80
 
   db:

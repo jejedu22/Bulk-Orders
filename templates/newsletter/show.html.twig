@@ -55,8 +55,33 @@
         <div class="panel-head"><h3>Aperçu</h3></div>
         <div class="panel-body newsletter-preview">
             {{ newsletter.content|raw }}
+            {% if newsletter.orderButton %}
+                {{ include('newsletter/_order_button.html.twig', {'url': order_url, 'color': 'var(--accent)'}) }}
+            {% endif %}
         </div>
     </div>
+
+    {% if newsletter.attachments is not empty %}
+    <div class="panel form-panel">
+        <div class="panel-head">
+            <h3><i class="fas fa-paperclip mr-1"></i> Pièces jointes</h3>
+            <span class="meta">{{ newsletter.attachments|length }}</span>
+        </div>
+        <ul class="rows">
+        {% for attachment in newsletter.attachments %}
+            <li>
+                <a href="{{ path('newsletter_attachment', {'id': attachment.id}) }}" class="row-item">
+                    <i class="fas fa-file-download fa-fw text-muted"></i>
+                    <span class="row-main">
+                        <span class="row-title d-block">{{ attachment.originalName }}</span>
+                        <span class="row-meta">{{ attachment.size >= 1048576 ? (attachment.size / 1048576)|number_format(1, ',', ' ') ~ ' Mo' : max(1, (attachment.size / 1024)|round) ~ ' Ko' }}</span>
+                    </span>
+                </a>
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
 
     {% if deliveries is not empty %}
     <div class="panel form-panel">

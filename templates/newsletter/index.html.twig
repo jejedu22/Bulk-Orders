@@ -42,6 +42,9 @@
                             <span class="row-title d-block">{{ newsletter.subject }}</span>
                             <span class="row-meta">
                                 <span><i class="fas fa-users"></i> {{ newsletter.groups is empty ? (newsletter.jourDistrib ? 'Abonnés' : 'Tous les abonnés') : newsletter.groups|map(g => g.name)|join(', ') }}{% if newsletter.jourDistrib %} · clients de la vente du {{ newsletter.jourDistrib.date|date('d/m/Y') }}{% endif %}</span>
+                                {% if newsletter.attachments is not empty %}
+                                    <span><i class="fas fa-paperclip"></i> {{ newsletter.attachments|length }} pièce{{ newsletter.attachments|length > 1 ? 's' }} jointe{{ newsletter.attachments|length > 1 ? 's' }}</span>
+                                {% endif %}
                                 {% if newsletter.sent %}
                                     <span>Envoyée le {{ newsletter.sentAt|date('d/m/Y à H:i') }}</span>
                                     <span>{{ newsletter.recipientCount }} destinataire{{ newsletter.recipientCount > 1 ? 's' }}</span>

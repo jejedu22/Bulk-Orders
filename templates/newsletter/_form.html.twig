@@ -11,6 +11,11 @@
     {% endif %}
     {{ form_row(form.jourDistrib) }}
     {{ form_row(form.content) }}
+    {{ form_row(form.orderButton) }}
+    {% if form.removedAttachments is defined %}
+        {{ form_row(form.removedAttachments) }}
+    {% endif %}
+    {{ form_row(form.newAttachments) }}
     {{ form_rest(form) }}
     <div class="form-actions">
         <button class="btn btn-accent"><i class="fas fa-check mr-1"></i> {{ button_label|default('Enregistrer') }}</button>

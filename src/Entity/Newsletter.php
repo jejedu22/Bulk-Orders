@@ -51,11 +51,57 @@ class Newsletter
     #[ORM\JoinColumn(onDelete: 'SET NULL')]
     private $jourDistrib;
 
+    // Pièces jointes : supprimées avec la newsletter (ou retirées une à une)
+    #[ORM\OneToMany(targetEntity: NewsletterAttachment::class, mappedBy: 'newsletter', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['id' => 'ASC'])]
+    private $attachments;
+
+    // Bouton « Commander » vers le site à la fin de l'e-mail
+    #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    private $orderButton = true;
+
     public function __construct()
     {
+        $this->attachments = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->groups = new ArrayCollection();
         $this->deliveries = new ArrayCollection();
+    }
+
+    /**
+     * @return Collection|NewsletterAttachment[]
+     */
+    public function getAttachments(): Collection
+    {
+        return $this->attachments;
+    }
+
+    public function addAttachment(NewsletterAttachment $attachment): self
+    {
+        if (!$this->attachments->contains($attachment)) {
+            $this->attachments[] = $attachment;
+        }
+
+        return $this;
+    }
+
+    public function removeAttachment(NewsletterAttachment $attachment): self
+    {
+        $this->attachments->removeElement($attachment);
+
+        return $this;
+    }
+
+    public function hasOrderButton(): bool
+    {
+        return (bool) $this->orderButton;
+    }
+
+    public function setOrderButton(bool $orderButton): self
+    {
+        $this->orderButton = $orderButton;
+
+        return $this;
     }
 
     public function getJourDistrib(): ?JourDistrib

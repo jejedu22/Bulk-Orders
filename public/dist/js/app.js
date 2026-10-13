@@ -77,6 +77,16 @@
         picker.querySelectorAll('[data-value]').forEach(function (o) { o.classList.toggle('active', o === option); });
     });
 
+    // Champ fichier : affiche les noms des fichiers choisis
+    document.addEventListener('change', function (e) {
+        var input = e.target;
+        if (!input.matches || !input.matches('.custom-file-input') || !input.files) { return; }
+        var label = input.parentNode.querySelector('.custom-file-label');
+        if (!label) { return; }
+        var names = Array.prototype.map.call(input.files, function (f) { return f.name; });
+        if (names.length) { label.textContent = names.join(', '); }
+    });
+
     // Panneaux repliables
     document.addEventListener('click', function (e) {
         var toggle = e.target.closest('.panel-toggle');

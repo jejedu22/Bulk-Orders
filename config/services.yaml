@@ -10,6 +10,8 @@ parameters:
     env(NEWSLETTER_MAILER_DSN): 'null://null'
     logo_directory: '%kernel.project_dir%/public/uploads/logo'
     newsletter_upload_directory: '%kernel.project_dir%/public/uploads/newsletter'
+    # Pièces jointes des newsletters : hors du dossier public (volume « attachments »)
+    newsletter_attachment_directory: '%kernel.project_dir%/var/attachments/newsletter'
     mailer_from: '%env(MAILER_FROM)%'
 services:
     # default configuration for services in *this* file
@@ -29,6 +31,10 @@ services:
         arguments:
             $mailerFrom: '%env(MAILER_FROM)%'
             $logoDirectory: '%logo_directory%'
+
+    App\Service\NewsletterAttachments:
+        arguments:
+            $directory: '%newsletter_attachment_directory%'
 
     App\Controller\:
         resource: '../src/Controller'

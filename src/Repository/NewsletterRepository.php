@@ -27,6 +27,8 @@ class NewsletterRepository extends ServiceEntityRepository
     public function findAllForIndex(): array
     {
         return $this->createQueryBuilder('n')
+            ->leftJoin('n.attachments', 'a')
+            ->addSelect('a')
             ->addSelect('CASE WHEN n.sentAt IS NULL THEN 0 ELSE 1 END AS HIDDEN sent')
             ->orderBy('sent', 'ASC')
             ->addOrderBy('n.sentAt', 'DESC')

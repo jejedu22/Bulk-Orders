@@ -1,0 +1,3 @@
+parameters:
+    # Pièces jointes des tests : supprimées par les tests (voir NewsletterAttachmentTest)
+    newsletter_attachment_directory: '%kernel.project_dir%/var/test-attachments'

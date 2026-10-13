@@ -155,6 +155,17 @@ vidéos, code HTML. Les images insérées sont enregistrées dans
 e-mail affiche en en-tête le logo de la configuration (joint à l'e-mail) sur
 la couleur du thème.
 
+Une newsletter peut avoir des **pièces jointes** (PDF, images, documents
+Office ou LibreOffice, CSV, ZIP ; 5 Mo par fichier, 8 Mo en tout, limite de
+Mailjet à 15 Mo par message). Elles sont enregistrées sous un nom aléatoire
+dans `var/attachments/newsletter`, **hors du dossier public** : elles ne sont
+téléchargeables que par les administrateurs, depuis la page de la newsletter.
+Ce dossier est un volume Docker (`attachments`) : il doit être monté pour que
+les fichiers survivent à la recréation du conteneur (un envoi est annulé si
+une pièce jointe a disparu). Une case permet d'ajouter à la fin de l'e-mail un
+bouton **Commander** : il ouvre directement la page de commande de la vente
+choisie si elle est ouverte, sinon la liste des ventes du site.
+
 Chaque envoi est conservé : la fiche d'un utilisateur liste les newsletters
 qu'il a reçues (date, adresse utilisée, échec éventuel avec le message du
 serveur d'envoi, envois de test), et la page d'une newsletter liste ses

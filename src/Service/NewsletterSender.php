@@ -28,9 +28,13 @@ class NewsletterSender
     private $uriSigner;
     private $mailjet;
     private $logger;
+    private $attachments;
+    // Contenu des pièces jointes, lu une seule fois pour tout l'envoi
+    private $attachmentFiles = [];
 
-    public function __construct(MailSender $mailSender, Environment $twig, UrlGeneratorInterface $urlGenerator, UriSigner $uriSigner, Mailjet $mailjet, LoggerInterface $logger)
+    public function __construct(MailSender $mailSender, Environment $twig, UrlGeneratorInterface $urlGenerator, UriSigner $uriSigner, Mailjet $mailjet, LoggerInterface $logger, ?NewsletterAttachments $attachments = null)
     {
+        $this->attachments = $attachments;
         $this->mailSender = $mailSender;
         $this->twig = $twig;
         $this->urlGenerator = $urlGenerator;
@@ -47,6 +51,20 @@ class NewsletterSender
         return $this->uriSigner->sign(
             $this->urlGenerator->generate('newsletter_unsubscribe', ['id' => $user->getId()], UrlGeneratorInterface::ABSOLUTE_URL)
         );
+    }
+
+    /**
+     * Destination du bouton « Commander » : la page de commande de la vente
+     * ciblée si elle est ouverte, sinon la liste des ventes en cours.
+     */
+    public function orderUrl(Newsletter $newsletter): string
+    {
+        $jour = $newsletter->getJourDistrib();
+        if (null !== $jour && !$jour->getClosed() && $jour->getDate() > new \DateTime('today')) {
+            return $this->urlGenerator->generate('passe_commande_new', ['idJourDistrib' => $jour->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
+        }
+
+        return $this->urlGenerator->generate('passe_commande_index', [], UrlGeneratorInterface::ABSOLUTE_URL);
     }
 
     /**
@@ -84,6 +102,12 @@ class NewsletterSender
             return $e->getMessage();
         }
 
+        try {
+            $files = $this->attachmentFiles($newsletter);
+        } catch (\RuntimeException $e) {
+            return $e->getMessage();
+        }
+
         $unsubscribeUrl = $this->unsubscribeUrl($user);
         $email
             ->to($user->getMail())
@@ -93,8 +117,12 @@ class NewsletterSender
                 'content' => $this->absoluteUrls((string) $newsletter->getContent()),
                 'user' => $user,
                 'unsubscribe_url' => $unsubscribeUrl,
+                'order_url' => $newsletter->hasOrderButton() ? $this->orderUrl($newsletter) : null,
                 'brand' => $this->mailSender->brand($email),
             ]));
+        foreach ($files as [$name, $content, $mimeType]) {
+            $email->attach($content, $name, $mimeType);
+        }
         $email->getHeaders()
             ->addTextHeader('List-Unsubscribe', '<' . $unsubscribeUrl . '>')
             ->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
@@ -120,6 +148,25 @@ class NewsletterSender
 
             return $e->getMessage();
         }
+    }
+
+    /**
+     * @return array<array{0: string, 1: string, 2: string}> [nom, contenu, type]
+     *
+     * @throws \RuntimeException si une pièce jointe est introuvable
+     */
+    private function attachmentFiles(Newsletter $newsletter): array
+    {
+        if (null === $this->attachments || $newsletter->getAttachments()->isEmpty()) {
+            return [];
+        }
+        $key = spl_object_id($newsletter);
+        if (!isset($this->attachmentFiles[$key])) {
+            // Un seul envoi à la fois : on ne garde que la dernière newsletter en mémoire
+            $this->attachmentFiles = [$key => $this->attachments->load($newsletter)];
+        }
+
+        return $this->attachmentFiles[$key];
     }
 
     /**

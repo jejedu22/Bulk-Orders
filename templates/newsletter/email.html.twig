@@ -4,6 +4,9 @@
 
 {% block content %}
     {{ content|raw }}
+    {% if order_url %}
+        {{ include('newsletter/_order_button.html.twig', {'url': order_url, 'color': brand.accent}) }}
+    {% endif %}
 {% endblock %}
 
 {% block footer %}

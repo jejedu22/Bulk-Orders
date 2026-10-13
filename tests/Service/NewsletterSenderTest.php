@@ -2,10 +2,13 @@
 
 namespace App\Tests\Service;
 
+use App\Entity\JourDistrib;
 use App\Entity\Newsletter;
+use App\Entity\NewsletterAttachment;
 use App\Entity\User;
 use App\Service\Mailjet;
 use App\Service\MailSender;
+use App\Service\NewsletterAttachments;
 use App\Service\NewsletterSender;
 use App\Service\OptionsSettings;
 use PHPUnit\Framework\TestCase;
@@ -136,7 +139,88 @@ class NewsletterSenderTest extends TestCase
         $this->assertFalse($deliveries[0]->isTest());
     }
 
-    private function newsletterSender(MailerInterface $mailer, ?Mailjet $mailjet = null, string $logo = ''): NewsletterSender
+    public function testAttachmentsAreAttachedToEveryEmailAndReadOnce(): void
+    {
+        $directory = sys_get_temp_dir() . '/nl-sender-' . bin2hex(random_bytes(4));
+        $attachments = new NewsletterAttachments($directory);
+        $newsletter = $this->newsletter();
+        mkdir($directory, 0777, true);
+        file_put_contents($directory . '/abc', 'contenu');
+        $newsletter->addAttachment(new NewsletterAttachment($newsletter, 'tarifs.pdf', 'abc', 'application/pdf', 7));
+
+        $sent = [];
+        $mailer = $this->createMock(MailerInterface::class);
+        $mailer->method('send')->willReturnCallback(function (Email $email) use (&$sent) {
+            $sent[] = $email;
+        });
+
+        $deliveries = $this->newsletterSender($mailer, null, '', $attachments)->send($newsletter, [$this->user(1, 'a@example.com'), $this->user(2, 'b@example.com')]);
+        unlink($directory . '/abc');
+        rmdir($directory);
+
+        $this->assertSame([null, null], array_map(function ($d) { return $d->getError(); }, $deliveries));
+        foreach ($sent as $email) {
+            $this->assertCount(1, $email->getAttachments());
+            $this->assertSame('tarifs.pdf', $email->getAttachments()[0]->getFilename());
+            $this->assertSame('contenu', $email->getAttachments()[0]->getBody());
+        }
+    }
+
+    public function testMissingAttachmentIsReportedAsDeliveryError(): void
+    {
+        $newsletter = $this->newsletter();
+        $newsletter->addAttachment(new NewsletterAttachment($newsletter, 'tarifs.pdf', 'inexistant', 'application/pdf', 7));
+        $mailer = $this->createMock(MailerInterface::class);
+        $mailer->expects($this->never())->method('send');
+
+        $deliveries = $this->newsletterSender($mailer, null, '', new NewsletterAttachments(sys_get_temp_dir() . '/nl-absent'))->send($newsletter, [$this->user(1, 'a@example.com')]);
+
+        $this->assertFalse($deliveries[0]->isSuccessful());
+        $this->assertStringContainsString('tarifs.pdf', $deliveries[0]->getError());
+    }
+
+    public function testOrderUrl(): void
+    {
+        $sender = $this->newsletterSender($this->createMock(MailerInterface::class));
+
+        // Sans vente : la liste des ventes
+        $this->assertSame('https://example.org/', $sender->orderUrl($this->newsletter()));
+
+        $open = $this->newsletter()->setJourDistrib($this->sale('+5 days', false));
+        $this->assertSame('https://example.org/new/12', $sender->orderUrl($open));
+
+        foreach ([$this->sale('+5 days', true), $this->sale('-1 day', false), $this->sale('today', false)] as $unavailable) {
+            $this->assertSame('https://example.org/', $sender->orderUrl($this->newsletter()->setJourDistrib($unavailable)));
+        }
+    }
+
+    public function testOrderButtonOnlyWhenEnabled(): void
+    {
+        $sent = [];
+        $mailer = $this->createMock(MailerInterface::class);
+        $mailer->method('send')->willReturnCallback(function (Email $email) use (&$sent) {
+            $sent[] = $email;
+        });
+        $sender = $this->newsletterSender($mailer);
+
+        $sender->send($this->newsletter(), [$this->user(1, 'a@example.com')]);
+        $sender->send($this->newsletter()->setOrderButton(false), [$this->user(1, 'a@example.com')]);
+
+        $this->assertStringContainsString('class="order-button" href="https://example.org/"', $sent[0]->getHtmlBody());
+        $this->assertStringNotContainsString('order-button', $sent[1]->getHtmlBody());
+    }
+
+    private function sale(string $date, bool $closed): JourDistrib
+    {
+        $jour = new JourDistrib();
+        $jour->setDate(new \DateTime($date));
+        $jour->setClosed($closed);
+        (new \ReflectionProperty(JourDistrib::class, 'id'))->setValue($jour, 12);
+
+        return $jour;
+    }
+
+    private function newsletterSender(MailerInterface $mailer, ?Mailjet $mailjet = null, string $logo = '', ?NewsletterAttachments $attachments = null): NewsletterSender
     {
         if (null === $mailjet) {
             $mailjet = $this->createMock(Mailjet::class);
@@ -151,15 +235,19 @@ class NewsletterSenderTest extends TestCase
         ]);
         $urlGenerator = $this->createMock(UrlGeneratorInterface::class);
         $urlGenerator->method('generate')->willReturnCallback(function (string $route, array $params) {
-            return 'newsletter_unsubscribe' === $route ? 'https://example.org/desinscription/'.$params['id'] : 'https://example.org/';
+            return match ($route) {
+                'newsletter_unsubscribe' => 'https://example.org/desinscription/'.$params['id'],
+                'passe_commande_new' => 'https://example.org/new/'.$params['idJourDistrib'],
+                default => 'https://example.org/',
+            };
         });
         $twig = new Environment(new ArrayLoader([
-            'newsletter/email.html.twig' => '{% if brand.logo_cid %}<img src="{{ brand.logo_cid }}">{% endif %}<div style="border-color: {{ brand.accent }}">{{ content|raw }}</div> <a href="{{ unsubscribe_url }}">Se désinscrire</a>',
+            'newsletter/email.html.twig' => '{% if brand.logo_cid %}<img src="{{ brand.logo_cid }}">{% endif %}<div style="border-color: {{ brand.accent }}">{{ content|raw }}</div> {% if order_url %}<a class="order-button" href="{{ order_url }}">Commander</a>{% endif %}<a href="{{ unsubscribe_url }}">Se désinscrire</a>',
         ]));
 
         $mailSender = new MailSender($mailer, $settings, new NullLogger(), '', $twig, $urlGenerator, \dirname(__DIR__, 2).'/public/dist/img');
 
-        return new NewsletterSender($mailSender, $twig, $urlGenerator, new UriSigner('secret'), $mailjet, new NullLogger());
+        return new NewsletterSender($mailSender, $twig, $urlGenerator, new UriSigner('secret'), $mailjet, new NullLogger(), $attachments);
     }
 
     private function newsletter(): Newsletter

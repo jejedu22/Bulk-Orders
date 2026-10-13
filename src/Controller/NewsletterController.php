@@ -3,16 +3,21 @@
 namespace App\Controller;
 
 use App\Entity\Newsletter;
+use App\Entity\NewsletterAttachment;
 use App\Entity\User;
 use App\Form\NewsletterType;
 use App\Repository\NewsletterDeliveryRepository;
 use App\Repository\NewsletterRepository;
 use App\Repository\UserRepository;
 use App\Service\Mailjet;
+use App\Service\NewsletterAttachments;
 use App\Service\NewsletterSender;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,10 +29,33 @@ class NewsletterController extends AbstractController
     private const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
     private $entityManager;
+    private $attachments;
 
-    public function __construct(EntityManagerInterface $entityManager)
+    public function __construct(EntityManagerInterface $entityManager, NewsletterAttachments $attachments)
     {
         $this->entityManager = $entityManager;
+        $this->attachments = $attachments;
+    }
+
+    /**
+     * Enregistre les pièces jointes ajoutées et retire celles qui sont cochées.
+     * Les fichiers retirés ne sont supprimés qu'une fois la base à jour.
+     *
+     * @return NewsletterAttachment[] pièces jointes retirées (fichiers à supprimer)
+     */
+    private function applyAttachments(Newsletter $newsletter, FormInterface $form): array
+    {
+        $removed = $form->has('removedAttachments') ? $form->get('removedAttachments')->getData() : [];
+        foreach ($removed as $attachment) {
+            $newsletter->removeAttachment($attachment);
+        }
+        foreach ((array) $form->get('newAttachments')->getData() as $file) {
+            if ($file instanceof UploadedFile) {
+                $this->attachments->store($newsletter, $file);
+            }
+        }
+
+        return $removed;
     }
 
     #[Route('/newsletter/', name: 'newsletter_index', methods: ['GET'])]
@@ -48,6 +76,7 @@ class NewsletterController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $this->applyAttachments($newsletter, $form);
             $this->entityManager->persist($newsletter);
             $this->entityManager->flush();
 
@@ -106,10 +135,11 @@ class NewsletterController extends AbstractController
     }
 
     #[Route('/newsletter/{id}', name: 'newsletter_show', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function show(Newsletter $newsletter, UserRepository $userRepository, NewsletterDeliveryRepository $deliveryRepository): Response
+    public function show(Newsletter $newsletter, UserRepository $userRepository, NewsletterDeliveryRepository $deliveryRepository, NewsletterSender $sender): Response
     {
         return $this->render('newsletter/show.html.twig', [
             'newsletter' => $newsletter,
+            'order_url' => $sender->orderUrl($newsletter),
             'subscribers' => $userRepository->countNewsletterRecipients($newsletter),
             'deliveries' => $deliveryRepository->findForNewsletter($newsletter),
         ]);
@@ -128,7 +158,11 @@ class NewsletterController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $removed = $this->applyAttachments($newsletter, $form);
             $this->entityManager->flush();
+            foreach ($removed as $attachment) {
+                $this->attachments->removeFile($attachment);
+            }
 
             return $this->redirectToRoute('newsletter_show', ['id' => $newsletter->getId()]);
         }
@@ -170,6 +204,16 @@ class NewsletterController extends AbstractController
             return $this->redirectToRoute('newsletter_show', ['id' => $newsletter->getId()]);
         }
 
+        // Mieux vaut ne rien envoyer que des newsletters sans leur pièce jointe
+        if ($missing = $this->attachments->missing($newsletter)) {
+            $this->addFlash('danger', sprintf(
+                'Envoi annulé : pièce jointe introuvable sur le serveur (%s). Modifiez la newsletter pour la retirer ou la renvoyer.',
+                htmlspecialchars(implode(', ', array_map(function (NewsletterAttachment $a) { return $a->getOriginalName(); }, $missing)))
+            ));
+
+            return $this->redirectToRoute('newsletter_show', ['id' => $newsletter->getId()]);
+        }
+
         $recipients = $userRepository->findNewsletterRecipients($newsletter);
         if (!$recipients) {
             $this->addFlash('warning', $newsletter->getGroups()->isEmpty() && null === $newsletter->getJourDistrib()
@@ -207,9 +251,34 @@ class NewsletterController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$newsletter->getId(), $request->request->get('_token'))) {
             $this->entityManager->remove($newsletter);
             $this->entityManager->flush();
+            // Après la base : un échec ne doit pas laisser une newsletter sans ses fichiers
+            $this->attachments->removeFiles($newsletter);
         }
 
         return $this->redirectToRoute('newsletter_index');
+    }
+
+    /**
+     * Téléchargement d'une pièce jointe (administrateurs, voir access_control).
+     */
+    #[Route('/newsletter/attachment/{id}', name: 'newsletter_attachment', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function attachment(NewsletterAttachment $attachment): Response
+    {
+        if (!$this->attachments->exists($attachment)) {
+            throw $this->createNotFoundException('Fichier introuvable.');
+        }
+
+        $response = new BinaryFileResponse($this->attachments->path($attachment));
+        // Toujours téléchargé, jamais interprété par le navigateur
+        $response->headers->set('Content-Type', $attachment->getMimeType());
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->headers->set('Content-Disposition', HeaderUtils::makeDisposition(
+            HeaderUtils::DISPOSITION_ATTACHMENT,
+            $attachment->getOriginalName(),
+            preg_replace('/[^\x20-\x7e]|%/', '_', $attachment->getOriginalName())
+        ));
+
+        return $response;
     }
 
     /**

@@ -268,3 +268,9 @@ a.tile:hover { box-shadow: var(--shadow-hover); transform: translateY(-1px); col
 
 /* Champ fichier : libellé du bouton en français */
 .custom-file-label::after { content: "Parcourir"; }
+/* Bootstrap superpose un vrai champ fichier transparent à un faux bouton.
+   Safari n'ouvre le sélecteur que sur le bouton natif du champ (à gauche),
+   pas sur le reste : le faux bouton « Parcourir » ne répondait pas. Les clics
+   passent donc par le <label for="…">, que tous les navigateurs activent ;
+   le champ reste atteignable au clavier. */
+.custom-file-input { pointer-events: none; }

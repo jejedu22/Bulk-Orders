@@ -38,8 +38,15 @@ du domaine de l'application pointant vers le serveur.
 
 ```bash
 cp .env.docker.example .env.docker   # puis renseigner les valeurs
-docker compose --env-file .env.docker up -d --build
+docker compose --env-file .env.docker build --pull
+docker compose --env-file .env.docker up -d
 ```
+
+**Mises à jour** : toujours construire avec `--pull`. L'image de base
+`php:8.4-apache` suit la dernière version de PHP 8.4 ; sans `--pull`, Docker
+réutilise celle déjà présente sur le serveur et les correctifs de sécurité de
+PHP ne sont pas appliqués. Vérifier la version en service :
+`docker compose --env-file .env.docker exec app php -v`.
 
 > Les variables de Compose sont dans `.env.docker` : le fichier `.env` est celui
 > de Symfony, il ne doit pas contenir de secrets.
@@ -218,7 +225,7 @@ Renseigner `.env.docker` :
 Construire l'image et démarrer **uniquement** la base :
 
 ```bash
-docker compose --env-file .env.docker build
+docker compose --env-file .env.docker build --pull
 docker compose --env-file .env.docker up -d db
 ```
 

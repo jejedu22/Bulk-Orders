@@ -299,12 +299,13 @@ class DefaultController extends AbstractController
         $commandes = $jourDistribRepository->export($jourDistrib);
 
         $output = fopen("php://temp",'w') or die("Can't open php://output");
-        fputcsv($output, array('id','nom','prenom', 'commentaire', 'produit', 'conditionnement', 'unite', 'quantitee', 'prix_initial', 'prix_final', 'livre', 'valid'));
+        // Pas de caractère d'échappement : CSV standard (RFC 4180), lu correctement par les tableurs
+        fputcsv($output, array('id','nom','prenom', 'commentaire', 'produit', 'conditionnement', 'unite', 'quantitee', 'prix_initial', 'prix_final', 'livre', 'valid'), escape: '');
         foreach($commandes as $commande) 
         {
             $commande['prixInit'] = number_format((float) $commande['prixInit'], 2, ',', ' ');
             $commande['prixFinal'] = number_format((float) $commande['prixFinal'], 2, ',', ' ');
-            fputcsv($output, $commande);
+            fputcsv($output, $commande, escape: '');
         }
         rewind($output);
         

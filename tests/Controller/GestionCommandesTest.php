@@ -164,7 +164,7 @@ class GestionCommandesTest extends WebTestCase
         $this->assertStringStartsWith('text/csv', $response->headers->get('Content-Type'));
         $this->assertStringContainsString('export_commandes.csv', $response->headers->get('Content-Disposition'));
 
-        $lines = array_map('str_getcsv', array_filter(explode("\n", $response->getContent())));
+        $lines = array_map(function ($line) { return str_getcsv($line, escape: ''); }, array_filter(explode("\n", $response->getContent())));
         $this->assertSame(['id', 'nom', 'prenom', 'commentaire', 'produit', 'conditionnement', 'unite', 'quantitee', 'prix_initial', 'prix_final', 'livre', 'valid'], $lines[0]);
         $this->assertCount(2, $lines);
         $this->assertSame((string) $commande->getId(), $lines[1][0]);

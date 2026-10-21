@@ -10,17 +10,17 @@ administration, mot de passe oublié) et tests unitaires des services.
 Chaque test part d'une base SQLite vide (`var/test.db`, schéma généré depuis
 les entités) : aucun serveur MySQL n'est nécessaire.
 
-Avec PHP 8.3 (ou plus récent) et les extensions `intl` et `pdo_sqlite` :
+Avec PHP 8.4 (ou plus récent) et les extensions `intl` et `pdo_sqlite` :
 
 ```bash
 composer install
 php vendor/bin/phpunit
 ```
 
-Sans PHP 8.3 en local, via Docker (image avec `intl` et `pdo_sqlite`) :
+Sans PHP 8.4 en local, via Docker (image avec `intl` et `pdo_sqlite`) :
 
 ```bash
-docker run --rm -v "$PWD":/app -w /app chialab/php:8.3 php vendor/bin/phpunit
+docker run --rm -v "$PWD":/app -w /app chialab/php:8.4 php vendor/bin/phpunit
 ```
 
 Les dépréciations (Symfony et Doctrine) déclenchées par le code de `src/`
@@ -46,7 +46,7 @@ docker compose --env-file .env.docker up -d --build
 
 Services :
 
-- `app` : PHP 8.3 + Apache, exposé uniquement via Traefik (`Host(APP_HOST)`, HTTPS).
+- `app` : PHP 8.4 + Apache, exposé uniquement via Traefik (`Host(APP_HOST)`, HTTPS).
 - `db` : MySQL 8.4, sur un réseau interne non exposé.
 
 Volumes : `db` (données MySQL), `uploads` (logo téléversé), `sessions`.

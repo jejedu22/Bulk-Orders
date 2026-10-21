@@ -21,7 +21,7 @@ class LigneCommandeType extends AbstractType
         $builder
             ->add('product', EntityType::class, [
                 'class' => Product::class,
-                'choice_label' => function (Product $product = null) {
+                'choice_label' => function (?Product $product = null) {
                     return $product->getNom() . " - " . $product->getConditionnement() . $product->getUnit() . " - " . $product->getPrixInit() . " €";
                 },
                 'choice_value' => 'id',

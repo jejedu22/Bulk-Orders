@@ -17,7 +17,7 @@ COPY src/ src/
 RUN composer dump-autoload --no-dev --classmap-authoritative --no-plugins --no-scripts
 
 # --- Image d'exécution -------------------------------------------------------
-FROM php:8.3-apache
+FROM php:8.4-apache
 
 # Extensions : intl (formats de dates et de nombres), pdo_mysql, opcache,
 # gd (icônes PWA générées à partir du logo), zip (exports Excel).

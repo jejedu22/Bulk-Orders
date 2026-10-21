@@ -25,7 +25,7 @@ class JourDistribType extends AbstractType
         ]);
         $productsOptions = [
             'class' => Product::class,
-            'choice_label' => function (Product $product = null) {
+            'choice_label' => function (?Product $product = null) {
                 return $product->getNom() . " - " . $product->getConditionnement() . $product->getUnit();
             },
             'choice_value' => 'id',

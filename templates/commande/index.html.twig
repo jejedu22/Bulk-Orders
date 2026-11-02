@@ -24,7 +24,9 @@
         </div>
         <div class="actions">
             {% if not commande.confirmed %}{{ include('commande/_delete_form.html.twig') }}{% endif %}
-            <a href="{{ path('passe_commande_index') }}" class="btn btn-accent"><i class="fas fa-shopping-basket mr-1"></i> Nouvelle commande</a>
+            {% set can_pay = helloasso_can_pay(commande) %}
+            {% if can_pay %}{{ include('commande/_paiement_form.html.twig') }}{% endif %}
+            <a href="{{ path('passe_commande_index') }}" class="btn {{ can_pay ? 'btn-soft' : 'btn-accent' }}"><i class="fas fa-shopping-basket mr-1"></i> Nouvelle commande</a>
         </div>
     </div>
 

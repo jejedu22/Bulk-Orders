@@ -1,0 +1,9 @@
+# Services de l'environnement de test
+services:
+    App\Tests\HelloAssoHttpClient: ~
+
+    # Aucune requête vers HelloAsso pendant les tests
+    App\Service\HelloAsso:
+        autowire: true
+        arguments:
+            $httpClient: '@App\Tests\HelloAssoHttpClient'

@@ -55,6 +55,7 @@ menu:
       config: Configuration
       user: Utilisateurs
       mailjet: Mailjet
+      helloasso: HelloAsso
   my_last_command: Ma dernière commande
   synthesis: Toutes mes commandes
   order: Passer commande

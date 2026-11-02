@@ -36,6 +36,14 @@ class Commande
     #[ORM\JoinColumn(nullable: false)]
     private $user;
 
+    /** Identifiant du paiement HelloAsso (« checkout intent ») en cours */
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private $helloassoCheckoutId;
+
+    /** Identifiant de la commande HelloAsso une fois le paiement en ligne reçu */
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private $helloassoOrderId;
+
     public function __construct()
     {
         $this->ligneCommandes = new ArrayCollection();
@@ -149,4 +157,49 @@ class Commande
         return $this;
     }
 
+    public function getHelloassoCheckoutId(): ?int
+    {
+        return $this->helloassoCheckoutId;
+    }
+
+    public function setHelloassoCheckoutId(?int $helloassoCheckoutId): self
+    {
+        $this->helloassoCheckoutId = $helloassoCheckoutId;
+
+        return $this;
+    }
+
+    public function getHelloassoOrderId(): ?int
+    {
+        return $this->helloassoOrderId;
+    }
+
+    public function setHelloassoOrderId(?int $helloassoOrderId): self
+    {
+        $this->helloassoOrderId = $helloassoOrderId;
+
+        return $this;
+    }
+
+    /**
+     * Total de la commande : prix finaux s'ils sont tous renseignés, prix
+     * initiaux sinon (comme sur la page « Ma dernière commande »).
+     */
+    public function getTotal(): float
+    {
+        $totalInit = 0.0;
+        $totalFinal = 0.0;
+        $hasFinal = true;
+        foreach ($this->ligneCommandes as $ligne) {
+            $product = $ligne->getProduct();
+            $totalInit += $ligne->getQuantite() * (float) $product->getPrixInit();
+            if (null === $product->getPrixFinal()) {
+                $hasFinal = false;
+            } else {
+                $totalFinal += $ligne->getQuantite() * $product->getPrixFinal();
+            }
+        }
+
+        return $hasFinal && !$this->ligneCommandes->isEmpty() ? $totalFinal : $totalInit;
+    }
 }

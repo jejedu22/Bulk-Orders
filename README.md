@@ -116,6 +116,36 @@ configuration devient alors l'adresse de réponse.
 Un échec d'envoi n'interrompt pas la commande : l'utilisateur est averti et
 l'erreur apparaît dans `docker compose logs app`.
 
+### Paiement en ligne (HelloAsso)
+
+Le paiement en ligne des commandes par [HelloAsso](https://www.helloasso.com)
+se configure dans **Paramètres → HelloAsso** :
+
+- organisation : identifiant de l'association dans l'adresse de sa page
+  HelloAsso (`helloasso.com/associations/mon-association`) ;
+- identifiant client et clé secrète : espace HelloAsso de l'association →
+  Mon compte → Intégrations et API (la clé secrète n'est jamais réaffichée ;
+  laisser le champ vide pour la conserver, vider l'identifiant client pour
+  désactiver le paiement en ligne) ;
+- « Environnement de test » : paiements fictifs sur helloasso-sandbox.com,
+  avec des identifiants créés sur ce site ;
+- le bouton « Vérifier la connexion » contrôle les identifiants et l'accès à
+  l'organisation, sans rien enregistrer.
+
+Une fois le compte renseigné, un bouton **Payer en ligne** apparaît sur les
+commandes non payées d'au moins 1 € (« Ma dernière commande » et « Toutes mes
+commandes »). Le montant est le total de la commande : prix finaux s'ils sont
+tous renseignés, prix initiaux sinon. Au retour de la page de paiement, la
+commande passe à « Paiement reçu (en ligne) » et l'e-mail de confirmation est
+envoyé, comme pour un paiement enregistré par un administrateur.
+
+Pour que le paiement soit pris en compte même si le client ne revient pas sur
+le site, renseigner dans HelloAsso (Intégrations et API → URL de callback)
+l'adresse de notification affichée sur la page Paramètres → HelloAsso
+(`https://APP_HOST/helloasso/notification`). Le statut d'un paiement est
+toujours relu auprès de l'API HelloAsso : une notification ou une URL de
+retour forgée ne confirme pas une commande.
+
 ### Newsletters (Mailjet)
 
 Les administrateurs rédigent et envoient les newsletters depuis le menu

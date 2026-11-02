@@ -120,6 +120,7 @@
                                     <i class="fas fa-check mr-1"></i> Remise
                                 </a>
                             {% endif %}
+                            {% if suivi == 0 and helloasso_can_pay(commande) %}{{ include('commande/_paiement_form.html.twig', {'compact': true}) }}{% endif %}
                             {% if can_delete %}{{ include('commande/_delete_form.html.twig', {'compact': true}) }}{% endif %}
                         </div>
                     </div>

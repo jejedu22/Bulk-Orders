@@ -1,0 +1,76 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}HelloAsso{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+{% set check_icons = { 'success': 'fa-check-circle', 'warning': 'fa-exclamation-triangle', 'danger': 'fa-times-circle' } %}
+<div class="col-12">
+    <div class="page-head">
+        <div>
+            <h1>HelloAsso</h1>
+            <p class="subtitle">Paiement en ligne des commandes par HelloAsso.</p>
+        </div>
+        <div class="actions">
+            {% if configured %}
+                <span class="pill pill-success"><i class="fas fa-check"></i> Configuré{{ sandbox ? ' (test)' }}</span>
+            {% else %}
+                <span class="pill pill-muted">Non configuré</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if checks is not null %}
+    <div class="panel form-panel">
+        <div class="panel-head"><h3>Vérification</h3></div>
+        <ul class="rows">
+        {% for check in checks %}
+            <li class="row-item">
+                <i class="fas {{ check_icons[check[0]] }} fa-fw text-{{ check[0] }}"></i>
+                <span class="row-main">{{ check[1] }}</span>
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="panel form-panel">
+        <div class="panel-body">
+            <p class="text-muted">
+                Les identifiants se trouvent dans l'espace HelloAsso de l'association → Mon compte →
+                <strong>Intégrations et API</strong>. Une fois le compte renseigné, les clients peuvent payer
+                leur commande en ligne ; elle passe alors automatiquement à « Paiement reçu ».
+            </p>
+            {{ form_start(form) }}
+                {{ form_row(form.organization) }}
+                {{ form_row(form.clientId) }}
+                {{ form_row(form.clientSecret) }}
+                {{ form_row(form.sandbox) }}
+                {{ form_rest(form) }}
+                <div class="form-actions">
+                    <button class="btn btn-accent" name="save"><i class="fas fa-check mr-1"></i> Enregistrer</button>
+                    <button class="btn btn-soft" name="check" value="1"><i class="fas fa-plug mr-1"></i> Vérifier la connexion</button>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+
+    <div class="panel form-panel">
+        <div class="panel-head"><h3>Notifications</h3></div>
+        <div class="panel-body">
+            <p class="text-muted mb-2">
+                Pour que les paiements soient confirmés même si le client ne revient pas sur le site,
+                renseignez cette adresse dans HelloAsso → Mon compte → Intégrations et API →
+                <strong>URL de callback</strong> (notifications) :
+            </p>
+            <input type="text" class="form-control" readonly value="{{ url('helloasso_notification') }}" onclick="this.select()" aria-label="URL de notification HelloAsso">
+        </div>
+    </div>
+
+    <p class="text-muted small">
+        Sans compte renseigné ici, le paiement en ligne n'est pas proposé : les paiements sont
+        enregistrés par un administrateur (« Paiement reçu »).
+    </p>
+</div>
+{% endblock %}

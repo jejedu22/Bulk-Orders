@@ -74,8 +74,7 @@ class HelloAsso
     }
 
     /**
-     * Montant à payer en centimes : prix finaux s'ils sont tous connus, prix
-     * initiaux sinon (comme le total affiché sur la commande).
+     * Montant à payer en centimes (prix définitifs, voir canPay()).
      */
     public function amount(Commande $commande): int
     {
@@ -83,12 +82,13 @@ class HelloAsso
     }
 
     /**
-     * Le paiement en ligne est proposé pour une commande non encore payée et
-     * dont le montant est d'au moins 1 €.
+     * Le paiement en ligne est proposé pour une commande non encore payée,
+     * une fois les prix définitifs de tous ses produits connus, et si son
+     * montant est d'au moins 1 €.
      */
     public function canPay(Commande $commande): bool
     {
-        return $this->isConfigured() && !$commande->getconfirmed() && $this->amount($commande) >= 100;
+        return $this->isConfigured() && !$commande->getPayee() && $commande->hasFinalPrices() && $this->amount($commande) >= 100;
     }
 
     /**

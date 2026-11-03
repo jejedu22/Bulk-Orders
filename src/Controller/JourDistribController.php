@@ -6,6 +6,7 @@ use App\Entity\JourDistrib;
 use App\Form\JourDistribType;
 use App\Repository\NewsletterRepository;
 use App\Repository\JourDistribRepository;
+use App\Service\DemandePaiement;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -69,6 +70,32 @@ class JourDistribController extends AbstractController
             'jour_distrib' => $jourDistrib,
             'form' => $form->createView(),
         ]);
+    }
+
+    /**
+     * Envoie aux clients le montant définitif de leur commande (avec le lien
+     * de paiement en ligne si HelloAsso est configuré).
+     */
+    #[Route('/{id}/demande-paiement', name: 'jour_distrib_demande_paiement', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function demandePaiement(Request $request, JourDistrib $jourDistrib, DemandePaiement $demandePaiement): Response
+    {
+        if (!$this->isCsrfTokenValid('demande-paiement' . $jourDistrib->getId(), $request->request->get('_token'))) {
+            $this->addFlash('danger', 'La demande a expiré, veuillez réessayer.');
+
+            return $this->redirectToRoute('synthese_index', ['suivi' => 2]);
+        }
+
+        $result = $demandePaiement->send($jourDistrib);
+        if ($result['sent'] > 0) {
+            $this->addFlash('success', sprintf('%d demande%s de paiement envoyée%2$s.', $result['sent'], $result['sent'] > 1 ? 's' : ''));
+        } elseif ([] === $result['failed']) {
+            $this->addFlash('info', 'Aucune demande de paiement à envoyer pour cette vente.');
+        }
+        if ([] !== $result['failed']) {
+            $this->addFlash('warning', 'E-mail non envoyé à : ' . implode(', ', $result['failed']) . '. Vous pourrez réessayer.');
+        }
+
+        return $this->redirectToRoute('synthese_index', ['suivi' => 2]);
     }
 
     #[Route('/{id}', name: 'jour_distrib_delete', methods: ['DELETE'])]

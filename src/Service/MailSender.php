@@ -119,9 +119,10 @@ class MailSender
     }
 
     /**
-     * E-mail récapitulatif d'une commande (enregistrement ou confirmation).
+     * E-mail récapitulatif d'une commande (enregistrement, validation ou
+     * paiement). $finalPrices : montants aux prix définitifs.
      */
-    public function sendCommande(Commande $commande, string $subject, string $message): bool
+    public function sendCommande(Commande $commande, string $subject, string $message, bool $finalPrices = false): bool
     {
         try {
             $email = $this->withSender(new Email());
@@ -137,7 +138,35 @@ class MailSender
                 'subject' => $subject,
                 'message' => $message,
                 'commande' => $commande,
+                'final_prices' => $finalPrices && $commande->hasFinalPrices(),
                 'commandes_url' => $this->url('commande_index'),
+            ]));
+
+        return $this->send($email);
+    }
+
+    /**
+     * Demande de paiement : montant définitif de la commande et, si
+     * $onlinePayment, lien vers la page de paiement en ligne.
+     */
+    public function sendDemandePaiement(Commande $commande, string $subject, bool $onlinePayment): bool
+    {
+        try {
+            $email = $this->withSender(new Email());
+        } catch (\LogicException $e) {
+            return false;
+        }
+
+        $email
+            ->to($commande->getUser()->getMail())
+            ->subject($subject)
+            ->html($this->twig->render('emails/demande_paiement.html.twig', [
+                'brand' => $this->brand($email),
+                'subject' => $subject,
+                'commande' => $commande,
+                'payment_url' => $onlinePayment && null !== $this->urlGenerator
+                    ? $this->urlGenerator->generate('commande_paiement_page', ['id' => $commande->getId()], UrlGeneratorInterface::ABSOLUTE_URL)
+                    : null,
             ]));
 
         return $this->send($email);

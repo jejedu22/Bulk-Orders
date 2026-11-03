@@ -32,6 +32,20 @@ class PaiementController extends AbstractController
     }
 
     /**
+     * Page de paiement d'une commande (lien de l'e-mail de demande de paiement).
+     */
+    #[Route('/commande/{id}/paiement', name: 'commande_paiement_page', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function show(Commande $commande): Response
+    {
+        $this->denyUnlessOwner($commande);
+
+        return $this->render('commande/paiement.html.twig', [
+            'commande' => $commande,
+            'can_pay' => $this->helloAsso->canPay($commande),
+        ]);
+    }
+
+    /**
      * Crée le paiement HelloAsso et envoie le client sur la page de paiement.
      */
     #[Route('/commande/{id}/paiement', name: 'commande_paiement', methods: ['POST'], requirements: ['id' => '\d+'])]
@@ -44,13 +58,15 @@ class PaiementController extends AbstractController
 
             return $this->redirectAfterPayment($commande);
         }
-        if ($commande->getconfirmed()) {
+        if ($commande->getPayee()) {
             $this->addFlash('info', 'Cette commande est déjà payée.');
 
             return $this->redirectAfterPayment($commande);
         }
         if (!$this->helloAsso->canPay($commande)) {
-            $this->addFlash('warning', 'Le paiement en ligne n\'est pas disponible pour cette commande.');
+            $this->addFlash('warning', $this->helloAsso->isConfigured() && !$commande->hasFinalPrices()
+                ? 'Le paiement en ligne sera possible dès que les prix définitifs seront connus.'
+                : 'Le paiement en ligne n\'est pas disponible pour cette commande.');
 
             return $this->redirectAfterPayment($commande);
         }
@@ -80,7 +96,7 @@ class PaiementController extends AbstractController
     {
         $this->denyUnlessOwner($commande);
 
-        if (!$commande->getconfirmed()) {
+        if (!$commande->getPayee()) {
             try {
                 $orderId = $this->helloAsso->paidOrderId($commande);
             } catch (HelloAssoException $e) {
@@ -92,11 +108,11 @@ class PaiementController extends AbstractController
             }
         }
 
-        if ($commande->getconfirmed()) {
+        if ($commande->getPayee()) {
             $this->addFlash('success', 'Merci ! Votre paiement a bien été reçu, un e-mail de confirmation vous a été envoyé.');
         } else {
-            // Paiement encore en cours de traitement : la notification HelloAsso confirmera la commande
-            $this->addFlash('info', 'Votre paiement est en cours de traitement. La commande sera confirmée dès sa validation par HelloAsso.');
+            // Paiement encore en cours de traitement : la notification HelloAsso le confirmera
+            $this->addFlash('info', 'Votre paiement est en cours de traitement. La commande passera à « Payée » dès sa validation par HelloAsso.');
         }
 
         return $this->redirectAfterPayment($commande);
@@ -136,7 +152,7 @@ class PaiementController extends AbstractController
 
         $commandeId = (int) ($payload['metadata']['commande'] ?? $payload['data']['metadata']['commande'] ?? 0);
         $commande = $commandeId > 0 ? $commandeRepository->find($commandeId) : null;
-        if (null === $commande || $commande->getconfirmed() || null === $commande->getHelloassoCheckoutId()) {
+        if (null === $commande || $commande->getPayee() || null === $commande->getHelloassoCheckoutId()) {
             return new Response('', Response::HTTP_OK);
         }
 

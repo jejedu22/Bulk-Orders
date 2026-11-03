@@ -176,6 +176,17 @@ class DefaultController extends AbstractController
         return $this->redirectToRoute('synthese_index',['suivi' => 2]);
     }
 
+    /**
+     * Paiement définitif reçu (chèque définitif, espèces…).
+     */
+    #[Route('/confirme/{commande}/paiement', name: 'commande_payee', methods: ['GET'])]
+    public function commandePayee(#[MapEntity(id: 'commande')] Commande $commande, CommandeConfirmation $confirmation): Response
+    {
+        $confirmation->markPaid($commande);
+
+        return $this->redirectToRoute('synthese_index',['suivi' => 2]);
+    }
+
     #[Route('/new/{idJourDistrib}', name: 'passe_commande_new', methods: ['GET', 'POST'])]
     public function new(Request $request, int $idJourDistrib, JourDistribRepository $jourDistribRepository, MailSender $mailSender, TranslatorInterface $translator): Response
     {

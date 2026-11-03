@@ -128,6 +128,8 @@ email:
   subject:
     confirm_command: Commande Confirmée
     register_command: Commande Enregistrée
+    payment_request: Montant définitif de votre commande
+    payment_received: Paiement reçu
 recap:
   title: Récapitulatif des commandes
   nom: Nom

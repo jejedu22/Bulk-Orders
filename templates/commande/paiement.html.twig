@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Paiement de la commande n°{{ commande.id }}{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <div class="page-head">
+        <div>
+            <h1>Paiement de la commande</h1>
+            <p class="subtitle">N°{{ commande.id }} · Vente du {{ commande.jourDistrib.date|format_date('long', locale='fr') }}</p>
+        </div>
+    </div>
+
+    <div class="panel form-panel">
+        <div class="panel-head">
+            <h3>Montant {{ commande.hasFinalPrices ? 'définitif' : 'estimé' }}</h3>
+            {{ include('commande/_status.html.twig') }}
+        </div>
+        <div class="panel-body">
+            {{ include('commande/_lines.html.twig', {'show_prices': true}) }}
+        </div>
+        <div class="panel-foot d-flex justify-content-between align-items-center flex-wrap" style="gap: .5rem">
+            <span class="text-muted">Total</span>
+            <span class="price" style="font-size: 1.2rem">{{ commande.total|format_currency('EUR', locale='fr') }}</span>
+        </div>
+    </div>
+
+    {% if commande.payee %}
+        <p class="text-muted"><i class="fas fa-check-circle text-success mr-1"></i> Cette commande est payée, merci !</p>
+    {% elseif can_pay %}
+        <div class="form-actions">
+            {{ include('commande/_paiement_form.html.twig') }}
+        </div>
+        <p class="text-muted small mt-2">Paiement sécurisé par HelloAsso. Votre chèque d'engagement ne sera pas encaissé.</p>
+    {% elseif not commande.hasFinalPrices %}
+        <p class="text-muted"><i class="fas fa-info-circle mr-1"></i> Les prix définitifs ne sont pas encore tous connus : vous recevrez un e-mail avec le montant exact.</p>
+    {% else %}
+        <p class="text-muted"><i class="fas fa-info-circle mr-1"></i> Le paiement en ligne n'est pas disponible : merci de régler par chèque.</p>
+    {% endif %}
+</div>
+{% endblock %}

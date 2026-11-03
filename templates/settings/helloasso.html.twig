@@ -40,7 +40,9 @@
             <p class="text-muted">
                 Les identifiants se trouvent dans l'espace HelloAsso de l'association → Mon compte →
                 <strong>Intégrations et API</strong>. Une fois le compte renseigné, les clients peuvent payer
-                leur commande en ligne ; elle passe alors automatiquement à « Paiement reçu ».
+                leur commande en ligne dès que les prix définitifs sont connus ; elle passe alors
+                automatiquement à « Payée ». Le bouton « Demander le paiement » de chaque vente
+                (Toutes les commandes) leur envoie le montant exact et le lien de paiement.
             </p>
             {{ form_start(form) }}
                 {{ form_row(form.organization) }}
@@ -70,7 +72,8 @@
 
     <p class="text-muted small">
         Sans compte renseigné ici, le paiement en ligne n'est pas proposé : les paiements sont
-        enregistrés par un administrateur (« Paiement reçu »).
+        enregistrés par un administrateur (« Paiement reçu ») et la demande de paiement
+        envoyée par e-mail invite à régler par chèque.
     </p>
 </div>
 {% endblock %}

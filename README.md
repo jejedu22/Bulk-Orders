@@ -132,12 +132,24 @@ se configure dans **Paramètres → HelloAsso** :
 - le bouton « Vérifier la connexion » contrôle les identifiants et l'accès à
   l'organisation, sans rien enregistrer.
 
-Une fois le compte renseigné, un bouton **Payer en ligne** apparaît sur les
-commandes non payées d'au moins 1 € (« Ma dernière commande » et « Toutes mes
-commandes »). Le montant est le total de la commande : prix finaux s'ils sont
-tous renseignés, prix initiaux sinon. Au retour de la page de paiement, la
-commande passe à « Paiement reçu (en ligne) » et l'e-mail de confirmation est
-envoyé, comme pour un paiement enregistré par un administrateur.
+Le règlement se fait en deux temps :
+
+1. **Validation** : le client remet un chèque d'engagement, non encaissé ;
+   l'administrateur clique sur « Valider » (Toutes les commandes) et le
+   client reçoit l'e-mail de confirmation. Statut : « Validée ».
+2. **Paiement définitif**, une fois les prix finaux saisis sur les produits :
+   le bouton **Demander le paiement** de chaque vente (Toutes les commandes)
+   envoie à chaque client non payé dont tous les prix sont connus le montant
+   exact de sa commande, avec un lien **Payer en ligne** si HelloAsso est
+   configuré (sinon l'e-mail invite à régler par chèque). Chaque client ne
+   reçoit la demande qu'une fois ; les commandes dont un prix final manque
+   sont signalées (« sans prix définitif ») et recevront la demande au
+   prochain envoi. Statut : « Payée », automatiquement après un paiement en
+   ligne (e-mail de reçu), ou par le bouton « Paiement reçu » pour un chèque.
+
+Le paiement en ligne n'est proposé (page de la commande, historique, lien de
+l'e-mail) qu'une fois les prix définitifs de tous les produits de la commande
+connus, pour un montant d'au moins 1 €.
 
 Pour que le paiement soit pris en compte même si le client ne revient pas sur
 le site, renseigner dans HelloAsso (Intégrations et API → URL de callback)

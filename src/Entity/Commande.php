@@ -44,6 +44,18 @@ class Commande
     #[ORM\Column(type: 'integer', nullable: true)]
     private $helloassoOrderId;
 
+    /**
+     * Paiement définitif reçu (chèque enregistré par un administrateur ou
+     * paiement en ligne). « confirmed » indique seulement la validation de la
+     * commande (chèque d'engagement reçu).
+     */
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private $payee = false;
+
+    /** Envoi de l'e-mail de demande de paiement (montant définitif) */
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private $paiementDemandeLe;
+
     public function __construct()
     {
         $this->ligneCommandes = new ArrayCollection();
@@ -181,25 +193,60 @@ class Commande
         return $this;
     }
 
+    public function getPayee(): bool
+    {
+        return (bool) $this->payee;
+    }
+
+    public function setPayee(bool $payee): self
+    {
+        $this->payee = $payee;
+
+        return $this;
+    }
+
+    public function getPaiementDemandeLe(): ?\DateTimeInterface
+    {
+        return $this->paiementDemandeLe;
+    }
+
+    public function setPaiementDemandeLe(?\DateTimeInterface $paiementDemandeLe): self
+    {
+        $this->paiementDemandeLe = $paiementDemandeLe;
+
+        return $this;
+    }
+
+    /**
+     * Les prix définitifs de tous les produits de la commande sont-ils connus ?
+     */
+    public function hasFinalPrices(): bool
+    {
+        if ($this->ligneCommandes->isEmpty()) {
+            return false;
+        }
+        foreach ($this->ligneCommandes as $ligne) {
+            if (null === $ligne->getProduct()->getPrixFinal()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /**
      * Total de la commande : prix finaux s'ils sont tous renseignés, prix
      * initiaux sinon (comme sur la page « Ma dernière commande »).
      */
     public function getTotal(): float
     {
-        $totalInit = 0.0;
-        $totalFinal = 0.0;
-        $hasFinal = true;
+        $final = $this->hasFinalPrices();
+        $total = 0.0;
         foreach ($this->ligneCommandes as $ligne) {
             $product = $ligne->getProduct();
-            $totalInit += $ligne->getQuantite() * (float) $product->getPrixInit();
-            if (null === $product->getPrixFinal()) {
-                $hasFinal = false;
-            } else {
-                $totalFinal += $ligne->getQuantite() * $product->getPrixFinal();
-            }
+            $total += $ligne->getQuantite() * (float) ($final ? $product->getPrixFinal() : $product->getPrixInit());
         }
 
-        return $hasFinal && !$this->ligneCommandes->isEmpty() ? $totalFinal : $totalInit;
+        return $total;
     }
 }

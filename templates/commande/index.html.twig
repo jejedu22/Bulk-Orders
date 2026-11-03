@@ -23,7 +23,7 @@
             <p class="subtitle">N°{{ commande.id }} · {{ commande.user.prenom }} {{ commande.user.nom }}</p>
         </div>
         <div class="actions">
-            {% if not commande.confirmed %}{{ include('commande/_delete_form.html.twig') }}{% endif %}
+            {% if not commande.confirmed and not commande.payee %}{{ include('commande/_delete_form.html.twig') }}{% endif %}
             {% set can_pay = helloasso_can_pay(commande) %}
             {% if can_pay %}{{ include('commande/_paiement_form.html.twig') }}{% endif %}
             <a href="{{ path('passe_commande_index') }}" class="btn {{ can_pay ? 'btn-soft' : 'btn-accent' }}"><i class="fas fa-shopping-basket mr-1"></i> Nouvelle commande</a>
@@ -47,6 +47,9 @@
             {{ include('commande/_lines.html.twig', {'show_prices': true, 'show_delete': not commande.confirmed, 'show_delivery': commande.confirmed}) }}
             {% if commande.commentaire %}
                 <p class="text-muted mt-3 mb-0"><i class="far fa-comment mr-1"></i> {{ commande.commentaire }}</p>
+            {% endif %}
+            {% if helloasso_configured() and not commande.payee and not commande.hasFinalPrices %}
+                <p class="text-muted mt-3 mb-0"><i class="fas fa-info-circle mr-1"></i> Le paiement en ligne sera proposé dès que les prix définitifs seront connus : vous recevrez un e-mail avec le montant exact.</p>
             {% endif %}
         </div>
         <div class="panel-foot d-flex justify-content-between align-items-center flex-wrap" style="gap: .5rem">

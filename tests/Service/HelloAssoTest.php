@@ -64,9 +64,19 @@ class HelloAssoTest extends TestCase
     {
         $helloAsso = $this->helloAsso();
 
-        $this->assertFalse($helloAsso->canPay($this->commande([[0.5, null, 1]])));
-        $this->assertTrue($helloAsso->canPay($this->commande([[1, null, 1]])));
-        $this->assertFalse($helloAsso->canPay($this->commande([[10, null, 1]])->setConfirmed(true)));
+        $this->assertFalse($helloAsso->canPay($this->commande([[1, 0.5, 1]])));
+        $this->assertTrue($helloAsso->canPay($this->commande([[0.5, 1, 1]])));
+        // Commande validée (chèque d'engagement) mais pas encore payée
+        $this->assertTrue($helloAsso->canPay($this->commande([[10, 10, 1]])->setConfirmed(true)));
+        $this->assertFalse($helloAsso->canPay($this->commande([[10, 10, 1]])->setPayee(true)));
+    }
+
+    public function testNoOnlinePaymentBeforeFinalPrices(): void
+    {
+        $helloAsso = $this->helloAsso();
+
+        $this->assertFalse($helloAsso->canPay($this->commande([[10, 10, 1], [5, null, 1]])));
+        $this->assertFalse($helloAsso->canPay($this->commande([])));
     }
 
     public function testCreateCheckoutReusesToken(): void

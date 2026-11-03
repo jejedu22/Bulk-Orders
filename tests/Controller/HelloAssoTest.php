@@ -68,11 +68,12 @@ class HelloAssoTest extends WebTestCase
     }
 
     /**
-     * Commande de 2 × 10,50 € = 21 €.
+     * Commande de 2 × 10,50 € (prix définitif) = 21 €.
      */
-    private function commande(?\App\Entity\User $user = null): Commande
+    private function commande(?\App\Entity\User $user = null, ?float $prixFinal = 10.5): Commande
     {
-        $product = $this->createProduct('Farine', 5, 10.5);
+        $product = $this->createProduct('Farine', 5, 12);
+        $product->setPrixFinal($prixFinal);
         $jour = $this->createJourDistrib([$product]);
 
         return $this->createCommande($user ?? $this->createUser(), $jour, [[$product, 2]]);
@@ -214,12 +215,13 @@ class HelloAssoTest extends WebTestCase
         $this->assertRedirectsTo('/commande/');
         $this->assertEmailCount(1);
         $paid = $this->reload(Commande::class, $commande->getId());
+        $this->assertTrue($paid->getPayee());
         $this->assertTrue($paid->getconfirmed());
         $this->assertSame(777, $paid->getHelloassoOrderId());
 
         $this->client->followRedirect();
         $this->assertSelectorTextContains('.flash', 'paiement a bien été reçu');
-        $this->assertSelectorTextContains('.panel-head', 'Paiement reçu (en ligne)');
+        $this->assertSelectorTextContains('.panel-head', 'Payée en ligne');
         $this->assertSelectorNotExists('form[action$="/paiement"]');
     }
 
@@ -235,7 +237,7 @@ class HelloAssoTest extends WebTestCase
         // Paramètres d'URL forgés : sans paiement côté HelloAsso, rien n'est confirmé
         $this->client->request('GET', '/commande/' . $commande->getId() . '/paiement/retour?code=succeeded&orderId=1');
         $this->assertRedirectsTo('/commande/');
-        $this->assertFalse($this->reload(Commande::class, $commande->getId())->getconfirmed());
+        $this->assertFalse($this->reload(Commande::class, $commande->getId())->getPayee());
         $this->assertEmailCount(0);
     }
 
@@ -294,6 +296,7 @@ class HelloAssoTest extends WebTestCase
         $this->assertResponseIsSuccessful();
         $this->assertEmailCount(1);
         $paid = $this->reload(Commande::class, $commande->getId());
+        $this->assertTrue($paid->getPayee());
         $this->assertTrue($paid->getconfirmed());
         $this->assertSame(777, $paid->getHelloassoOrderId());
 
@@ -318,7 +321,7 @@ class HelloAssoTest extends WebTestCase
             'metadata' => ['commande' => $commande->getId()],
         ]));
         $this->assertResponseIsSuccessful();
-        $this->assertFalse($this->reload(Commande::class, $commande->getId())->getconfirmed());
+        $this->assertFalse($this->reload(Commande::class, $commande->getId())->getPayee());
 
         $this->client->request('POST', '/helloasso/notification', [], [], [], 'pas du json');
         $this->assertResponseStatusCodeSame(400);
@@ -329,7 +332,7 @@ class HelloAssoTest extends WebTestCase
         $this->configure();
         $user = $this->createUser();
         $paid = $this->commande($user);
-        $paid->setConfirmed(true);
+        $paid->setPayee(true);
         $this->persist($paid);
         $unpaid = $this->commande($user);
         $this->login($user);
@@ -338,5 +341,41 @@ class HelloAssoTest extends WebTestCase
         $this->assertResponseIsSuccessful();
         $this->assertCount(1, $crawler->filter('form[action="/commande/' . $unpaid->getId() . '/paiement"]'));
         $this->assertCount(0, $crawler->filter('form[action="/commande/' . $paid->getId() . '/paiement"]'));
+    }
+
+    public function testNoPayButtonBeforeFinalPrices(): void
+    {
+        $this->configure();
+        $commande = $this->commande(null, null);
+        $this->login($commande->getUser());
+
+        $this->client->request('GET', '/commande/');
+        $this->assertSelectorNotExists('form[action$="/paiement"]');
+        $this->assertSelectorTextContains('.panel-body', 'dès que les prix définitifs seront connus');
+
+        $this->client->request('GET', '/commande/' . $commande->getId() . '/paiement');
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorNotExists('form[action$="/paiement"]');
+        $this->assertSelectorTextContains('.col-12', 'prix définitifs ne sont pas encore tous connus');
+    }
+
+    public function testPaymentPage(): void
+    {
+        $this->configure();
+        $commande = $this->commande();
+        $commande->setConfirmed(true);
+        $this->persist($commande);
+        $this->login($commande->getUser());
+
+        // Commande validée (chèque d'engagement) : le paiement définitif reste possible
+        $crawler = $this->client->request('GET', '/commande/' . $commande->getId() . '/paiement');
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('.panel-foot', '21,00');
+        $this->assertSelectorTextContains('.panel-head', 'Validée');
+        $this->assertCount(1, $crawler->filter('form[action="/commande/' . $commande->getId() . '/paiement"]'));
+
+        $this->login($this->createUser('autre@example.com'));
+        $this->client->request('GET', '/commande/' . $commande->getId() . '/paiement');
+        $this->assertResponseStatusCodeSame(403);
     }
 }

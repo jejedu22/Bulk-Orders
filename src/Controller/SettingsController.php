@@ -3,8 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\Settings;
+use App\Form\HelloAssoType;
 use App\Form\MailjetType;
 use App\Form\SettingsType;
+use App\Service\HelloAsso;
 use App\Service\Mailjet;
 use App\Service\OptionsSettings;
 use App\Repository\SettingsRepository;
@@ -29,9 +31,10 @@ class SettingsController extends AbstractController
     #[Route('/', name: 'settings_index', methods: ['GET'])]
     public function index(SettingsRepository $settingsRepository): Response
     {
-        // Les réglages Mailjet ont leur propre page (la clé secrète n'est jamais affichée)
+        // Les réglages Mailjet et HelloAsso ont leur propre page (les clés secrètes ne sont jamais affichées)
         $settings = array_filter($settingsRepository->findAll(), function (Settings $setting) {
-            return !str_starts_with((string) $setting->getName(), 'mailjet_');
+            return !str_starts_with((string) $setting->getName(), 'mailjet_')
+                && !str_starts_with((string) $setting->getName(), 'helloasso_');
         });
 
         return $this->render('settings/index.html.twig', [
@@ -77,6 +80,47 @@ class SettingsController extends AbstractController
         ]);
     }
 
+
+    #[Route('/helloasso', name: 'settings_helloasso', methods: ['GET', 'POST'])]
+    public function helloasso(Request $request, HelloAsso $helloAsso, OptionsSettings $options): Response
+    {
+        $form = $this->createForm(HelloAssoType::class, [
+            'organization' => $helloAsso->organization(),
+            'clientId' => $helloAsso->clientId(),
+            'sandbox' => $helloAsso->isSandbox(),
+        ], ['has_secret' => '' !== $helloAsso->clientSecret()]);
+        $form->handleRequest($request);
+
+        $checks = null;
+        if ($form->isSubmitted() && $form->isValid()) {
+            $data = $form->getData();
+            $organization = trim((string) $data['organization']);
+            $clientId = trim((string) $data['clientId']);
+            // Clé secrète vide : on garde celle enregistrée
+            $clientSecret = trim((string) $data['clientSecret']) ?: $helloAsso->clientSecret();
+            $sandbox = (bool) $data['sandbox'];
+
+            if ($request->request->has('check')) {
+                // Vérification des valeurs saisies, sans les enregistrer
+                $checks = $helloAsso->check($clientId, $clientSecret, $organization, $sandbox);
+            } else {
+                $options->set(HelloAsso::ORGANIZATION, $organization);
+                $options->set(HelloAsso::CLIENT_ID, $clientId);
+                $options->set(HelloAsso::CLIENT_SECRET, '' === $clientId ? '' : $clientSecret);
+                $options->set(HelloAsso::SANDBOX, $sandbox ? '1' : '');
+                $this->addFlash('success', '' === $clientId ? 'Configuration HelloAsso supprimée : le paiement en ligne est désactivé.' : 'Configuration HelloAsso enregistrée.');
+
+                return $this->redirectToRoute('settings_helloasso');
+            }
+        }
+
+        return $this->render('settings/helloasso.html.twig', [
+            'form' => $form->createView(),
+            'configured' => $helloAsso->isConfigured(),
+            'sandbox' => $helloAsso->isSandbox(),
+            'checks' => $checks,
+        ]);
+    }
 
     #[Route('/{id}/edit', name: 'settings_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, Settings $setting): Response

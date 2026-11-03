@@ -55,6 +55,7 @@ menu:
       config: Configuration
       user: Utilisateurs
       mailjet: Mailjet
+      helloasso: HelloAsso
   my_last_command: Ma dernière commande
   synthesis: Toutes mes commandes
   order: Passer commande
@@ -127,6 +128,8 @@ email:
   subject:
     confirm_command: Commande Confirmée
     register_command: Commande Enregistrée
+    payment_request: Montant définitif de votre commande
+    payment_received: Paiement reçu
 recap:
   title: Récapitulatif des commandes
   nom: Nom

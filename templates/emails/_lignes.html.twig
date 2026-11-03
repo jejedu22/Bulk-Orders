@@ -1,0 +1,36 @@
+{# Lignes d'une commande ; final : prix définitifs (sinon prix initiaux, total estimé) #}
+{% set cell = 'padding: 8px; border-bottom: 1px solid #e9ecef; text-align: left' %}
+    <table style="width: 100%; border-collapse: collapse; font-size: 14px">
+        <thead>
+            <tr style="background: #f8f9fa">
+                <th style="{{ cell }}">Produit</th>
+                <th style="{{ cell }}; text-align: right">{{ final ? 'Prix unitaire' : 'Prix unitaire initial' }}</th>
+                <th style="{{ cell }}; text-align: right">Quantité</th>
+                <th style="{{ cell }}; text-align: right">Montant</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% set total = 0 %}
+        {% for ligne in commande.ligneCommandes %}
+            {% set product = ligne.product %}
+            {% set prix = final ? product.prixFinal : product.prixInit %}
+            {% set montant = prix * ligne.quantite %}
+            {% set total = total + montant %}
+            <tr>
+                <td style="{{ cell }}">{{ product.nom }}<br><span style="color: #6c757d; font-size: 12px">{{ product.conditionnement ~ product.unit }}</span></td>
+                <td style="{{ cell }}; text-align: right; white-space: nowrap">{{ prix|number_format(2, ',', ' ') }} €</td>
+                <td style="{{ cell }}; text-align: right">{{ ligne.quantite }}</td>
+                <td style="{{ cell }}; text-align: right; white-space: nowrap">{{ montant|number_format(2, ',', ' ') }} €</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" style="padding: 10px 8px; text-align: right; font-weight: bold">{{ final ? 'Total' : 'Total estimé' }}</td>
+                <td style="padding: 10px 8px; text-align: right; font-weight: bold; white-space: nowrap">{{ total|number_format(2, ',', ' ') }} €</td>
+            </tr>
+        </tfoot>
+    </table>
+    {% if not final %}
+    <p style="color: #6c757d; font-size: 12px; margin: 8px 0 0">Montant calculé sur les prix initiaux ; le montant final peut varier selon les prix définitifs.</p>
+    {% endif %}

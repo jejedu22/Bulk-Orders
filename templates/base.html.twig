@@ -181,7 +181,7 @@
                                 </a>
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item">
-                                        <a href="{{ path('settings_index') }}" class="nav-link {{ current_route starts with 'settings_' and current_route != 'settings_mailjet' ? 'active' }}">
+                                        <a href="{{ path('settings_index') }}" class="nav-link {{ current_route starts with 'settings_' and current_route not in ['settings_mailjet', 'settings_helloasso'] ? 'active' }}">
                                             <i class="fas fa-sliders-h nav-icon"></i>
                                             <p>{{ 'menu.admin.parameter.config'|trans }}</p>
                                         </a>
@@ -190,6 +190,12 @@
                                         <a href="{{ path('settings_mailjet') }}" class="nav-link {{ current_route == 'settings_mailjet' ? 'active' }}">
                                             <i class="fas fa-paper-plane nav-icon"></i>
                                             <p>{{ 'menu.admin.parameter.mailjet'|trans }}</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ path('settings_helloasso') }}" class="nav-link {{ current_route == 'settings_helloasso' ? 'active' }}">
+                                            <i class="fas fa-credit-card nav-icon"></i>
+                                            <p>{{ 'menu.admin.parameter.helloasso'|trans }}</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">

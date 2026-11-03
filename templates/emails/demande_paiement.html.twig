@@ -1,0 +1,28 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% block title %}{{ subject }}{% endblock %}
+
+{% block content %}
+    {% set jour = commande.jourDistrib %}
+    <h1 style="font-size: 20px; margin: 0 0 16px">{{ subject }}</h1>
+    {% if commande.user.prenom %}<p style="margin: 0 0 12px">Bonjour {{ commande.user.prenom }},</p>{% endif %}
+    <p style="margin: 0 0 16px">
+        Les prix définitifs de la vente{% if jour %} du {{ jour.date|date('d/m/Y') }}{% endif %} sont connus.
+        Le montant à régler pour votre commande n°{{ commande.id }} est de
+        <strong>{{ commande.total|number_format(2, ',', ' ') }} €</strong>.
+    </p>
+
+    {{ include('emails/_lignes.html.twig', {final: true}) }}
+
+    {% if payment_url %}
+        {{ include('emails/_button.html.twig', {url: payment_url, label: 'Payer en ligne'}) }}
+        <p style="color: #6c757d; font-size: 13px; margin: 0">
+            Paiement sécurisé par HelloAsso. Vous pouvez aussi régler par chèque de ce montant ;
+            votre chèque d'engagement ne sera pas encaissé.
+        </p>
+    {% else %}
+        <p style="margin: 16px 0 0">
+            Merci de remettre un chèque de ce montant ; votre chèque d'engagement ne sera pas encaissé.
+        </p>
+    {% endif %}
+{% endblock %}

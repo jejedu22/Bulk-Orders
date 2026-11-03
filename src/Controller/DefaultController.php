@@ -19,6 +19,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+use App\Service\CommandeConfirmation;
 use App\Service\MailSender;
 
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -166,17 +167,22 @@ class DefaultController extends AbstractController
     }
 
     #[Route('/confirme/{commande}', name: 'livree_confirme', methods: ['GET'])]
-    public function confirmeCommande(CommandeRepository $commandeRepository, #[MapEntity(id: 'commande')] Commande $commande, MailSender $mailSender, TranslatorInterface $translator): Response
+    public function confirmeCommande(#[MapEntity(id: 'commande')] Commande $commande, CommandeConfirmation $confirmation, TranslatorInterface $translator): Response
     {
-        $entityManager = $this->entityManager;
-        $commande->setConfirmed(true);
-        
-        $entityManager->persist($commande);
-        $entityManager->flush();
-        $message = $entityManager->getRepository(Settings::class)->findOneBy(['name' => 'text_confirm_email'])->getValue();
-        if (!$mailSender->sendCommande($commande, $translator->trans('email.subject.confirm_command'), (string) $message)) {
+        if (!$confirmation->confirm($commande)) {
             $this->addFlash('warning', $translator->trans('alert_message.email_not_sent', ['%email%' => $commande->getUser()->getMail()]));
         }
+
+        return $this->redirectToRoute('synthese_index',['suivi' => 2]);
+    }
+
+    /**
+     * Paiement définitif reçu (chèque définitif, espèces…).
+     */
+    #[Route('/confirme/{commande}/paiement', name: 'commande_payee', methods: ['GET'])]
+    public function commandePayee(#[MapEntity(id: 'commande')] Commande $commande, CommandeConfirmation $confirmation): Response
+    {
+        $confirmation->markPaid($commande);
 
         return $this->redirectToRoute('synthese_index',['suivi' => 2]);
     }

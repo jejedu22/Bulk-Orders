@@ -29,7 +29,8 @@
         </div>
         <div class="chips">
             <button type="button" class="chip active" data-filter-value="">Toutes</button>
-            <button type="button" class="chip" data-filter-value="unpaid">En attente de paiement</button>
+            <button type="button" class="chip" data-filter-value="pending">À valider</button>
+            <button type="button" class="chip" data-filter-value="validated">Validées</button>
             <button type="button" class="chip" data-filter-value="paid">Payées</button>
             <button type="button" class="chip" data-filter-value="delivered">Livrées</button>
         </div>
@@ -39,7 +40,8 @@
 {% for jour_distrib in jour_distribs %}
     {# 0 : mes commandes ; 1 : commandes restant à livrer ; 2 : toutes les commandes #}
     {% set commandes = (jour_distrib.commandes ?? [])|filter(c => (suivi == 0 and c.user == app.user) or (suivi == 1 and not c.livree) or suivi == 2) %}
-    {% set nb_unpaid = commandes|filter(c => not c.confirmed)|length %}
+    {% set nb_pending = commandes|filter(c => not c.confirmed)|length %}
+    {% set nb_to_pay = commandes|filter(c => c.confirmed and not c.payee)|length %}
     {% set nb_paid = commandes|filter(c => c.confirmed and not c.livree)|length %}
     {% set nb_delivered = commandes|filter(c => c.livree)|length %}
     {% set collapsed = (suivi == 1 and jour_distrib.date|date('Y-m-d') != today) or (suivi == 2 and commandes is not empty and nb_delivered == commandes|length) %}
@@ -57,11 +59,21 @@
             </div>
             <div class="d-flex align-items-center flex-wrap" style="gap: .4rem">
                 {% if suivi != 0 %}
-                    {% if nb_unpaid %}<span class="pill pill-danger" title="En attente de paiement">{{ nb_unpaid }} à payer</span>{% endif %}
-                    {% if nb_paid %}<span class="pill pill-warning" title="Payées, à livrer">{{ nb_paid }} à livrer</span>{% endif %}
+                    {% if nb_pending %}<span class="pill pill-danger" title="Chèque d'engagement non reçu">{{ nb_pending }} à valider</span>{% endif %}
+                    {% if nb_to_pay %}<span class="pill pill-info" title="Validées, paiement définitif non reçu">{{ nb_to_pay }} à payer</span>{% endif %}
+                    {% if nb_paid %}<span class="pill pill-warning" title="Validées, à livrer">{{ nb_paid }} à livrer</span>{% endif %}
                     {% if nb_delivered %}<span class="pill pill-success">{{ nb_delivered }} livrée{{ nb_delivered > 1 ? 's' }}</span>{% endif %}
                 {% endif %}
                 {% if suivi == 2 %}
+                    {% set nb_requests = demande_paiement_pending(jour_distrib) %}
+                    {% if nb_requests %}
+                        <form method="post" action="{{ path('jour_distrib_demande_paiement', {'id': jour_distrib.id}) }}" class="d-inline" data-confirm="Envoyer le montant définitif {{ helloasso_configured() ? 'et le lien de paiement en ligne ' }}à {{ nb_requests }} client{{ nb_requests > 1 ? 's' }} ?">
+                            <input type="hidden" name="_token" value="{{ csrf_token('demande-paiement' ~ jour_distrib.id) }}">
+                            <button class="btn btn-sm btn-accent" title="E-mail aux clients dont les prix définitifs sont connus et qui ne l'ont pas encore reçu"><i class="fas fa-envelope mr-1"></i> Demander le paiement ({{ nb_requests }})</button>
+                        </form>
+                    {% endif %}
+                    {% set nb_missing = demande_paiement_missing(jour_distrib) %}
+                    {% if nb_missing %}<span class="pill pill-muted" title="Commandes non payées dont un produit n'a pas encore de prix final">{{ nb_missing }} sans prix définitif</span>{% endif %}
                     <a href="{{ path('export_csv', { id: jour_distrib.id }) }}" class="btn btn-sm btn-soft" title="Exporter en CSV"><i class="fas fa-file-csv mr-1"></i> CSV</a>
                 {% endif %}
                 <i class="fas fa-chevron-down ml-1"></i>
@@ -80,7 +92,7 @@
                 {% if ligne.product.prixFinal is null %}{% set hasFinal = false %}{% endif %}
                 {% set search = search ~ ' ' ~ ligne.product.nom %}
             {% endfor %}
-            {% set status = commande.livree ? 'delivered' : (commande.confirmed ? 'paid' : 'unpaid') %}
+            {% set status = commande.livree ? 'delivered' : (commande.payee ? 'paid' : (commande.confirmed ? 'validated' : 'pending')) %}
             {% set can_delete = not commande.livree and jour_distrib.date|date('Y-m-d') >= today and (suivi != 0 or not commande.confirmed) %}
             <li class="row-item align-items-start" data-filter-item data-status="{{ status }}" data-search="{{ search }}">
                 {% if suivi != 0 %}
@@ -112,7 +124,11 @@
                         </div>
                         <div class="d-flex align-items-center" style="gap: .75rem">
                             {% if suivi == 2 and not commande.confirmed %}
-                                <a href="{{ path('livree_confirme', { commande: commande.id }) }}" class="btn btn-sm btn-accent" data-confirm="Confirmer la réception du paiement de {{ commande.user.prenom }} {{ commande.user.nom }} ? Un e-mail de confirmation lui sera envoyé.">
+                                <a href="{{ path('livree_confirme', { commande: commande.id }) }}" class="btn btn-sm btn-accent" data-confirm="Valider la commande de {{ commande.user.prenom }} {{ commande.user.nom }} (chèque d'engagement reçu) ? Un e-mail de confirmation lui sera envoyé.">
+                                    <i class="fas fa-check mr-1"></i> Valider
+                                </a>
+                            {% elseif suivi == 2 and not commande.payee %}
+                                <a href="{{ path('commande_payee', { commande: commande.id }) }}" class="btn btn-sm btn-soft" data-confirm="Enregistrer le paiement définitif de {{ commande.user.prenom }} {{ commande.user.nom }} ?">
                                     <i class="fas fa-euro-sign mr-1"></i> Paiement reçu
                                 </a>
                             {% elseif suivi == 1 and not commande.livree %}
@@ -120,6 +136,7 @@
                                     <i class="fas fa-check mr-1"></i> Remise
                                 </a>
                             {% endif %}
+                            {% if suivi == 0 and helloasso_can_pay(commande) %}{{ include('commande/_paiement_form.html.twig', {'compact': true}) }}{% endif %}
                             {% if can_delete %}{{ include('commande/_delete_form.html.twig', {'compact': true}) }}{% endif %}
                         </div>
                     </div>

@@ -116,6 +116,48 @@ configuration devient alors l'adresse de réponse.
 Un échec d'envoi n'interrompt pas la commande : l'utilisateur est averti et
 l'erreur apparaît dans `docker compose logs app`.
 
+### Paiement en ligne (HelloAsso)
+
+Le paiement en ligne des commandes par [HelloAsso](https://www.helloasso.com)
+se configure dans **Paramètres → HelloAsso** :
+
+- organisation : identifiant de l'association dans l'adresse de sa page
+  HelloAsso (`helloasso.com/associations/mon-association`) ;
+- identifiant client et clé secrète : espace HelloAsso de l'association →
+  Mon compte → Intégrations et API (la clé secrète n'est jamais réaffichée ;
+  laisser le champ vide pour la conserver, vider l'identifiant client pour
+  désactiver le paiement en ligne) ;
+- « Environnement de test » : paiements fictifs sur helloasso-sandbox.com,
+  avec des identifiants créés sur ce site ;
+- le bouton « Vérifier la connexion » contrôle les identifiants et l'accès à
+  l'organisation, sans rien enregistrer.
+
+Le règlement se fait en deux temps :
+
+1. **Validation** : le client remet un chèque d'engagement, non encaissé ;
+   l'administrateur clique sur « Valider » (Toutes les commandes) et le
+   client reçoit l'e-mail de confirmation. Statut : « Validée ».
+2. **Paiement définitif**, une fois les prix finaux saisis sur les produits :
+   le bouton **Demander le paiement** de chaque vente (Toutes les commandes)
+   envoie à chaque client non payé dont tous les prix sont connus le montant
+   exact de sa commande, avec un lien **Payer en ligne** si HelloAsso est
+   configuré (sinon l'e-mail invite à régler par chèque). Chaque client ne
+   reçoit la demande qu'une fois ; les commandes dont un prix final manque
+   sont signalées (« sans prix définitif ») et recevront la demande au
+   prochain envoi. Statut : « Payée », automatiquement après un paiement en
+   ligne (e-mail de reçu), ou par le bouton « Paiement reçu » pour un chèque.
+
+Le paiement en ligne n'est proposé (page de la commande, historique, lien de
+l'e-mail) qu'une fois les prix définitifs de tous les produits de la commande
+connus, pour un montant d'au moins 1 €.
+
+Pour que le paiement soit pris en compte même si le client ne revient pas sur
+le site, renseigner dans HelloAsso (Intégrations et API → URL de callback)
+l'adresse de notification affichée sur la page Paramètres → HelloAsso
+(`https://APP_HOST/helloasso/notification`). Le statut d'un paiement est
+toujours relu auprès de l'API HelloAsso : une notification ou une URL de
+retour forgée ne confirme pas une commande.
+
 ### Newsletters (Mailjet)
 
 Les administrateurs rédigent et envoient les newsletters depuis le menu

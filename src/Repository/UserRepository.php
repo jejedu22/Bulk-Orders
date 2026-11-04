@@ -124,20 +124,27 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     public function findAdherentsAJour(?\DateTimeInterface $date = null): array
     {
         $jour = $date ? \DateTimeImmutable::createFromInterface($date) : new \DateTimeImmutable('today');
-        $actifs = $this->getEntityManager()->createQueryBuilder()
-            ->select('IDENTITY(a.user)')
-            ->from(Adhesion::class, 'a')
-            ->where('a.dateDebut <= :jour')
-            ->andWhere('a.dateFin >= :jour');
-
         $qb = $this->createQueryBuilder('u');
 
-        return $qb->where($qb->expr()->in('u.id', $actifs->getDQL()))
+        return $qb->where($qb->expr()->in('u.id', $this->adherentsAJourDql('a')))
             ->setParameter('jour', $jour->setTime(0, 0), 'date_immutable')
             ->orderBy('u.nom', 'ASC')
             ->addOrderBy('u.prenom', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Sous-requête : identifiants des utilisateurs dont une adhésion couvre :jour.
+     */
+    private function adherentsAJourDql(string $alias): string
+    {
+        return $this->getEntityManager()->createQueryBuilder()
+            ->select(sprintf('IDENTITY(%s.user)', $alias))
+            ->from(Adhesion::class, $alias)
+            ->where(sprintf('%s.dateDebut <= :jour', $alias))
+            ->andWhere(sprintf('%s.dateFin >= :jour', $alias))
+            ->getDQL();
     }
 
     /**
@@ -163,16 +170,17 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     /**
      * Destinataires des newsletters : abonnés, membres d'au moins un des
-     * groupes s'il y en a (une seule fois chacun), et clients de la vente si
-     * elle est indiquée. Sans groupe ni vente : tous les abonnés.
+     * groupes s'il y en a (une seule fois chacun), clients de la vente si
+     * elle est indiquée, et adhérents à jour si demandé. Sans aucun de ces
+     * critères : tous les abonnés.
      *
      * @param iterable<NewsletterGroup> $groups
      *
      * @return User[]
      */
-    public function findNewsletterSubscribers(iterable $groups = [], ?JourDistrib $jourDistrib = null): array
+    public function findNewsletterSubscribers(iterable $groups = [], ?JourDistrib $jourDistrib = null, bool $adherentsOnly = false): array
     {
-        return $this->subscribersQuery($groups, $jourDistrib)
+        return $this->subscribersQuery($groups, $jourDistrib, $adherentsOnly)
             ->orderBy('u.nom', 'ASC')
             ->addOrderBy('u.prenom', 'ASC')
             ->getQuery()
@@ -182,9 +190,9 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     /**
      * @param iterable<NewsletterGroup> $groups
      */
-    public function countNewsletterSubscribers(iterable $groups = [], ?JourDistrib $jourDistrib = null): int
+    public function countNewsletterSubscribers(iterable $groups = [], ?JourDistrib $jourDistrib = null, bool $adherentsOnly = false): int
     {
-        return (int) $this->subscribersQuery($groups, $jourDistrib)
+        return (int) $this->subscribersQuery($groups, $jourDistrib, $adherentsOnly)
             ->select('COUNT(u.id)')
             ->getQuery()
             ->getSingleScalarResult();
@@ -195,15 +203,15 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
      */
     public function findNewsletterRecipients(Newsletter $newsletter): array
     {
-        return $this->findNewsletterSubscribers($newsletter->getGroups(), $newsletter->getJourDistrib());
+        return $this->findNewsletterSubscribers($newsletter->getGroups(), $newsletter->getJourDistrib(), $newsletter->isAdherentsOnly());
     }
 
     public function countNewsletterRecipients(Newsletter $newsletter): int
     {
-        return $this->countNewsletterSubscribers($newsletter->getGroups(), $newsletter->getJourDistrib());
+        return $this->countNewsletterSubscribers($newsletter->getGroups(), $newsletter->getJourDistrib(), $newsletter->isAdherentsOnly());
     }
 
-    private function subscribersQuery(iterable $groups, ?JourDistrib $jourDistrib = null): \Doctrine\ORM\QueryBuilder
+    private function subscribersQuery(iterable $groups, ?JourDistrib $jourDistrib = null, bool $adherentsOnly = false): \Doctrine\ORM\QueryBuilder
     {
         $groups = \is_array($groups) ? $groups : iterator_to_array($groups, false);
         $qb = $this->createQueryBuilder('u')->andWhere('u.newsletter = true');
@@ -224,6 +232,10 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                 ->where('c.jourDistrib = :jourDistrib');
             $qb->andWhere($qb->expr()->in('u.id', $customers->getDQL()))
                 ->setParameter('jourDistrib', $jourDistrib);
+        }
+        if ($adherentsOnly) {
+            $qb->andWhere($qb->expr()->in('u.id', $this->adherentsAJourDql('adh')))
+                ->setParameter('jour', new \DateTimeImmutable('today'), 'date_immutable');
         }
 
         return $qb;

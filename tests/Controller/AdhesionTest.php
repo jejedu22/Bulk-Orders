@@ -3,10 +3,13 @@
 namespace App\Tests\Controller;
 
 use App\Entity\Adhesion;
+use App\Entity\Newsletter;
+use App\Entity\NewsletterGroup;
 use App\Entity\User;
 use App\Service\AdhesionPeriode;
 use App\Service\OptionsSettings;
 use App\Tests\WebTestCase;
+use Symfony\Component\Mime\Email;
 
 /**
  * Gestion des adhérents : adhésions, saison, création de compte par un administrateur.
@@ -232,5 +235,107 @@ class AdhesionTest extends WebTestCase
 
         $this->assertSelectorTextContains('body', 'L\'email renseigné est déjà utilisé.');
         $this->assertCount(1, $this->em()->getRepository(User::class)->findBy(['mail' => 'alice@example.com']));
+    }
+
+    private function newsletter(bool $adherentsOnly, array $groups = []): Newsletter
+    {
+        $newsletter = new Newsletter();
+        $newsletter->setSubject('Assemblée générale')->setContent('<p>Convocation</p>')->setAdherentsOnly($adherentsOnly);
+        foreach ($groups as $group) {
+            $newsletter->addGroup($group);
+        }
+        $this->persist($newsletter);
+
+        return $newsletter;
+    }
+
+    /** @return string[] */
+    private function sentTo(): array
+    {
+        $recipients = array_map(function (Email $email) { return $email->getTo()[0]->getAddress(); }, $this->getMailerMessages());
+        sort($recipients);
+
+        return $recipients;
+    }
+
+    public function testNewsletterForCurrentMembersOnly(): void
+    {
+        $alice = $this->createUser('alice@example.com');
+        $bob = $this->createUser('bob@example.com');
+        $carol = $this->createUser('carol@example.com');
+        $denise = $this->createUser('denise@example.com');
+        $denise->setNewsletter(false);
+        $this->em()->flush();
+        $this->adhesion($alice, '-1 month', '+1 month');
+        $this->adhesion($bob, '-2 years', '-1 year');
+        $this->adhesion($carol, '+1 day', '+1 year');
+        $this->adhesion($denise, '-1 month', '+1 month');
+        $newsletter = $this->newsletter(true);
+
+        $this->login($this->admin);
+        $this->client->request('GET', '/newsletter/'.$newsletter->getId());
+        $this->assertSelectorTextContains('.page-head', 'Adhérents à jour uniquement');
+        $this->assertSelectorTextContains('body', 'Envoyer à 1 abonné');
+
+        $this->submitFormWithAction('/newsletter/'.$newsletter->getId(), '/newsletter/'.$newsletter->getId().'/send');
+
+        // Bob a expiré, Carol n'a pas commencé, Denise est désinscrite
+        $this->assertSame(['alice@example.com'], $this->sentTo());
+    }
+
+    public function testCurrentMembersOptionCombinesWithGroups(): void
+    {
+        $alice = $this->createUser('alice@example.com');
+        $bob = $this->createUser('bob@example.com');
+        $this->createUser('carol@example.com');
+        $this->adhesion($alice, '-1 month', '+1 month');
+        $this->adhesion($bob, '-1 month', '+1 month');
+        $group = new NewsletterGroup();
+        $group->setName('Bureau');
+        $group->addUser($alice);
+        $this->persist($group);
+        $newsletter = $this->newsletter(true, [$group]);
+
+        $this->login($this->admin);
+        $this->submitFormWithAction('/newsletter/'.$newsletter->getId(), '/newsletter/'.$newsletter->getId().'/send');
+
+        $this->assertSame(['alice@example.com'], $this->sentTo());
+    }
+
+    public function testNoCurrentMemberSendsNothing(): void
+    {
+        $this->createUser('alice@example.com');
+        $newsletter = $this->newsletter(true);
+
+        $this->login($this->admin);
+        $this->submitFormWithAction('/newsletter/'.$newsletter->getId(), '/newsletter/'.$newsletter->getId().'/send');
+
+        $this->assertEmailCount(0);
+        $this->assertFalse($this->reload(Newsletter::class, $newsletter->getId())->isSent());
+        $this->client->followRedirect();
+        $this->assertSelectorTextContains('.alert-warning', 'Aucun abonné parmi les destinataires choisis.');
+    }
+
+    public function testOptionIsSetFromTheFormAndKeptWhenDuplicating(): void
+    {
+        $this->login($this->admin);
+        $crawler = $this->client->request('GET', '/newsletter/new');
+        $form = $crawler->filter('form[name="newsletter"]')->form([
+            'newsletter[subject]' => 'Assemblée générale',
+            'newsletter[content]' => '<p>Convocation</p>',
+        ]);
+        $form['newsletter[adherentsOnly]']->tick();
+        $this->client->submit($form);
+
+        $newsletter = $this->em()->getRepository(Newsletter::class)->findOneBy(['subject' => 'Assemblée générale']);
+        $this->assertTrue($newsletter->isAdherentsOnly());
+
+        $this->submitFormWithAction('/newsletter/'.$newsletter->getId(), '/newsletter/'.$newsletter->getId().'/duplicate');
+        $copies = $this->em()->getRepository(Newsletter::class)->findBy([], ['id' => 'DESC'], 1);
+        $this->assertNotSame($newsletter->getId(), $copies[0]->getId());
+        $this->assertTrue($copies[0]->isAdherentsOnly());
+
+        $this->client->request('GET', '/newsletter/');
+        $this->assertSelectorTextContains('.rows', 'adhérents à jour');
     }
 }

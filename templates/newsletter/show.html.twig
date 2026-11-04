@@ -21,8 +21,11 @@
                 {% for group in newsletter.groups %}
                     <span class="pill pill-info"><i class="fas fa-users"></i> {{ group.name }}</span>
                 {% else %}
-                    {% if not newsletter.jourDistrib %}<span class="pill pill-muted"><i class="fas fa-users"></i> Tous les abonnés</span>{% endif %}
+                    {% if not newsletter.jourDistrib and not newsletter.adherentsOnly %}<span class="pill pill-muted"><i class="fas fa-users"></i> Tous les abonnés</span>{% endif %}
                 {% endfor %}
+                {% if newsletter.adherentsOnly %}
+                    <span class="pill pill-success"><i class="fas fa-id-card"></i> Adhérents à jour uniquement</span>
+                {% endif %}
                 {% if newsletter.jourDistrib %}
                     <span class="pill pill-warning"><i class="fas fa-shopping-basket"></i> Clients de la vente du {{ newsletter.jourDistrib.date|date('d/m/Y') }}</span>
                 {% endif %}

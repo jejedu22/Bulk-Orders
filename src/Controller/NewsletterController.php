@@ -188,6 +188,7 @@ class NewsletterController extends AbstractController
         $copy->setSubject($newsletter->getSubject())
             ->setContent($newsletter->getContent())
             ->setOrderButton($newsletter->hasOrderButton())
+            ->setAdherentsOnly($newsletter->isAdherentsOnly())
             ->setJourDistrib($newsletter->getJourDistrib());
         foreach ($newsletter->getGroups() as $group) {
             $copy->addGroup($group);
@@ -266,7 +267,7 @@ class NewsletterController extends AbstractController
 
         $recipients = $userRepository->findNewsletterRecipients($newsletter);
         if (!$recipients) {
-            $this->addFlash('warning', $newsletter->getGroups()->isEmpty() && null === $newsletter->getJourDistrib()
+            $this->addFlash('warning', $newsletter->getGroups()->isEmpty() && null === $newsletter->getJourDistrib() && !$newsletter->isAdherentsOnly()
                 ? 'Aucun utilisateur n\'est abonné à la newsletter.'
                 : 'Aucun abonné parmi les destinataires choisis.');
 

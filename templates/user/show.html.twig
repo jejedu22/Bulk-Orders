@@ -6,13 +6,14 @@
 
 {% block body %}
 <div class="col-12">
-    <a href="{{ path('user_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Utilisateurs</a>
+    <a href="{{ path('user_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Adhérents</a>
     <div class="page-head">
         <div class="d-flex align-items-center" style="gap: .9rem">
             <span class="avatar" style="width: 56px; height: 56px; font-size: 1.2rem">{{ user.prenom|initials(user.nom) }}</span>
             <div>
                 <h1>{{ user.prenom }} {{ user.nom }}</h1>
                 <p class="subtitle">{% for role in user.roles %}{{ role|trans }}{{ not loop.last ? ', ' }}{% endfor %}</p>
+                <p class="mb-0">{{ include('user/_adhesion_statut.html.twig') }}</p>
             </div>
         </div>
         <div class="actions">
@@ -26,6 +27,51 @@
             <li class="row-item"><i class="fas fa-phone-alt text-muted fa-fw"></i><span class="row-main">{% if user.phone %}<a href="tel:{{ user.phone }}">{{ user.phone }}</a>{% else %}<span class="text-muted">Non renseigné</span>{% endif %}</span></li>
             <li class="row-item"><i class="fas fa-paper-plane text-muted fa-fw"></i><span class="row-main">{{ user.newsletter ? 'Abonné·e à la newsletter' : 'Désinscrit·e de la newsletter' }}{% if user.newsletterGroups is not empty %} · {{ user.newsletterGroups|map(g => g.name)|join(', ') }}{% endif %}</span></li>
         </ul>
+    </div>
+
+    <div class="panel form-panel" id="adhesions">
+        <div class="panel-head"><h3>Adhésions</h3><span class="meta">{{ user.adhesions|length }}</span></div>
+        {% if user.adhesions is not empty %}
+            <ul class="rows">
+            {% for adhesion in user.adhesions %}
+                <li class="row-item {{ adhesion.expiree ? 'is-muted' }}">
+                    <i class="fas fa-id-card fa-fw {{ adhesion.couvre ? 'text-success' : 'text-muted' }}"></i>
+                    <span class="row-main">
+                        <span class="row-title d-block">Du {{ adhesion.dateDebut|date('d/m/Y') }} au {{ adhesion.dateFin|date('d/m/Y') }}</span>
+                        <span class="row-meta">
+                            {% if adhesion.montant is not null %}<span>{{ adhesion.montant|number_format(2, ',', ' ') }} €</span>{% endif %}
+                            {% if adhesion.modePaiementLabel %}<span>{{ adhesion.modePaiementLabel }}</span>{% endif %}
+                            {% if adhesion.note %}<span>{{ adhesion.note }}</span>{% endif %}
+                            <span class="hide-xs">Enregistrée le {{ adhesion.createdAt|date('d/m/Y') }}</span>
+                        </span>
+                    </span>
+                    {% if adhesion.couvre %}<span class="pill pill-success">En cours</span>{% elseif not adhesion.expiree %}<span class="pill pill-info">À venir</span>{% endif %}
+                    <a href="{{ path('user_adhesion_edit', {'id': adhesion.id}) }}" class="btn btn-sm btn-soft" title="Modifier" aria-label="Modifier l'adhésion"><i class="fas fa-pen"></i></a>
+                    <form method="post" action="{{ path('user_adhesion_delete', {'id': adhesion.id}) }}" data-confirm="Supprimer l'adhésion du {{ adhesion.dateDebut|date('d/m/Y') }} au {{ adhesion.dateFin|date('d/m/Y') }} ?">
+                        <input type="hidden" name="_method" value="DELETE">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete_adhesion' ~ adhesion.id) }}">
+                        <button class="btn btn-sm btn-outline-danger" title="Supprimer" aria-label="Supprimer l'adhésion"><i class="fas fa-trash-alt"></i></button>
+                    </form>
+                </li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+        <details class="panel-body adhesion-new" {{ adhesion_open or user.adhesions is empty ? 'open' }}>
+            <summary class="btn btn-accent"><i class="fas fa-plus mr-1"></i> {{ user.statutAdhesion in ['a_jour', 'expiree'] ? 'Renouveler l\'adhésion' : 'Enregistrer une adhésion' }}</summary>
+            {{ form_start(adhesion_form, {'attr': {'class': 'mt-3'}}) }}
+                <div class="form-row">
+                    <div class="col-sm-6">{{ form_row(adhesion_form.dateDebut) }}</div>
+                    <div class="col-sm-6">{{ form_row(adhesion_form.dateFin) }}</div>
+                    <div class="col-sm-6">{{ form_row(adhesion_form.montant) }}</div>
+                    <div class="col-sm-6">{{ form_row(adhesion_form.modePaiement) }}</div>
+                    <div class="col-12">{{ form_row(adhesion_form.note) }}</div>
+                </div>
+                {{ form_rest(adhesion_form) }}
+                <div class="form-actions">
+                    <button class="btn btn-accent"><i class="fas fa-check mr-1"></i> Enregistrer l'adhésion</button>
+                </div>
+            {{ form_end(adhesion_form) }}
+        </details>
     </div>
 
     <div class="panel form-panel">

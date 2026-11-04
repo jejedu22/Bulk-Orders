@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier l'adhésion{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <a href="{{ path('user_show', {'id': user.id}) }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> {{ user.prenom }} {{ user.nom }}</a>
+    <div class="page-head"><h1>Modifier l'adhésion</h1></div>
+    <div class="panel form-panel">
+        <div class="panel-body">
+            {{ form_start(form) }}
+                <div class="form-row">
+                    <div class="col-sm-6">{{ form_row(form.dateDebut) }}</div>
+                    <div class="col-sm-6">{{ form_row(form.dateFin) }}</div>
+                    <div class="col-sm-6">{{ form_row(form.montant) }}</div>
+                    <div class="col-sm-6">{{ form_row(form.modePaiement) }}</div>
+                    <div class="col-12">{{ form_row(form.note) }}</div>
+                </div>
+                {{ form_rest(form) }}
+                <div class="form-actions">
+                    <button class="btn btn-accent"><i class="fas fa-check mr-1"></i> Enregistrer</button>
+                    <a href="{{ path('user_show', {'id': user.id}) }}" class="btn btn-soft">Annuler</a>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</div>
+{% endblock %}

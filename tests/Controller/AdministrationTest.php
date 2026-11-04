@@ -215,7 +215,7 @@ class AdministrationTest extends WebTestCase
         $form['user_admin[nom]'] = 'Martin';
         $this->client->submit($form);
 
-        $this->assertRedirectsTo('/user/');
+        $this->assertRedirectsTo('/user/'.$user->getId());
         $user = $this->reload(User::class, $user->getId());
         $this->assertSame('Martin', $user->getNom());
         $this->assertContains('ROLE_ADMIN', $user->getRoles());

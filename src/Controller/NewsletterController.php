@@ -173,6 +173,57 @@ class NewsletterController extends AbstractController
         ]);
     }
 
+    /**
+     * Crée un brouillon reprenant le contenu, les destinataires et les pièces
+     * jointes d'une newsletter (envoyée ou non), puis ouvre sa modification.
+     */
+    #[Route('/newsletter/{id}/duplicate', name: 'newsletter_duplicate', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function duplicate(Request $request, Newsletter $newsletter): Response
+    {
+        if (!$this->isCsrfTokenValid('duplicate'.$newsletter->getId(), $request->request->get('_token'))) {
+            return $this->redirectToRoute('newsletter_show', ['id' => $newsletter->getId()]);
+        }
+
+        $copy = new Newsletter();
+        $copy->setSubject($newsletter->getSubject())
+            ->setContent($newsletter->getContent())
+            ->setOrderButton($newsletter->hasOrderButton())
+            ->setAdherentsOnly($newsletter->isAdherentsOnly())
+            ->setJourDistrib($newsletter->getJourDistrib());
+        foreach ($newsletter->getGroups() as $group) {
+            $copy->addGroup($group);
+        }
+
+        // Les pièces jointes dont le fichier a disparu ne sont pas reprises
+        $skipped = [];
+        foreach ($newsletter->getAttachments() as $attachment) {
+            try {
+                $this->attachments->copy($attachment, $copy);
+            } catch (\RuntimeException $e) {
+                $skipped[] = $attachment->getOriginalName();
+            }
+        }
+
+        try {
+            $this->entityManager->persist($copy);
+            $this->entityManager->flush();
+        } catch (\Throwable $e) {
+            $this->attachments->removeFiles($copy);
+
+            throw $e;
+        }
+
+        $this->addFlash('success', 'Newsletter dupliquée : vous pouvez modifier ce brouillon avant de l\'envoyer.');
+        if ($skipped) {
+            $this->addFlash('warning', sprintf(
+                'Pièce(s) jointe(s) introuvable(s) sur le serveur, non reprise(s) : %s.',
+                htmlspecialchars(implode(', ', $skipped))
+            ));
+        }
+
+        return $this->redirectToRoute('newsletter_edit', ['id' => $copy->getId()]);
+    }
+
     #[Route('/newsletter/{id}/test', name: 'newsletter_test', methods: ['POST'], requirements: ['id' => '\d+'])]
     public function test(Request $request, Newsletter $newsletter, NewsletterSender $sender): Response
     {
@@ -216,7 +267,7 @@ class NewsletterController extends AbstractController
 
         $recipients = $userRepository->findNewsletterRecipients($newsletter);
         if (!$recipients) {
-            $this->addFlash('warning', $newsletter->getGroups()->isEmpty() && null === $newsletter->getJourDistrib()
+            $this->addFlash('warning', $newsletter->getGroups()->isEmpty() && null === $newsletter->getJourDistrib() && !$newsletter->isAdherentsOnly()
                 ? 'Aucun utilisateur n\'est abonné à la newsletter.'
                 : 'Aucun abonné parmi les destinataires choisis.');
 

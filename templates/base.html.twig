@@ -173,7 +173,13 @@
                                     <p>{{ 'menu.admin.newsletter'|trans }}</p>
                                 </a>
                             </li>
-                            {% set settings_open = current_route starts with 'settings_' or current_route starts with 'user_' %}
+                            <li class="nav-item">
+                                <a href="{{ path('user_index') }}" class="nav-link {{ current_route starts with 'user_' ? 'active' }}">
+                                    <i class="fas fa-id-card nav-icon"></i>
+                                    <p>Adhérents</p>
+                                </a>
+                            </li>
+                            {% set settings_open = current_route starts with 'settings_' %}
                             <li class="nav-item has-treeview {{ settings_open ? 'menu-open' }}">
                                 <a href="#" class="nav-link {{ settings_open ? 'active' }}">
                                     <i class="fas fa-cog nav-icon"></i>
@@ -181,7 +187,7 @@
                                 </a>
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item">
-                                        <a href="{{ path('settings_index') }}" class="nav-link {{ current_route starts with 'settings_' and current_route not in ['settings_mailjet', 'settings_helloasso'] ? 'active' }}">
+                                        <a href="{{ path('settings_index') }}" class="nav-link {{ current_route starts with 'settings_' and current_route not in ['settings_mailjet', 'settings_helloasso', 'settings_adhesion'] ? 'active' }}">
                                             <i class="fas fa-sliders-h nav-icon"></i>
                                             <p>{{ 'menu.admin.parameter.config'|trans }}</p>
                                         </a>
@@ -199,9 +205,9 @@
                                         </a>
                                     </li>
                                     <li class="nav-item">
-                                        <a href="{{ path('user_index') }}" class="nav-link {{ current_route starts with 'user_' ? 'active' }}">
-                                            <i class="fas fa-users nav-icon"></i>
-                                            <p>{{ 'menu.admin.parameter.user'|trans }}</p>
+                                        <a href="{{ path('settings_adhesion') }}" class="nav-link {{ current_route == 'settings_adhesion' ? 'active' }}">
+                                            <i class="fas fa-id-card nav-icon"></i>
+                                            <p>Adhésions</p>
                                         </a>
                                     </li>
                                 </ul>

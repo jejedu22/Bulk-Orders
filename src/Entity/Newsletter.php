@@ -56,6 +56,11 @@ class Newsletter
     #[ORM\OrderBy(['id' => 'ASC'])]
     private $attachments;
 
+    // Uniquement les adhérents à jour (adhésion couvrant le jour de l'envoi),
+    // en plus des groupes et de la vente éventuels
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private $adherentsOnly = false;
+
     // Bouton « Commander » vers le site à la fin de l'e-mail
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private $orderButton = true;
@@ -88,6 +93,18 @@ class Newsletter
     public function removeAttachment(NewsletterAttachment $attachment): self
     {
         $this->attachments->removeElement($attachment);
+
+        return $this;
+    }
+
+    public function isAdherentsOnly(): bool
+    {
+        return (bool) $this->adherentsOnly;
+    }
+
+    public function setAdherentsOnly(bool $adherentsOnly): self
+    {
+        $this->adherentsOnly = $adherentsOnly;
 
         return $this;
     }

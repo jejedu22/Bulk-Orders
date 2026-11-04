@@ -131,7 +131,6 @@ class AccessControlTest extends WebTestCase
     {
         yield 'contact' => ['GET', '/contact'];
         yield 'ancienne prise de commande' => ['GET', '/commande/new'];
-        yield 'création d\'utilisateur' => ['GET', '/user/new'];
         yield 'liste des lignes de commande' => ['GET', '/ligne/commande/'];
         yield 'nouvelle ligne de commande' => ['GET', '/ligne/commande/new'];
         yield 'modification de ligne de commande' => ['GET', '/ligne/commande/1/edit'];

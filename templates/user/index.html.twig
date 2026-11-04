@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Utilisateurs{% endblock %}
+{% block title %}Adhérents{% endblock %}
 
 {% block titre_page %}{% endblock %}
 
@@ -8,13 +8,20 @@
 <div class="col-12" data-filter-scope>
     <div class="page-head">
         <div>
-            <h1>Utilisateurs</h1>
-            <p class="subtitle">{{ users|length }} compte{{ users|length > 1 ? 's' }}</p>
+            <h1>Adhérents</h1>
+            <p class="subtitle">{{ users|length }} compte{{ users|length > 1 ? 's' }} · saison {{ saison }}</p>
         </div>
         <div class="actions">
             <a href="{{ path('user_export') }}" class="btn btn-soft"><i class="fas fa-file-excel mr-1"></i> Exporter (Excel)</a>
-            <a href="{{ path('app_register') }}" class="btn btn-accent"><i class="fas fa-user-plus mr-1"></i> Nouvel utilisateur</a>
+            <a href="{{ path('user_new') }}" class="btn btn-accent"><i class="fas fa-user-plus mr-1"></i> Nouvel adhérent</a>
         </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat"><div class="label">Adhérents à jour</div><div class="value">{{ stats.a_jour }}</div></div>
+        <div class="stat"><div class="label">Adhésions expirées</div><div class="value">{{ stats.expiree }}</div></div>
+        <div class="stat"><div class="label">Non adhérents</div><div class="value">{{ stats.aucune }}</div></div>
+        <div class="stat"><div class="label">Cotisations {{ saison }}</div><div class="value">{{ cotisations.total|number_format(2, ',', ' ') }} €</div></div>
     </div>
 
     <div class="toolbar">
@@ -23,15 +30,19 @@
             <input type="search" data-filter-search placeholder="Nom, e-mail, téléphone…" aria-label="Rechercher un utilisateur">
         </div>
         <div class="chips">
-            <button type="button" class="chip active" data-filter-value="">Tous</button>
+            <button type="button" class="chip active" data-filter-value="">Tous <span class="count">{{ users|length }}</span></button>
+            <button type="button" class="chip" data-filter-value="a_jour">À jour <span class="count">{{ stats.a_jour }}</span></button>
+            <button type="button" class="chip" data-filter-value="expiree">Expirées <span class="count">{{ stats.expiree }}</span></button>
+            {% if stats.a_venir > 0 %}<button type="button" class="chip" data-filter-value="a_venir">À venir <span class="count">{{ stats.a_venir }}</span></button>{% endif %}
+            <button type="button" class="chip" data-filter-value="aucune">Non adhérents <span class="count">{{ stats.aucune }}</span></button>
             <button type="button" class="chip" data-filter-value="ROLE_ADMIN">{{ 'ROLE_ADMIN'|trans }}s</button>
         </div>
     </div>
 
     <div class="panel">
         <ul class="rows">
-        {% for user in users|sort((a, b) => a.nom|lower <=> b.nom|lower) %}
-            <li data-filter-item data-status="{{ user.roles|join(' ') }}" data-search="{{ user.prenom }} {{ user.nom }} {{ user.mail }} {{ user.phone }}">
+        {% for user in users %}
+            <li data-filter-item data-status="{{ user.roles|join(' ') }} {{ user.statutAdhesion }}" data-search="{{ user.prenom }} {{ user.nom }} {{ user.mail }} {{ user.phone }}">
                 <a href="{{ path('user_show', {'id': user.id}) }}" class="row-item">
                     <span class="avatar">{{ user.prenom|initials(user.nom) }}</span>
                     <span class="row-main">
@@ -41,7 +52,8 @@
                             {% if user.phone %}<span class="hide-xs">{{ user.phone }}</span>{% endif %}
                         </span>
                     </span>
-                    {% if 'ROLE_ADMIN' in user.roles %}<span class="pill pill-accent">{{ 'ROLE_ADMIN'|trans }}</span>{% endif %}
+                    {% if 'ROLE_ADMIN' in user.roles %}<span class="pill pill-accent hide-xs">{{ 'ROLE_ADMIN'|trans }}</span>{% endif %}
+                    {{ include('user/_adhesion_statut.html.twig') }}
                 </a>
             </li>
         {% endfor %}

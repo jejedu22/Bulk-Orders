@@ -62,12 +62,22 @@ class UserAdminType extends AbstractType
                 'label' => 'user.form.phone', 
             ])
         ;
+        if ($options['adhesion']) {
+            $builder->add('adhesion', CheckboxType::class, [
+                'label' => 'Enregistrer son adhésion pour la saison en cours',
+                'mapped' => false,
+                'required' => false,
+                'help' => 'Avec la cotisation proposée par défaut (Paramètres → Adhésions). Modifiable ensuite sur sa fiche.',
+            ]);
+        }
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
             'data_class' => User::class,
+            'adhesion' => false,
         ]);
+        $resolver->setAllowedTypes('adhesion', 'bool');
     }
 }

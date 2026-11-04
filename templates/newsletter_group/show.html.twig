@@ -1,0 +1,182 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ group.name }}{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('/plugins/select2/css/select2.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+{% endblock %}
+
+{% block body %}
+{% set token = csrf_token('members' ~ group.id) %}
+<div class="col-12">
+    <a href="{{ path('newsletter_group_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Groupes</a>
+    <div class="page-head">
+        <div>
+            <h1>{{ group.name }}</h1>
+            <p class="subtitle">{{ members|length }} membre{{ members|length > 1 ? 's' }} · {{ subscribers }} abonné{{ subscribers > 1 ? 's' }} à la newsletter</p>
+        </div>
+        <div class="actions">
+            {{ include('newsletter_group/_delete_form.html.twig') }}
+            <a href="{{ path('newsletter_group_edit', {'id': group.id}) }}" class="btn btn-soft"><i class="fas fa-pen mr-1"></i> Renommer</a>
+        </div>
+    </div>
+
+    <div class="panel overflow-visible group-add">
+        <div class="panel-head"><h3>Ajouter des membres</h3></div>
+        <div class="panel-body">
+            <div class="group-add-grid">
+                <form method="post" action="{{ path('newsletter_group_add_members', {'id': group.id}) }}" class="group-add-card">
+                    <input type="hidden" name="_token" value="{{ token }}">
+                    <label for="group-add-users"><i class="fas fa-user-plus fa-fw text-muted"></i> Une ou plusieurs personnes</label>
+                    <select id="group-add-users" name="users[]" multiple class="form-control select2" data-placeholder="Rechercher un nom, un e-mail…">
+                        {% for user in candidates %}
+                            <option value="{{ user.id }}">{{ user.prenom }} {{ user.nom }} ({{ user.mail }})</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-accent mt-2" {{ candidates is empty ? 'disabled' }}>Ajouter</button>
+                </form>
+
+                <form method="post" action="{{ path('newsletter_group_add_members', {'id': group.id}) }}" class="group-add-card">
+                    <input type="hidden" name="_token" value="{{ token }}">
+                    <label for="group-add-source"><i class="fas fa-users fa-fw text-muted"></i> Toute une liste</label>
+                    <select id="group-add-source" name="source" class="form-control" required>
+                        <option value="">Choisir…</option>
+                        <option value="adherents">Tous les adhérents à jour</option>
+                        <option value="abonnes">Tous les abonnés à la newsletter</option>
+                        <option value="tous">Tous les utilisateurs</option>
+                        {% if sales is not empty %}
+                            <optgroup label="Clients d'une vente">
+                                {% for sale in sales %}
+                                    <option value="vente-{{ sale.id }}">Vente du {{ sale.date|date('d/m/Y') }}</option>
+                                {% endfor %}
+                            </optgroup>
+                        {% endif %}
+                        {% if other_groups is not empty %}
+                            <optgroup label="Membres d'un autre groupe">
+                                {% for other in other_groups %}
+                                    <option value="groupe-{{ other.id }}">{{ other.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                        {% endif %}
+                    </select>
+                    <small class="form-text text-muted">Les personnes déjà membres ne sont pas ajoutées deux fois.</small>
+                    <button class="btn btn-accent mt-2">Ajouter</button>
+                </form>
+
+                <form method="post" action="{{ path('newsletter_group_add_members', {'id': group.id}) }}" class="group-add-card">
+                    <input type="hidden" name="_token" value="{{ token }}">
+                    <label for="group-add-emails"><i class="fas fa-paste fa-fw text-muted"></i> Une liste d'adresses e-mail</label>
+                    <textarea id="group-add-emails" name="emails" rows="3" class="form-control" placeholder="Collez des adresses (une par ligne, ou séparées par des virgules)" required></textarea>
+                    <small class="form-text text-muted">Par exemple une colonne copiée d'un tableur. Seules les adresses ayant un compte sont ajoutées.</small>
+                    <button class="btn btn-accent mt-2">Ajouter</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel" data-filter-scope>
+        <div class="panel-head"><h3>Membres</h3><span class="meta">{{ members|length }}</span></div>
+        {% if members is empty %}
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h3>Aucun membre</h3>
+                <p>Ajoutez des personnes avec les options ci-dessus.</p>
+            </div>
+        {% else %}
+            <form method="post" action="{{ path('newsletter_group_remove_members', {'id': group.id}) }}" data-members-form>
+                <input type="hidden" name="_token" value="{{ token }}">
+                <div class="toolbar panel-body pb-0 mb-2">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="search" data-filter-search placeholder="Rechercher un membre…" aria-label="Rechercher un membre">
+                    </div>
+                    <div class="chips">
+                        <button type="button" class="chip active" data-filter-value="">Tous</button>
+                        <button type="button" class="chip" data-filter-value="a_jour">Adhérents à jour</button>
+                        <button type="button" class="chip" data-filter-value="expiree">Adhésion expirée</button>
+                        <button type="button" class="chip" data-filter-value="aucune">Non adhérents</button>
+                        <button type="button" class="chip" data-filter-value="desinscrit">Désinscrits</button>
+                    </div>
+                </div>
+                <div class="members-bar">
+                    <label class="mb-0"><input type="checkbox" data-members-all> Tout sélectionner <span class="text-muted">(résultats affichés)</span></label>
+                    <button class="btn btn-sm btn-outline-danger" data-members-remove disabled
+                            data-confirm="Retirer les membres sélectionnés du groupe ? Leurs comptes ne sont pas supprimés.">
+                        <i class="fas fa-user-minus mr-1"></i> Retirer la sélection (<span data-members-count>0</span>)
+                    </button>
+                </div>
+                <ul class="rows">
+                {% for user in members %}
+                    <li data-filter-item data-status="{{ user.statutAdhesion }}{{ not user.newsletter ? ' desinscrit' }}" data-search="{{ user.prenom }} {{ user.nom }} {{ user.mail }}">
+                        <label class="row-item mb-0">
+                            <input type="checkbox" name="users[]" value="{{ user.id }}" data-member aria-label="Sélectionner {{ user.prenom }} {{ user.nom }}">
+                            <span class="avatar">{{ user.prenom|initials(user.nom) }}</span>
+                            <span class="row-main">
+                                <span class="row-title d-block">{{ user.prenom }} {{ user.nom }}</span>
+                                <span class="row-meta d-block text-truncate"><span>{{ user.mail }}</span></span>
+                            </span>
+                            {% if not user.newsletter %}<span class="pill pill-muted hide-xs" title="Ne reçoit pas les newsletters">Désinscrit·e</span>{% endif %}
+                            {{ include('user/_adhesion_statut.html.twig') }}
+                            <a href="{{ path('user_show', {'id': user.id}) }}" class="btn btn-sm btn-soft" title="Voir la fiche" aria-label="Voir la fiche de {{ user.prenom }} {{ user.nom }}"><i class="fas fa-chevron-right"></i></a>
+                        </label>
+                    </li>
+                {% endfor %}
+                </ul>
+                <div class="empty-state is-hidden" data-filter-empty><i class="fas fa-user-slash"></i><h3>Aucun membre ne correspond</h3></div>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('/plugins/select2/js/select2.full.min.js') }}"></script>
+    <script src="{{ asset('/plugins/select2/js/i18n/fr.js') }}"></script>
+    <script>
+        $(function () {
+            $('select.select2').select2({ theme: 'bootstrap4', language: 'fr', width: '100%', closeOnSelect: false });
+        });
+
+        // Sélection des membres à retirer : « tout sélectionner » porte sur les résultats affichés
+        (function () {
+            var form = document.querySelector('[data-members-form]');
+            if (!form) { return; }
+            var all = form.querySelector('[data-members-all]');
+            var button = form.querySelector('[data-members-remove]');
+            var count = form.querySelector('[data-members-count]');
+            function boxes(visibleOnly) {
+                return Array.prototype.filter.call(form.querySelectorAll('[data-member]'), function (box) {
+                    return !visibleOnly || !box.closest('[data-filter-item]').classList.contains('is-hidden');
+                });
+            }
+            function refresh() {
+                // Seuls les membres affichés sont retirés (voir « submit »)
+                var visible = boxes(true);
+                var checked = visible.filter(function (b) { return b.checked; }).length;
+                count.textContent = checked;
+                button.disabled = checked === 0;
+                all.checked = visible.length > 0 && visible.every(function (b) { return b.checked; });
+            }
+            all.addEventListener('change', function () {
+                boxes(true).forEach(function (b) { b.checked = all.checked; });
+                refresh();
+            });
+            form.addEventListener('change', function (e) { if (e.target.matches('[data-member]')) { refresh(); } });
+            // Le filtrage change les résultats affichés
+            form.addEventListener('input', function (e) { if (e.target.matches('[data-filter-search]')) { refresh(); } });
+            form.addEventListener('click', function (e) { if (e.target.closest('.chip')) { setTimeout(refresh); } });
+            // Un membre masqué par le filtre n'est pas retiré à l'insu de l'utilisateur
+            form.addEventListener('submit', function () {
+                boxes(false).forEach(function (b) {
+                    if (b.closest('[data-filter-item]').classList.contains('is-hidden')) { b.checked = false; }
+                });
+            });
+            refresh();
+        })();
+    </script>
+{% endblock %}

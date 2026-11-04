@@ -67,26 +67,147 @@ class NewsletterGroupTest extends WebTestCase
         $this->assertResponseStatusCodeSame(403);
     }
 
-    public function testCreateGroupWithMembers(): void
+    public function testCreateGroupThenAddMembers(): void
     {
         $alice = $this->createUser('alice@example.com', [], 'Martin', 'Alice');
         $this->createUser('bob@example.com', [], 'Durand', 'Bob');
 
         $this->login($this->admin);
         $crawler = $this->client->request('GET', '/newsletter/groupes/new');
-        $form = $crawler->filter('form[name="newsletter_group"]')->form();
-        $form['newsletter_group[name]'] = 'Bureau';
-        $form['newsletter_group[users]']->select([(string) $alice->getId()]);
-        $this->client->submit($form);
+        $this->client->submit($crawler->filter('form[name="newsletter_group"]')->form([
+            'newsletter_group[name]' => 'Bureau',
+        ]));
 
-        $this->assertRedirectsTo('/newsletter/groupes/');
         $group = $this->em()->getRepository(NewsletterGroup::class)->findOneBy(['name' => 'Bureau']);
         $this->assertNotNull($group);
-        $this->assertSame(['alice@example.com'], $group->getUsers()->map(function (User $u) { return $u->getMail(); })->toArray());
+        $this->assertRedirectsTo('/newsletter/groupes/'.$group->getId());
+
+        $crawler = $this->client->request('GET', '/newsletter/groupes/'.$group->getId());
+        $form = $crawler->filter('#group-add-users')->closest('form')->form();
+        $form['users']->select([(string) $alice->getId()]);
+        $this->client->submit($form);
+
+        $this->assertRedirectsTo('/newsletter/groupes/'.$group->getId());
+        $this->assertSame(['alice@example.com'], $this->members($group));
 
         $this->client->followRedirect();
+        $this->assertSelectorTextContains('.alert-success', '1 membre ajouté');
+        $this->client->request('GET', '/newsletter/groupes/');
         $this->assertSelectorTextContains('.rows', 'Bureau');
         $this->assertSelectorTextContains('.rows', '1 membre');
+    }
+
+    /**
+     * @return string[] adresses des membres, triées
+     */
+    private function members(NewsletterGroup $group): array
+    {
+        $mails = $this->reload(NewsletterGroup::class, $group->getId())->getUsers()->map(function (User $u) { return $u->getMail(); })->toArray();
+        sort($mails);
+
+        return array_values($mails);
+    }
+
+    private function addMembers(NewsletterGroup $group, array $data): void
+    {
+        $crawler = $this->client->request('GET', '/newsletter/groupes/'.$group->getId());
+        $token = $crawler->filter('form[action$="/membres/ajouter"] input[name="_token"]')->attr('value');
+        $this->client->request('POST', '/newsletter/groupes/'.$group->getId().'/membres/ajouter', $data + ['_token' => $token]);
+        $this->assertRedirectsTo('/newsletter/groupes/'.$group->getId());
+    }
+
+    public function testAddCurrentMembersInBulk(): void
+    {
+        $alice = $this->createUser('alice@example.com');
+        $bob = $this->createUser('bob@example.com');
+        $this->createUser('carol@example.com');
+        foreach ([[$alice, '-1 month', '+1 month'], [$bob, '-2 years', '-1 year']] as [$user, $debut, $fin]) {
+            $adhesion = new \App\Entity\Adhesion($user);
+            $adhesion->setDateDebut(new \DateTimeImmutable($debut))->setDateFin(new \DateTimeImmutable($fin));
+            $this->persist($adhesion);
+        }
+        $group = $this->createGroup('Adhérents', [$alice]);
+
+        $this->login($this->admin);
+        $this->addMembers($group, ['source' => 'adherents']);
+        // Seule Alice est à jour, et déjà membre
+        $this->assertSame(['alice@example.com'], $this->members($group));
+        $this->client->followRedirect();
+        $this->assertSelectorTextContains('.alert-info', 'déjà membres');
+
+        $this->addMembers($group, ['source' => 'tous']);
+        $this->assertCount(4, $this->members($group));
+    }
+
+    public function testAddCustomersOfASaleAndMembersOfAnotherGroup(): void
+    {
+        $alice = $this->createUser('alice@example.com');
+        $bob = $this->createUser('bob@example.com');
+        $this->createUser('carol@example.com');
+        $product = $this->createProduct();
+        $jour = $this->createJourDistrib([$product]);
+        $this->createCommande($alice, $jour, [[$product, 1]]);
+        $other = $this->createGroup('Bureau', [$bob]);
+        $group = $this->createGroup('Relance');
+
+        $this->login($this->admin);
+        $this->addMembers($group, ['source' => 'vente-'.$jour->getId()]);
+        $this->assertSame(['alice@example.com'], $this->members($group));
+
+        $this->addMembers($group, ['source' => 'groupe-'.$other->getId()]);
+        $this->assertSame(['alice@example.com', 'bob@example.com'], $this->members($group));
+    }
+
+    public function testAddMembersFromPastedEmails(): void
+    {
+        $this->createUser('alice@example.com');
+        $this->createUser('bob@example.com');
+        $this->createUser('carol@example.com');
+        $group = $this->createGroup('Bureau');
+
+        $this->login($this->admin);
+        $this->addMembers($group, ['emails' => "Alice@Example.com\n\"Bob\" <bob@example.com>; inconnu@example.com,\n"]);
+
+        $this->assertSame(['alice@example.com', 'bob@example.com'], $this->members($group));
+        $this->client->followRedirect();
+        $this->assertSelectorTextContains('.alert-success', '2 membres ajoutés');
+        $this->assertSelectorTextContains('.alert-warning', 'inconnu@example.com');
+    }
+
+    public function testRemoveSelectedMembers(): void
+    {
+        $alice = $this->createUser('alice@example.com');
+        $bob = $this->createUser('bob@example.com');
+        $carol = $this->createUser('carol@example.com');
+        $group = $this->createGroup('Bureau', [$alice, $bob, $carol]);
+
+        $this->login($this->admin);
+        $crawler = $this->client->request('GET', '/newsletter/groupes/'.$group->getId());
+        $this->assertCount(3, $crawler->filter('[data-members-form] [data-filter-item]'));
+        $form = $crawler->filter('[data-members-form]')->form();
+        foreach ($form->get('users') as $box) {
+            if (\in_array($box->availableOptionValues()[0], [(string) $alice->getId(), (string) $carol->getId()], true)) {
+                $box->tick();
+            }
+        }
+        $this->client->submit($form);
+
+        $this->assertRedirectsTo('/newsletter/groupes/'.$group->getId());
+        $this->assertSame(['bob@example.com'], $this->members($group));
+        // Les comptes restent
+        $this->assertNotNull($this->reload(User::class, $alice->getId()));
+    }
+
+    public function testMembersRequireAValidToken(): void
+    {
+        $alice = $this->createUser('alice@example.com');
+        $group = $this->createGroup('Bureau', [$alice]);
+
+        $this->login($this->admin);
+        $this->client->request('POST', '/newsletter/groupes/'.$group->getId().'/membres/retirer', ['users' => [$alice->getId()], '_token' => 'invalide']);
+        $this->client->request('POST', '/newsletter/groupes/'.$group->getId().'/membres/ajouter', ['source' => 'tous', '_token' => 'invalide']);
+
+        $this->assertSame(['alice@example.com'], $this->members($group));
     }
 
     public function testGroupNameIsUnique(): void
@@ -103,20 +224,19 @@ class NewsletterGroupTest extends WebTestCase
         $this->assertCount(1, $this->em()->getRepository(NewsletterGroup::class)->findAll());
     }
 
-    public function testEditMembersFromGroupAndFromUser(): void
+    public function testRenameGroupAndEditMembershipFromUser(): void
     {
         $alice = $this->createUser('alice@example.com');
         $bob = $this->createUser('bob@example.com');
-        $group = $this->createGroup('Bureau', [$alice]);
+        $group = $this->createGroup('Bureau', [$bob]);
 
         $this->login($this->admin);
         $crawler = $this->client->request('GET', '/newsletter/groupes/'.$group->getId().'/edit');
-        $form = $crawler->filter('form[name="newsletter_group"]')->form();
-        $form['newsletter_group[users]']->select([(string) $bob->getId()]);
-        $this->client->submit($form);
-        $this->assertRedirectsTo('/newsletter/groupes/');
-        $members = $this->reload(NewsletterGroup::class, $group->getId())->getUsers()->map(function (User $u) { return $u->getMail(); })->toArray();
-        $this->assertSame(['bob@example.com'], array_values($members));
+        $this->client->submit($crawler->filter('form[name="newsletter_group"]')->form([
+            'newsletter_group[name]' => 'Conseil',
+        ]));
+        $this->assertRedirectsTo('/newsletter/groupes/'.$group->getId());
+        $this->assertSame('Conseil', $this->reload(NewsletterGroup::class, $group->getId())->getName());
 
         // Depuis la fiche utilisateur
         $crawler = $this->client->request('GET', '/user/'.$alice->getId().'/edit');
@@ -126,7 +246,7 @@ class NewsletterGroupTest extends WebTestCase
         $this->assertCount(2, $this->reload(NewsletterGroup::class, $group->getId())->getUsers());
 
         $this->client->request('GET', '/user/'.$alice->getId());
-        $this->assertSelectorTextContains('.rows', 'Bureau');
+        $this->assertSelectorTextContains('.rows', 'Conseil');
     }
 
     public function testNewsletterTargetsGroups(): void
@@ -194,9 +314,9 @@ class NewsletterGroupTest extends WebTestCase
         $id = $group->getId();
 
         $this->login($this->admin);
-        $this->submitFormWithAction('/newsletter/groupes/'.$id.'/edit', '/newsletter/groupes/'.$id);
+        $this->submitFormWithAction('/newsletter/groupes/'.$id, '/newsletter/groupes/'.$id);
 
-        $this->assertRedirectsTo('/newsletter/groupes/'.$id.'/edit');
+        $this->assertRedirectsTo('/newsletter/groupes/'.$id);
         $this->assertNotNull($this->reload(NewsletterGroup::class, $id));
     }
 
@@ -210,7 +330,7 @@ class NewsletterGroupTest extends WebTestCase
         $id = $group->getId();
 
         $this->login($this->admin);
-        $this->submitFormWithAction('/newsletter/groupes/'.$id.'/edit', '/newsletter/groupes/'.$id);
+        $this->submitFormWithAction('/newsletter/groupes/'.$id, '/newsletter/groupes/'.$id);
 
         $this->assertRedirectsTo('/newsletter/groupes/');
         $this->assertNull($this->reload(NewsletterGroup::class, $id));

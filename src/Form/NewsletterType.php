@@ -75,6 +75,11 @@ class NewsletterType extends AbstractType
                 },
                 'help' => 'Ventes à venir uniquement. Seuls les abonnés qui ont commandé sur la vente choisie reçoivent la newsletter.',
             ])
+            ->add('adherentsOnly', CheckboxType::class, [
+                'label' => 'Adhérents à jour uniquement',
+                'required' => false,
+                'help' => 'Seuls les abonnés dont l\'adhésion couvre le jour de l\'envoi la reçoivent (en plus des groupes et de la vente choisis). Le nombre de destinataires est recalculé à l\'envoi.',
+            ])
             ->add('content', TextareaType::class, [
                 'label' => 'Contenu',
                 'attr' => ['class' => 'newsletter-editor', 'rows' => 12],

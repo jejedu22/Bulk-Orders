@@ -366,4 +366,71 @@ class NewsletterAttachmentTest extends WebTestCase
         $this->assertCount(0, $newsletter->getAttachments());
         $this->assertSame([], $this->attachmentsOf($this->sendTest($newsletter)));
     }
+
+    private function duplicate(Newsletter $newsletter): Newsletter
+    {
+        $this->submitFormWithAction('/newsletter/' . $newsletter->getId(), '/newsletter/' . $newsletter->getId() . '/duplicate');
+
+        $copies = $this->em()->getRepository(Newsletter::class)->findBy([], ['id' => 'DESC'], 1);
+        $copy = $copies[0];
+        $this->assertNotSame($newsletter->getId(), $copy->getId());
+        $this->assertRedirectsTo('/newsletter/' . $copy->getId() . '/edit');
+
+        return $copy;
+    }
+
+    public function testSentNewsletterCanBeDuplicatedWithItsAttachments(): void
+    {
+        $newsletter = $this->newsletterWithPdf();
+        $jour = $this->createJourDistrib();
+        $this->setSale($newsletter, $jour);
+        $original = $this->reload(Newsletter::class, $newsletter->getId());
+        $original->setOrderButton(false)->markSent(3, 0);
+        $this->em()->flush();
+
+        $copy = $this->duplicate($original);
+        $copy = $this->reload(Newsletter::class, $copy->getId());
+
+        $this->assertFalse($copy->isSent());
+        $this->assertSame('Vente de printemps', $copy->getSubject());
+        $this->assertSame('<p>Bonjour</p>', $copy->getContent());
+        $this->assertFalse($copy->hasOrderButton());
+        $this->assertSame($jour->getId(), $copy->getJourDistrib()->getId());
+        $this->assertCount(1, $copy->getAttachments());
+        $attachment = $copy->getAttachments()->first();
+        $this->assertSame('tarifs.pdf', $attachment->getOriginalName());
+        // Fichier distinct : supprimer l'une ne prive pas l'autre de sa pièce jointe
+        $this->assertNotSame($original->getAttachments()->first()->getStoredName(), $attachment->getStoredName());
+        $this->assertCount(2, $this->storedFiles());
+        $this->assertSame(self::PDF, file_get_contents($this->directory() . '/' . $attachment->getStoredName()));
+
+        $this->client->followRedirect();
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('.alert-success', 'Newsletter dupliquée');
+
+        $this->submitFormWithAction('/newsletter/' . $original->getId(), '/newsletter/' . $original->getId());
+        $this->assertCount(1, $this->storedFiles());
+    }
+
+    public function testDuplicateSkipsMissingAttachments(): void
+    {
+        $newsletter = $this->newsletterWithPdf();
+        $this->cleanDirectory();
+
+        $copy = $this->reload(Newsletter::class, $this->duplicate($newsletter)->getId());
+
+        $this->assertCount(0, $copy->getAttachments());
+        $this->client->followRedirect();
+        $this->assertSelectorTextContains('.alert-warning', 'tarifs.pdf');
+    }
+
+    public function testDuplicateRequiresAValidToken(): void
+    {
+        $newsletter = $this->newsletterWithPdf();
+
+        $this->client->request('POST', '/newsletter/' . $newsletter->getId() . '/duplicate', ['_token' => 'invalide']);
+
+        $this->assertRedirectsTo('/newsletter/' . $newsletter->getId());
+        $this->assertCount(1, $this->em()->getRepository(Newsletter::class)->findAll());
+    }
 }

@@ -274,3 +274,18 @@ a.tile:hover { box-shadow: var(--shadow-hover); transform: translateY(-1px); col
    passent donc par le <label for="…">, que tous les navigateurs activent ;
    le champ reste atteignable au clavier. */
 .custom-file-input { pointer-events: none; }
+
+/* Fiche adhérent : formulaire d'adhésion repliable */
+.adhesion-new > summary { display: inline-block; list-style: none; cursor: pointer; }
+.adhesion-new > summary::-webkit-details-marker { display: none; }
+.adhesion-new[open] > summary { background: transparent; color: var(--muted); border-color: transparent; box-shadow: none; padding-left: 0; }
+
+/* Groupes : ajout de membres et sélection en masse */
+.group-add-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.group-add-card { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.group-add-card > label { font-weight: 600; }
+.group-add-card > .form-control, .group-add-card .select2-container { width: 100% !important; }
+.members-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; padding: .5rem 1rem; border-bottom: 1px solid var(--border, #eef0f3); background: #fafbfc; }
+.members-bar label { font-weight: 500; cursor: pointer; }
+label.row-item { cursor: pointer; font-weight: normal; }
+label.row-item input[type="checkbox"] { flex: none; width: 1.05rem; height: 1.05rem; }

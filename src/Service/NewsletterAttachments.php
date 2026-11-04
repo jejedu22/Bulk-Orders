@@ -67,6 +67,24 @@ class NewsletterAttachments
         return $attachment;
     }
 
+    /**
+     * Copie le fichier d'une pièce jointe vers une autre newsletter (à persister par l'appelant).
+     *
+     * @throws \RuntimeException si le fichier source est introuvable ou ne peut être copié
+     */
+    public function copy(NewsletterAttachment $source, Newsletter $newsletter): NewsletterAttachment
+    {
+        $storedName = bin2hex(random_bytes(16));
+        if (!$this->exists($source) || !@copy($this->path($source), $this->directory . '/' . $storedName)) {
+            throw new \RuntimeException(sprintf('Pièce jointe « %s » introuvable sur le serveur.', $source->getOriginalName()));
+        }
+
+        $attachment = new NewsletterAttachment($newsletter, $source->getOriginalName(), $storedName, $source->getMimeType(), $source->getSize());
+        $newsletter->addAttachment($attachment);
+
+        return $attachment;
+    }
+
     public function path(NewsletterAttachment $attachment): string
     {
         return $this->directory . '/' . $attachment->getStoredName();

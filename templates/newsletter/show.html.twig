@@ -30,6 +30,10 @@
         </div>
         <div class="actions">
             {{ include('newsletter/_delete_form.html.twig') }}
+            <form method="post" action="{{ path('newsletter_duplicate', {'id': newsletter.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('duplicate' ~ newsletter.id) }}">
+                <button class="btn btn-soft"><i class="fas fa-copy mr-1"></i> Dupliquer</button>
+            </form>
             {% if not newsletter.sent %}
                 <a href="{{ path('newsletter_edit', {'id': newsletter.id}) }}" class="btn btn-soft"><i class="fas fa-pen mr-1"></i> Modifier</a>
             {% endif %}

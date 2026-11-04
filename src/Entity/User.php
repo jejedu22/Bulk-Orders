@@ -68,8 +68,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OrderBy(['name' => 'ASC'])]
     private $newsletterGroups;
 
+    // Adhésions (cotisations), de la plus récente à la plus ancienne
+    #[ORM\OneToMany(targetEntity: Adhesion::class, mappedBy: 'user', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['dateFin' => 'DESC', 'id' => 'DESC'])]
+    private $adhesions;
+
     public function __construct()
     {
+        $this->adhesions = new ArrayCollection();
         $this->commandes = new ArrayCollection();
         $this->newsletterGroups = new ArrayCollection();
         $this->newsletterDeliveries = new ArrayCollection();
@@ -280,5 +286,85 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         return $this;
+    }
+
+    public const ADHESION_A_JOUR = 'a_jour';
+    public const ADHESION_A_VENIR = 'a_venir';
+    public const ADHESION_EXPIREE = 'expiree';
+    public const ADHESION_AUCUNE = 'aucune';
+
+    /**
+     * @return Collection|Adhesion[]
+     */
+    public function getAdhesions(): Collection
+    {
+        return $this->adhesions;
+    }
+
+    public function addAdhesion(Adhesion $adhesion): self
+    {
+        if (!$this->adhesions->contains($adhesion)) {
+            $this->adhesions[] = $adhesion;
+        }
+
+        return $this;
+    }
+
+    public function removeAdhesion(Adhesion $adhesion): self
+    {
+        $this->adhesions->removeElement($adhesion);
+
+        return $this;
+    }
+
+    /**
+     * Adhésion couvrant la date du jour (celle qui finit le plus tard s'il y en a plusieurs).
+     */
+    public function getAdhesionEnCours(?\DateTimeInterface $date = null): ?Adhesion
+    {
+        $enCours = null;
+        foreach ($this->adhesions as $adhesion) {
+            if ($adhesion->couvre($date) && (!$enCours || $adhesion->getDateFin() > $enCours->getDateFin())) {
+                $enCours = $adhesion;
+            }
+        }
+
+        return $enCours;
+    }
+
+    /**
+     * Adhésion qui se termine le plus tard (en cours, à venir ou expirée).
+     */
+    public function getDerniereAdhesion(): ?Adhesion
+    {
+        $derniere = null;
+        foreach ($this->adhesions as $adhesion) {
+            if (!$derniere || $adhesion->getDateFin() > $derniere->getDateFin()) {
+                $derniere = $adhesion;
+            }
+        }
+
+        return $derniere;
+    }
+
+    public function isAdherent(?\DateTimeInterface $date = null): bool
+    {
+        return null !== $this->getAdhesionEnCours($date);
+    }
+
+    /**
+     * a_jour, a_venir (seulement une adhésion qui n'a pas commencé), expiree ou aucune.
+     */
+    public function getStatutAdhesion(?\DateTimeInterface $date = null): string
+    {
+        if ($this->isAdherent($date)) {
+            return self::ADHESION_A_JOUR;
+        }
+        $derniere = $this->getDerniereAdhesion();
+        if (null === $derniere) {
+            return self::ADHESION_AUCUNE;
+        }
+
+        return $derniere->isExpiree($date) ? self::ADHESION_EXPIREE : self::ADHESION_A_VENIR;
     }
 }

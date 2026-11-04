@@ -1,0 +1,26 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvel adhérent{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <a href="{{ path('user_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Adhérents</a>
+    <div class="page-head">
+        <div>
+            <h1>Nouvel adhérent</h1>
+            <p class="subtitle">Crée un compte pour une personne qui ne s'inscrit pas elle-même sur le site.</p>
+        </div>
+    </div>
+    <div class="panel form-panel">
+        <div class="panel-body">
+            {{ include('user/_form.html.twig', {'button_label': 'Créer le compte'}) }}
+            <p class="text-muted small mb-0 mt-3">
+                Aucun mot de passe n'est communiqué : pour se connecter, la personne utilise
+                « Mot de passe oublié » avec son adresse e-mail.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

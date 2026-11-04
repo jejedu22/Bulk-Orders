@@ -24,4 +24,24 @@ class NewsletterGroupRepository extends ServiceEntityRepository
     {
         return $this->findBy([], ['name' => 'ASC']);
     }
+
+    /**
+     * Nombre de membres de chaque groupe, sans charger les membres.
+     *
+     * @return array<int, int> id du groupe => nombre de membres
+     */
+    public function countMembers(): array
+    {
+        $counts = [];
+        foreach ($this->createQueryBuilder('g')
+            ->select('g.id AS id, COUNT(u.id) AS members')
+            ->leftJoin('g.users', 'u')
+            ->groupBy('g.id')
+            ->getQuery()
+            ->getArrayResult() as $row) {
+            $counts[(int) $row['id']] = (int) $row['members'];
+        }
+
+        return $counts;
+    }
 }

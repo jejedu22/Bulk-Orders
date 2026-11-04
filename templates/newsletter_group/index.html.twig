@@ -29,12 +29,12 @@
             <ul class="rows">
             {% for group in groups %}
                 <li>
-                    <a href="{{ path('newsletter_group_edit', {'id': group.id}) }}" class="row-item">
+                    <a href="{{ path('newsletter_group_show', {'id': group.id}) }}" class="row-item">
                         <span class="avatar"><i class="fas fa-users"></i></span>
                         <span class="row-main">
                             <span class="row-title d-block">{{ group.name }}</span>
                             <span class="row-meta">
-                                <span>{{ group.users|length }} membre{{ group.users|length > 1 ? 's' }}</span>
+                                {% set count = members[group.id] ?? 0 %}<span>{{ count }} membre{{ count > 1 ? 's' }}</span>
                                 <span>{{ subscribers[group.id] }} abonné{{ subscribers[group.id] > 1 ? 's' }}</span>
                             </span>
                         </span>

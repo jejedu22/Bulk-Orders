@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Adhésions{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <div class="page-head">
+        <div>
+            <h1>Adhésions</h1>
+            <p class="subtitle">Saison en cours : du {{ saison[0]|date('d/m/Y') }} au {{ saison[1]|date('d/m/Y') }}</p>
+        </div>
+        <div class="actions">
+            <a href="{{ path('user_index') }}" class="btn btn-soft"><i class="fas fa-users mr-1"></i> Adhérents</a>
+        </div>
+    </div>
+
+    <div class="panel form-panel">
+        <div class="panel-body">
+            <p class="text-muted">
+                Une adhésion couvre une période (une saison par défaut). Un utilisateur est
+                <strong>adhérent à jour</strong> tant que l'une de ses adhésions couvre la date du jour.
+                Les adhésions s'enregistrent depuis la fiche de chaque utilisateur.
+            </p>
+            {{ form_start(form) }}
+                {{ form_rest(form) }}
+                <div class="form-actions">
+                    <button class="btn btn-accent"><i class="fas fa-check mr-1"></i> Enregistrer</button>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</div>
+{% endblock %}

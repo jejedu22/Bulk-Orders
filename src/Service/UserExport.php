@@ -23,6 +23,14 @@ class UserExport
     private const COLUMNS = [
         'Nom' => 22, 'Prénom' => 18, 'E-mail' => 32, 'Téléphone' => 16, 'Rôle' => 16,
         'Newsletter' => 12, 'Groupes de newsletter' => 28, 'Commandes' => 12, 'Dernière commande' => 18,
+        'Adhésion' => 14, 'Fin d\'adhésion' => 16,
+    ];
+
+    private const STATUTS = [
+        User::ADHESION_A_JOUR => 'À jour',
+        User::ADHESION_A_VENIR => 'À venir',
+        User::ADHESION_EXPIREE => 'Expirée',
+        User::ADHESION_AUCUNE => 'Non adhérent',
     ];
 
     private $entityManager;
@@ -68,6 +76,9 @@ class UserExport
                 Cell::fromValue(implode(', ', $user->getNewsletterGroups()->map(function ($group) { return $group->getName(); })->toArray())),
                 Cell::fromValue($orders),
                 null !== $lastOrder ? Cell::fromValue(new \DateTimeImmutable($lastOrder), $date) : Cell::fromValue(''),
+                Cell::fromValue(self::STATUTS[$user->getStatutAdhesion()]),
+                // Fin de l'adhésion en cours, sinon de la dernière
+                ($adhesion = $user->getAdhesionEnCours() ?? $user->getDerniereAdhesion()) ? Cell::fromValue($adhesion->getDateFin(), $date) : Cell::fromValue(''),
             ]));
         }
 
@@ -84,9 +95,10 @@ class UserExport
     private function rows(): array
     {
         $users = $this->entityManager->createQueryBuilder()
-            ->select('u', 'g')
+            ->select('u', 'g', 'a')
             ->from(User::class, 'u')
             ->leftJoin('u.newsletterGroups', 'g')
+            ->leftJoin('u.adhesions', 'a')
             ->orderBy('u.nom', 'ASC')
             ->addOrderBy('u.prenom', 'ASC')
             ->getQuery()

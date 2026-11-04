@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Adhesion;
 use App\Entity\Commande;
 use App\Entity\JourDistrib;
 use App\Entity\Newsletter;
@@ -38,6 +39,126 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $user->setPassword($newHashedPassword);
         $this->getEntityManager()->persist($user);
         $this->getEntityManager()->flush();
+    }
+
+    /**
+     * Tous les utilisateurs avec leurs adhésions (une seule requête), par nom.
+     *
+     * @return User[]
+     */
+    public function findAllWithAdhesions(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->leftJoin('u.adhesions', 'a')
+            ->addSelect('a')
+            ->orderBy('u.nom', 'ASC')
+            ->addOrderBy('u.prenom', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Membres du groupe, avec leurs adhésions, par nom.
+     *
+     * @return User[]
+     */
+    public function findGroupMembers(NewsletterGroup $group): array
+    {
+        return $this->createQueryBuilder('u')
+            ->leftJoin('u.adhesions', 'a')
+            ->addSelect('a')
+            ->innerJoin('u.newsletterGroups', 'g', 'WITH', 'g = :group')
+            ->setParameter('group', $group)
+            ->orderBy('u.nom', 'ASC')
+            ->addOrderBy('u.prenom', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Utilisateurs qui ne sont pas membres du groupe, par nom.
+     *
+     * @return User[]
+     */
+    public function findNotInGroup(NewsletterGroup $group): array
+    {
+        $members = $this->getEntityManager()->createQueryBuilder()
+            ->select('m.id')
+            ->from(NewsletterGroup::class, 'g')
+            ->join('g.users', 'm')
+            ->where('g = :group');
+        $qb = $this->createQueryBuilder('u');
+
+        return $qb->where($qb->expr()->notIn('u.id', $members->getDQL()))
+            ->setParameter('group', $group)
+            ->orderBy('u.nom', 'ASC')
+            ->addOrderBy('u.prenom', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Clients ayant passé commande pour cette vente.
+     *
+     * @return User[]
+     */
+    public function findCustomers(JourDistrib $jourDistrib): array
+    {
+        $customers = $this->getEntityManager()->createQueryBuilder()
+            ->select('IDENTITY(c.user)')
+            ->from(Commande::class, 'c')
+            ->where('c.jourDistrib = :jourDistrib');
+        $qb = $this->createQueryBuilder('u');
+
+        return $qb->where($qb->expr()->in('u.id', $customers->getDQL()))
+            ->setParameter('jourDistrib', $jourDistrib)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Utilisateurs dont une adhésion couvre la date (aujourd'hui par défaut).
+     *
+     * @return User[]
+     */
+    public function findAdherentsAJour(?\DateTimeInterface $date = null): array
+    {
+        $jour = $date ? \DateTimeImmutable::createFromInterface($date) : new \DateTimeImmutable('today');
+        $actifs = $this->getEntityManager()->createQueryBuilder()
+            ->select('IDENTITY(a.user)')
+            ->from(Adhesion::class, 'a')
+            ->where('a.dateDebut <= :jour')
+            ->andWhere('a.dateFin >= :jour');
+
+        $qb = $this->createQueryBuilder('u');
+
+        return $qb->where($qb->expr()->in('u.id', $actifs->getDQL()))
+            ->setParameter('jour', $jour->setTime(0, 0), 'date_immutable')
+            ->orderBy('u.nom', 'ASC')
+            ->addOrderBy('u.prenom', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Utilisateurs correspondant à ces adresses e-mail (sans tenir compte de la casse).
+     *
+     * @param string[] $mails
+     *
+     * @return User[]
+     */
+    public function findByMails(array $mails): array
+    {
+        $mails = array_values(array_unique(array_map('mb_strtolower', $mails)));
+        if (!$mails) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('u')
+            ->where('LOWER(u.mail) IN (:mails)')
+            ->setParameter('mails', $mails)
+            ->getQuery()
+            ->getResult();
     }
 
     /**

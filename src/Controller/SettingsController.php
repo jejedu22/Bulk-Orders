@@ -3,9 +3,11 @@
 namespace App\Controller;
 
 use App\Entity\Settings;
+use App\Form\AdhesionSettingsType;
 use App\Form\HelloAssoType;
 use App\Form\MailjetType;
 use App\Form\SettingsType;
+use App\Service\AdhesionPeriode;
 use App\Service\HelloAsso;
 use App\Service\Mailjet;
 use App\Service\OptionsSettings;
@@ -119,6 +121,30 @@ class SettingsController extends AbstractController
             'configured' => $helloAsso->isConfigured(),
             'sandbox' => $helloAsso->isSandbox(),
             'checks' => $checks,
+        ]);
+    }
+
+    #[Route('/adhesions', name: 'settings_adhesion', methods: ['GET', 'POST'])]
+    public function adhesion(Request $request, AdhesionPeriode $periode, OptionsSettings $options): Response
+    {
+        $form = $this->createForm(AdhesionSettingsType::class, [
+            'moisDebut' => $periode->moisDebut(),
+            'montant' => $periode->montantParDefaut(),
+        ]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $data = $form->getData();
+            $options->set(AdhesionPeriode::MOIS_DEBUT, (string) $data['moisDebut']);
+            $options->set(AdhesionPeriode::MONTANT, null === $data['montant'] ? '' : (string) $data['montant']);
+            $this->addFlash('success', 'Paramètres des adhésions enregistrés.');
+
+            return $this->redirectToRoute('settings_adhesion');
+        }
+
+        return $this->render('settings/adhesion.html.twig', [
+            'form' => $form->createView(),
+            'saison' => $periode->saison(),
         ]);
     }
 

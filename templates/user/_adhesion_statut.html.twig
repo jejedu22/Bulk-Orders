@@ -1,0 +1,11 @@
+{# Pastille du statut d'adhésion de « user » #}
+{% set statut = user.statutAdhesion %}
+{% if statut == 'a_jour' %}
+    <span class="pill pill-success" title="Adhésion en cours"><i class="fas fa-id-card"></i> Adhérent·e jusqu'au {{ user.adhesionEnCours.dateFin|date('d/m/Y') }}</span>
+{% elseif statut == 'a_venir' %}
+    <span class="pill pill-info"><i class="fas fa-clock"></i> Adhésion à partir du {{ user.derniereAdhesion.dateDebut|date('d/m/Y') }}</span>
+{% elseif statut == 'expiree' %}
+    <span class="pill pill-warning"><i class="fas fa-exclamation-triangle"></i> Adhésion expirée le {{ user.derniereAdhesion.dateFin|date('d/m/Y') }}</span>
+{% else %}
+    <span class="pill pill-muted">Non adhérent·e</span>
+{% endif %}

@@ -2,6 +2,7 @@
 
 namespace App\Tests\Controller;
 
+use App\Entity\Adhesion;
 use App\Entity\NewsletterGroup;
 use App\Tests\WebTestCase;
 use OpenSpout\Reader\XLSX\Reader;
@@ -34,6 +35,9 @@ class UserExportTest extends WebTestCase
         $jour = $this->createJourDistrib([$product]);
         $this->createCommande($alice, $jour, [[$product, 1]]);
         $this->createCommande($alice, $this->createJourDistrib([$product], 0, false, false, '+14 days'), [[$product, 2]]);
+        $adhesion = new Adhesion($alice);
+        $adhesion->setDateDebut(new \DateTimeImmutable('-1 month'))->setDateFin(new \DateTimeImmutable('+1 month'));
+        $this->persist($adhesion);
 
         $this->login($admin);
         $this->client->request('GET', '/user/export');
@@ -43,14 +47,16 @@ class UserExportTest extends WebTestCase
 
         $rows = $this->read($this->client->getInternalResponse()->getContent());
 
-        $this->assertSame(['Nom', 'Prénom', 'E-mail', 'Téléphone', 'Rôle', 'Newsletter', 'Groupes de newsletter', 'Commandes', 'Dernière commande'], $rows[0]);
+        $this->assertSame(['Nom', 'Prénom', 'E-mail', 'Téléphone', 'Rôle', 'Newsletter', 'Groupes de newsletter', 'Commandes', 'Dernière commande', 'Adhésion', 'Fin d\'adhésion'], $rows[0]);
         // Triés par nom : Admin, Durand, Martin
         $this->assertSame(['Admin', 'Durand', 'Martin'], array_column(\array_slice($rows, 1), 0));
         $this->assertSame('Administrateur', $rows[1][4]);
-        $this->assertSame(['Durand', 'Bob', 'bob@example.com', '0600000000', 'Utilisateur', 'Non', '', 0, ''], $rows[2]);
+        $this->assertSame(['Durand', 'Bob', 'bob@example.com', '0600000000', 'Utilisateur', 'Non', '', 0, '', 'Non adhérent', ''], $rows[2]);
         $this->assertSame(['Martin', 'Alice', 'alice@example.com', '0612345678', 'Utilisateur', 'Oui', 'Bureau', 2], \array_slice($rows[3], 0, 8));
         $this->assertInstanceOf(\DateTimeInterface::class, $rows[3][8]);
         $this->assertSame(date('Y-m-d'), $rows[3][8]->format('Y-m-d'));
+        $this->assertSame('À jour', $rows[3][9]);
+        $this->assertSame((new \DateTimeImmutable('+1 month'))->format('Y-m-d'), $rows[3][10]->format('Y-m-d'));
     }
 
     private function read(string $content): array

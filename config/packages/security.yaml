@@ -46,7 +46,7 @@ security:
         - { path: ^/livraison, roles: ROLE_ADMIN }
         - { path: ^/recap, roles: ROLE_ADMIN }
         - { path: ^/confirme, roles: ROLE_ADMIN }
-        - { path: ^/exportcsv, roles: ROLE_ADMIN }
+        - { path: ^/exportxlsx, roles: ROLE_ADMIN }
         - { path: ^/newsletter, roles: ROLE_ADMIN }
         # Utilisateurs connectés
         - { path: ^/synthese, roles: ROLE_USER }

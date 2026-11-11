@@ -21,6 +21,9 @@ use Symfony\Component\Routing\Attribute\Route;
 
 use App\Service\CommandeConfirmation;
 use App\Service\MailSender;
+use App\Service\SalesExport;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -310,27 +313,22 @@ class DefaultController extends AbstractController
         ]);
     }
 
-    #[Route('/exportcsv/{id}', name: 'export_csv', methods: ['GET'])]
-    public function exportCsv(JourDistrib $jourDistrib, JourDistribRepository $jourDistribRepository): Response
+    /**
+     * Export Excel d'une vente : une ligne par commande (par personne).
+     */
+    #[Route('/exportxlsx/{id}', name: 'export_xlsx', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function exportXlsx(JourDistrib $jourDistrib, SalesExport $export): StreamedResponse
     {
-        $commandes = $jourDistribRepository->export($jourDistrib);
+        $response = new StreamedResponse(function () use ($export, $jourDistrib) {
+            $export->write($jourDistrib, 'php://output');
+        });
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', $response->headers->makeDisposition(
+            ResponseHeaderBag::DISPOSITION_ATTACHMENT,
+            sprintf('ventes-%s.xlsx', $jourDistrib->getDate()->format('Y-m-d'))
+        ));
+        $response->headers->set('Cache-Control', 'private, no-store');
 
-        $output = fopen("php://temp",'w') or die("Can't open php://output");
-        // Pas de caractère d'échappement : CSV standard (RFC 4180), lu correctement par les tableurs
-        fputcsv($output, array('id','nom','prenom', 'commentaire', 'produit', 'conditionnement', 'unite', 'quantitee', 'prix_initial', 'prix_final', 'livre', 'valid'), escape: '');
-        foreach($commandes as $commande) 
-        {
-            $commande['prixInit'] = number_format((float) $commande['prixInit'], 2, ',', ' ');
-            $commande['prixFinal'] = number_format((float) $commande['prixFinal'], 2, ',', ' ');
-            fputcsv($output, $commande, escape: '');
-        }
-        rewind($output);
-        
-        $response = new Response(\stream_get_contents($output));
-        fclose($output) or die("Can't close php://output");
-        $response->headers->set('Content-Type', 'text/csv; charset=utf-8', 'application/force-download');
-        $response->headers->set('Content-Disposition', 'attachment; filename="export_commandes.csv";');
-        
         return $response;
     }
 

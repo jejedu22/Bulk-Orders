@@ -149,25 +149,42 @@ class GestionCommandesTest extends WebTestCase
         $this->assertSame('Céréales', $recap[0]['categoryNom']);
     }
 
-    public function testExportCsv(): void
+    public function testExportXlsxOneRowPerOrder(): void
     {
         $farine = $this->createProduct('Farine', 5, 10.5);
-        $jour = $this->createJourDistrib([$farine]);
-        $commande = $this->createCommande($this->createUser('jean@example.com', [], 'Martin', 'Jean'), $jour, [[$farine, 2]], true);
+        $riz = $this->createProduct('Riz', 1, 3);
+        $jour = $this->createJourDistrib([$farine, $riz]);
+        $commande = $this->createCommande($this->createUser('jean@example.com', [], 'Martin', 'Jean'), $jour, [[$farine, 2], [$riz, 1]], true);
         $commande->setCommentaire('Le matin');
         $this->persist($commande);
 
-        $this->client->request('GET', '/exportcsv/'.$jour->getId());
+        $this->client->request('GET', '/exportxlsx/'.$jour->getId());
 
         $this->assertResponseIsSuccessful();
-        $response = $this->client->getResponse();
-        $this->assertStringStartsWith('text/csv', $response->headers->get('Content-Type'));
-        $this->assertStringContainsString('export_commandes.csv', $response->headers->get('Content-Disposition'));
+        $this->assertResponseHeaderSame('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $this->assertStringContainsString('.xlsx', $this->client->getResponse()->headers->get('Content-Disposition'));
 
-        $lines = array_map(function ($line) { return str_getcsv($line, escape: ''); }, array_filter(explode("\n", $response->getContent())));
-        $this->assertSame(['id', 'nom', 'prenom', 'commentaire', 'produit', 'conditionnement', 'unite', 'quantitee', 'prix_initial', 'prix_final', 'livre', 'valid'], $lines[0]);
-        $this->assertCount(2, $lines);
-        $this->assertSame((string) $commande->getId(), $lines[1][0]);
-        $this->assertSame(['Martin', 'Jean', 'Le matin', 'Farine', '5', 'kg', '2', '10,50', '0,00'], array_slice($lines[1], 1, 9));
+        $file = tempnam(sys_get_temp_dir(), 'ventes').'.xlsx';
+        file_put_contents($file, $this->client->getInternalResponse()->getContent());
+        $reader = new \OpenSpout\Reader\XLSX\Reader();
+        $reader->open($file);
+        $rows = [];
+        foreach ($reader->getSheetIterator() as $sheet) {
+            foreach ($sheet->getRowIterator() as $row) {
+                $rows[] = $row->toArray();
+            }
+        }
+        $reader->close();
+        unlink($file);
+
+        $this->assertSame('N° commande', $rows[0][0]);
+        // Deux produits, mais une seule ligne pour la commande
+        $this->assertCount(2, $rows);
+        $this->assertSame($commande->getId(), $rows[1][0]);
+        $this->assertSame(['Martin', 'Jean', 'jean@example.com'], \array_slice($rows[1], 1, 3));
+        $this->assertStringContainsString('Farine', $rows[1][6]);
+        $this->assertStringContainsString('Riz', $rows[1][6]);
+        $this->assertEquals(24.0, $rows[1][7]);
+        $this->assertSame('Le matin', $rows[1][8]);
     }
 }

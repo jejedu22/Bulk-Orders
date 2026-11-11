@@ -14,6 +14,13 @@
         </div>
     </div>
 
+    {% for commande in creneaux_a_choisir %}
+        <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between" style="gap: .5rem">
+            <span><i class="fas fa-clock mr-1"></i> Votre commande pour la distribution du {{ commande.jourDistrib.dateDistribution|format_date('full', locale='fr') }} est validée : <strong>choisissez votre créneau de retrait</strong>.</span>
+            <a href="{{ path('commande_creneau', {'id': commande.id}) }}" class="btn btn-sm btn-accent">Choisir mon créneau</a>
+        </div>
+    {% endfor %}
+
     {% if jours is empty %}
         <div class="panel">
             <div class="empty-state">

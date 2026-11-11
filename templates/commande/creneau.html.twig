@@ -1,0 +1,67 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Créneau de retrait{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <a href="{{ path('commande_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Ma commande</a>
+    <div class="page-head">
+        <div>
+            <h1>Quand venez-vous chercher votre commande ?</h1>
+            <p class="subtitle">
+                Commande n°{{ commande.id }} · distribution le {{ jour.dateDistribution|format_date('full', locale='fr') }}
+                {% if jour.lieu %}<br><i class="fas fa-map-marker-alt mr-1"></i>{{ jour.lieu }}{% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="panel form-panel">
+        {% if not commande.confirmed %}
+            <div class="panel-body">
+                <p class="mb-0"><i class="fas fa-hourglass-half text-muted mr-1"></i> Vous pourrez choisir votre créneau dès que votre commande sera validée. Vous recevrez un e-mail à ce moment-là.</p>
+            </div>
+        {% elseif commande.livree %}
+            <div class="panel-body"><p class="mb-0"><i class="fas fa-check text-success mr-1"></i> Votre commande vous a été remise.</p></div>
+        {% else %}
+            {% if commande.creneau %}
+                <div class="panel-body retrait-box">
+                    <span class="pill pill-success"><i class="fas fa-check"></i> Votre créneau</span>
+                    <span class="when">{{ jour.dateDistribution|format_date('full', locale='fr')|capitalize }}, de {{ commande.creneau.debut|date('H:i') }} à {{ commande.creneau.fin|date('H:i') }}</span>
+                </div>
+            {% else %}
+                <div class="panel-body">
+                    <p class="mb-0 text-warning font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Le choix d'un créneau est obligatoire pour venir chercher votre commande.</p>
+                </div>
+            {% endif %}
+
+            {% if modifiable %}
+                <form method="post" class="panel-body {{ commande.creneau ? 'pt-0' }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('creneau' ~ commande.id) }}">
+                    <fieldset>
+                        <legend class="h6 font-weight-bold">{{ commande.creneau ? 'Changer de créneau' : 'Choisissez un créneau' }}</legend>
+                        <div class="slot-choices">
+                        {% for creneau in jour.creneaux %}
+                            {% set mine = commande.creneau == creneau %}
+                            {% set full = creneau.complet and not mine %}
+                            <label class="slot-choice {{ full ? 'is-full' }}">
+                                <input type="radio" name="creneau" value="{{ creneau.id }}" {{ mine ? 'checked' }} {{ full ? 'disabled' }} required>
+                                <span class="t">{{ creneau.debut|date('H:i') }}–{{ creneau.fin|date('H:i') }}</span>
+                                <span class="r">{% if mine %}Votre créneau{% elseif full %}Complet{% else %}{{ creneau.restantes }} place{{ creneau.restantes > 1 ? 's' }}{% endif %}</span>
+                            </label>
+                        {% endfor %}
+                        </div>
+                    </fieldset>
+                    <p class="text-muted small mt-3 mb-3">Vous pouvez changer de créneau jusqu'au {{ limite|format_datetime(pattern: "EEEE d MMMM 'à' H'h'", locale='fr') }}.</p>
+                    <button class="btn btn-accent"><i class="fas fa-check mr-1"></i> {{ commande.creneau ? 'Changer de créneau' : 'Réserver ce créneau' }}</button>
+                </form>
+            {% else %}
+                <div class="panel-body pt-0">
+                    <p class="text-muted mb-0">Les créneaux ne peuvent plus être modifiés depuis le {{ limite|format_datetime(pattern: "EEEE d MMMM 'à' H'h'", locale='fr') }}. Pour changer d'horaire, contactez l'équipe.</p>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

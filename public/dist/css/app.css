@@ -289,3 +289,31 @@ a.tile:hover { box-shadow: var(--shadow-hover); transform: translateY(-1px); col
 .members-bar label { font-weight: 500; cursor: pointer; }
 label.row-item { cursor: pointer; font-weight: normal; }
 label.row-item input[type="checkbox"] { flex: none; width: 1.05rem; height: 1.05rem; }
+
+/* Distribution : créneaux de retrait et bénévoles */
+.distribution-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 0 1rem; align-items: start; }
+.slot-row { gap: .75rem; }
+.slot-time { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 6.5rem; }
+.gauge { flex: 1; min-width: 60px; height: 8px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.gauge > span { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.gauge.is-full > span { background: #dc3545; }
+.slot-count { min-width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.poste-row { align-items: flex-start; }
+.pill-remove { border: 0; background: transparent; color: inherit; padding: 0 0 0 .2rem; line-height: 1; font-size: 1rem; cursor: pointer; opacity: .7; }
+.pill-remove:hover, .pill-remove:focus { opacity: 1; }
+.slot-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: .5rem; }
+.slot-choice { position: relative; display: grid; gap: .1rem; padding: .55rem .7rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; margin: 0; font-weight: normal; }
+.slot-choice input { position: absolute; opacity: 0; pointer-events: none; }
+.slot-choice .t { font-weight: 600; font-variant-numeric: tabular-nums; }
+.slot-choice .r { font-size: .8rem; color: var(--muted); }
+.slot-choice:hover { border-color: #cfd5db; }
+.slot-choice:has(input:checked) { border-color: var(--accent); background: #e9f6ec; }
+.slot-choice:has(input:checked) .r { color: #1e7e34; font-weight: 600; }
+.slot-choice:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.slot-choice.is-full { opacity: .55; cursor: not-allowed; background: #f6f7f9; }
+.slot-choice.is-full .r { color: #b02a37; }
+.retrait-box { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; }
+.retrait-box .when { font-size: 1.1rem; font-weight: 600; }
+.sheet-tabs { display: flex; gap: .4rem; overflow-x: auto; padding-bottom: .25rem; }
+.sheet-tabs .chip { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sheet-row.is-done .row-title { text-decoration: line-through; color: var(--muted); }

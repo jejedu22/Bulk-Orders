@@ -1,0 +1,213 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Distribution du {{ jour.dateDistribution|date('d/m/Y') }}{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+{% set token = csrf_token('distribution' ~ jour.id) %}
+{% set places = jour.creneaux|reduce((total, c) => total + c.places, 0) %}
+{% set reservees = jour.creneaux|reduce((total, c) => total + c.reservees, 0) %}
+{% set besoin = jour.postes|reduce((total, p) => total + p.besoin, 0) %}
+{% set pourvus = jour.postes|reduce((total, p) => total + min(p.inscriptions|length, p.besoin), 0) %}
+<div class="col-12">
+    <a href="{{ path('jour_distrib_edit', {'id': jour.id}) }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Vente du {{ jour.date|format_date('long', locale='fr') }}</a>
+    <div class="page-head">
+        <div>
+            <h1>Distribution du {{ jour.dateDistribution|format_date('full', locale='fr') }}</h1>
+            <p class="subtitle">
+                {% if jour.lieu %}<i class="fas fa-map-marker-alt mr-1"></i>{{ jour.lieu }}{% else %}<a href="{{ path('jour_distrib_edit', {'id': jour.id}) }}">Indiquer le lieu de la distribution</a>{% endif %}
+                · changements de créneau jusqu'au {{ limite|format_datetime(pattern: "EEEE d MMMM 'à' H'h'", locale='fr') }}
+            </p>
+        </div>
+        <div class="actions">
+            <a href="{{ path('distribution_jour', {'id': jour.id}) }}" class="btn btn-accent"><i class="fas fa-clipboard-check mr-1"></i> Feuille du jour J</a>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat"><div class="label">Commandes validées</div><div class="value">{{ commandes|length }}</div>{% if en_attente > 0 %}<div class="text-muted small">+ {{ en_attente }} en attente de validation</div>{% endif %}</div>
+        <div class="stat"><div class="label">Sans créneau</div><div class="value {{ sans_creneau > 0 ? 'text-warning' }}">{{ sans_creneau }}</div></div>
+        <div class="stat"><div class="label">Places réservées</div><div class="value">{{ reservees }} / {{ places }}</div></div>
+        <div class="stat"><div class="label">Bénévoles</div><div class="value">{{ pourvus }} / {{ besoin }}</div></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head"><h3>Rappels et relances</h3></div>
+        <div class="panel-body d-flex flex-wrap align-items-center justify-content-between" style="gap: .75rem">
+            <p class="text-muted mb-0" style="max-width: 60ch">
+                Les clients et les bénévoles reçoivent automatiquement un rappel la veille de la distribution (à partir de 8 h). Vous pouvez aussi l'envoyer maintenant ; chacun ne le reçoit qu'une fois.
+            </p>
+            <div class="d-flex flex-wrap" style="gap: .5rem">
+                <form method="post" action="{{ path('distribution_relance', {'id': jour.id}) }}" data-confirm="Envoyer un e-mail aux {{ sans_creneau }} client(s) qui n'ont pas choisi de créneau ?">
+                    <input type="hidden" name="_token" value="{{ token }}">
+                    <button class="btn btn-soft" {{ sans_creneau == 0 ? 'disabled' }}><i class="fas fa-bell mr-1"></i> Relancer les clients sans créneau ({{ sans_creneau }})</button>
+                </form>
+                <form method="post" action="{{ path('distribution_rappels', {'id': jour.id}) }}" data-confirm="Envoyer le rappel de la distribution à {{ rappels }} personne(s) maintenant ?">
+                    <input type="hidden" name="_token" value="{{ token }}">
+                    <button class="btn btn-soft" {{ rappels == 0 ? 'disabled' }}><i class="fas fa-paper-plane mr-1"></i> Envoyer les rappels maintenant ({{ rappels }})</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if modeles is not empty and jour.creneaux is empty and jour.postes is empty %}
+    <div class="panel">
+        <div class="panel-body">
+            <form method="post" action="{{ path('distribution_copier', {'id': jour.id}) }}" class="d-flex flex-wrap align-items-end" style="gap: .5rem">
+                <input type="hidden" name="_token" value="{{ token }}">
+                <div class="flex-grow-1">
+                    <label for="copier-source" class="mb-1">Reprendre le planning d'une vente précédente</label>
+                    <select id="copier-source" name="source" class="form-control">
+                        {% for modele in modeles %}
+                            <option value="{{ modele.id }}">Vente du {{ modele.date|date('d/m/Y') }} · {{ modele.creneaux|length }} créneaux, {{ modele.postes|length }} postes</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button class="btn btn-soft"><i class="fas fa-copy mr-1"></i> Reprendre</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="distribution-grid">
+        <div class="panel" id="creneaux">
+            <div class="panel-head"><h3>Créneaux de retrait</h3><span class="meta">{{ reservees }} / {{ places }} places</span></div>
+            {% if jour.creneaux is not empty %}
+                <ul class="rows">
+                {% for creneau in jour.creneaux %}
+                    <li class="row-item slot-row">
+                        <span class="slot-time">{{ creneau.libelle }}</span>
+                        <span class="gauge {{ creneau.complet ? 'is-full' }}" role="img" aria-label="{{ creneau.reservees }} sur {{ creneau.places }} places">
+                            <span style="width: {{ creneau.places > 0 ? min(100, (creneau.reservees / creneau.places * 100)|round) : 0 }}%"></span>
+                        </span>
+                        <span class="slot-count">{% if creneau.complet %}<span class="pill pill-danger">Complet</span>{% else %}{{ creneau.reservees }} / {{ creneau.places }}{% endif %}</span>
+                        <a href="{{ path('distribution_creneau_edit', {'id': creneau.id}) }}" class="btn btn-sm btn-soft" title="Modifier" aria-label="Modifier le créneau {{ creneau.libelle }}"><i class="fas fa-pen"></i></a>
+                        <form method="post" action="{{ path('distribution_creneau_delete', {'id': creneau.id}) }}" data-confirm="Supprimer le créneau {{ creneau.libelle }} ?{{ creneau.reservees > 0 ? ' Les ' ~ creneau.reservees ~ ' client(s) inscrits devront en choisir un autre.' }}">
+                            <input type="hidden" name="_token" value="{{ token }}">
+                            <button class="btn btn-sm btn-outline-danger" title="Supprimer" aria-label="Supprimer le créneau {{ creneau.libelle }}"><i class="fas fa-trash-alt"></i></button>
+                        </form>
+                    </li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+            <div class="panel-body">
+                <h4 class="h6 font-weight-bold">{{ jour.creneaux is empty ? 'Créer les créneaux' : 'Ajouter des créneaux' }}</h4>
+                {{ form_start(generateur) }}
+                    <div class="form-row">
+                        <div class="col-6 col-md-3">{{ form_row(generateur.de) }}</div>
+                        <div class="col-6 col-md-3">{{ form_row(generateur.a) }}</div>
+                        <div class="col-6 col-md-3">{{ form_row(generateur.duree) }}</div>
+                        <div class="col-6 col-md-3">{{ form_row(generateur.places) }}</div>
+                    </div>
+                    {{ form_rest(generateur) }}
+                    <button class="btn btn-accent"><i class="fas fa-plus mr-1"></i> Créer les créneaux</button>
+                {{ form_end(generateur) }}
+            </div>
+        </div>
+
+        <div class="panel" id="benevoles">
+            <div class="panel-head"><h3>Bénévoles</h3><span class="meta">{{ pourvus }} / {{ besoin }}</span></div>
+            {% if jour.postes is not empty %}
+                <ul class="rows">
+                {% for poste in jour.postes %}
+                    <li class="row-item poste-row">
+                        <span class="row-main">
+                            <span class="row-title d-block">{{ poste.intitule }} <span class="text-muted font-weight-normal">· {{ poste.libelle }}</span></span>
+                            {% if poste.description %}<span class="row-meta d-block">{{ poste.description }}</span>{% endif %}
+                            <span class="d-flex flex-wrap mt-1" style="gap: .3rem">
+                                {% for inscription in poste.inscriptions %}
+                                    <span class="pill pill-info">{{ inscription.user.prenom }} {{ inscription.user.nom }}
+                                        <form method="post" action="{{ path('distribution_inscription_delete', {'id': inscription.id}) }}" class="d-inline" data-confirm="Retirer {{ inscription.user.prenom }} {{ inscription.user.nom }} du poste ?">
+                                            <input type="hidden" name="_token" value="{{ token }}">
+                                            <button class="pill-remove" aria-label="Retirer {{ inscription.user.prenom }} {{ inscription.user.nom }}">&times;</button>
+                                        </form>
+                                    </span>
+                                {% endfor %}
+                                {% if poste.manquants > 0 %}<span class="pill pill-warning">Il manque {{ poste.manquants }} personne{{ poste.manquants > 1 ? 's' }}</span>{% endif %}
+                            </span>
+                            <form method="post" action="{{ path('distribution_poste_ajouter', {'id': poste.id}) }}" class="d-flex mt-2" style="gap: .4rem; max-width: 420px">
+                                <input type="hidden" name="_token" value="{{ token }}">
+                                <select name="user" class="form-control form-control-sm" aria-label="Inscrire une personne sur {{ poste.intitule }}" required>
+                                    <option value="">Inscrire une personne…</option>
+                                    {% for user in users %}{% if not poste.isInscrit(user) %}<option value="{{ user.id }}">{{ user.nom }} {{ user.prenom }}</option>{% endif %}{% endfor %}
+                                </select>
+                                <button class="btn btn-sm btn-soft">Inscrire</button>
+                            </form>
+                        </span>
+                        <a href="{{ path('distribution_poste_edit', {'id': poste.id}) }}" class="btn btn-sm btn-soft" title="Modifier" aria-label="Modifier le poste {{ poste.intitule }}"><i class="fas fa-pen"></i></a>
+                        <form method="post" action="{{ path('distribution_poste_delete', {'id': poste.id}) }}" data-confirm="Supprimer le poste « {{ poste.intitule }} » et ses {{ poste.inscriptions|length }} inscription(s) ?">
+                            <input type="hidden" name="_token" value="{{ token }}">
+                            <button class="btn btn-sm btn-outline-danger" title="Supprimer" aria-label="Supprimer le poste {{ poste.intitule }}"><i class="fas fa-trash-alt"></i></button>
+                        </form>
+                    </li>
+                {% endfor %}
+                </ul>
+                <div class="panel-body pb-0">
+                    <form method="post" action="{{ path('distribution_appel', {'id': jour.id}) }}">
+                        <input type="hidden" name="_token" value="{{ token }}">
+                        <button class="btn btn-soft" {{ pourvus >= besoin ? 'disabled' }}><i class="fas fa-bullhorn mr-1"></i> Préparer un appel à bénévoles (newsletter)</button>
+                    </form>
+                </div>
+            {% endif %}
+            <div class="panel-body">
+                <h4 class="h6 font-weight-bold">Ajouter un poste</h4>
+                {{ form_start(poste_form) }}
+                    <div class="form-row">
+                        <div class="col-md-6">{{ form_row(poste_form.intitule) }}</div>
+                        <div class="col-md-6">{{ form_row(poste_form.description) }}</div>
+                        <div class="col-4">{{ form_row(poste_form.debut) }}</div>
+                        <div class="col-4">{{ form_row(poste_form.fin) }}</div>
+                        <div class="col-4">{{ form_row(poste_form.besoin) }}</div>
+                    </div>
+                    {{ form_rest(poste_form) }}
+                    <button class="btn btn-accent"><i class="fas fa-plus mr-1"></i> Ajouter le poste</button>
+                {{ form_end(poste_form) }}
+            </div>
+        </div>
+    </div>
+
+    <div class="panel" id="commandes" data-filter-scope>
+        <div class="panel-head"><h3>Clients</h3><span class="meta">{{ commandes|length }} commande{{ commandes|length > 1 ? 's' }} validée{{ commandes|length > 1 ? 's' }}</span></div>
+        {% if commandes is empty %}
+            <p class="panel-body text-muted mb-0">Les clients pourront choisir leur créneau dès que leur commande sera validée.</p>
+        {% else %}
+            <div class="toolbar panel-body pb-0 mb-2">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="search" data-filter-search placeholder="Rechercher un client…" aria-label="Rechercher un client">
+                </div>
+                <div class="chips">
+                    <button type="button" class="chip active" data-filter-value="">Tous</button>
+                    <button type="button" class="chip" data-filter-value="sans">Sans créneau <span class="count">{{ sans_creneau }}</span></button>
+                </div>
+            </div>
+            <ul class="rows">
+            {% for commande in commandes %}
+                <li class="row-item" data-filter-item data-status="{{ commande.creneau ? 'avec' : 'sans' }}" data-search="{{ commande.user.prenom }} {{ commande.user.nom }} {{ commande.id }}">
+                    <span class="avatar">{{ commande.user.prenom|initials(commande.user.nom) }}</span>
+                    <span class="row-main">
+                        <span class="row-title d-block">{{ commande.user.prenom }} {{ commande.user.nom }}</span>
+                        <span class="row-meta d-block">n°{{ commande.id }}{% if commande.livree %} · remise{% endif %}</span>
+                    </span>
+                    {% if not commande.creneau and jour.creneaux is not empty %}<span class="pill pill-warning hide-xs">Sans créneau</span>{% endif %}
+                    {% if jour.creneaux is not empty %}
+                    <form method="post" action="{{ path('distribution_commande_placer', {'id': commande.id}) }}" class="d-flex" style="gap: .4rem">
+                        <input type="hidden" name="_token" value="{{ token }}">
+                        <select name="creneau" class="form-control form-control-sm" aria-label="Créneau de {{ commande.user.prenom }} {{ commande.user.nom }}">
+                            <option value="0">— Sans créneau —</option>
+                            {% for creneau in jour.creneaux %}
+                                <option value="{{ creneau.id }}" {{ commande.creneau == creneau ? 'selected' }}>{{ creneau.libelle }} ({{ creneau.reservees }}/{{ creneau.places }})</option>
+                            {% endfor %}
+                        </select>
+                        <button class="btn btn-sm btn-soft">Placer</button>
+                    </form>
+                    {% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+            <div class="empty-state is-hidden" data-filter-empty><i class="fas fa-user-check"></i><h3>Aucun client ne correspond</h3></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

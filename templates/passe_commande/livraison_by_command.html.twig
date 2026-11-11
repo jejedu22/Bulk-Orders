@@ -41,7 +41,10 @@
                     <div class="meta">{{ day.commandes|length }} commande{{ day.commandes|length > 1 ? 's' }} à remettre</div>
                 </div>
             </div>
-            <i class="fas fa-chevron-down"></i>
+            <span class="d-flex align-items-center" style="gap: .5rem">
+                <a href="{{ path('distribution_jour', {'id': jour_distrib.id}) }}" class="btn btn-sm btn-soft" title="Feuille par créneau de retrait"><i class="fas fa-clipboard-check mr-1"></i> Feuille du jour J</a>
+                <i class="fas fa-chevron-down"></i>
+            </span>
         </div>
         <div class="panel-body panel-collapsible">
             <div class="card-grid wide">

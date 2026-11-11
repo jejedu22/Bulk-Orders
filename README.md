@@ -82,6 +82,19 @@ docker compose --env-file .env.docker logs -f app
 docker compose --env-file .env.docker exec -u www-data app php bin/console <commande>
 ```
 
+### Rappels de distribution
+
+Le service `scheduler` lance toutes les heures `app:distribution:rappels` : la
+veille d'une distribution (à partir de 8 h), les clients reçoivent leur créneau
+de retrait et les bénévoles leurs postes, une seule fois chacun. Les
+administrateurs peuvent aussi les envoyer à la main depuis la page
+« Créneaux et bénévoles » de la vente. Pour suivre ou tester :
+
+```bash
+docker compose --env-file .env.docker logs -f scheduler
+docker compose --env-file .env.docker exec -u www-data app php bin/console app:distribution:rappels --force
+```
+
 ### E-mails
 
 Les e-mails (commande enregistrée, paiement reçu, mot de passe oublié) partent

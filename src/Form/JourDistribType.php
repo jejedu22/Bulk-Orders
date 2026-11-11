@@ -12,6 +12,7 @@ use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Translation\Translator; 
 
 class JourDistribType extends AbstractType
@@ -78,6 +79,12 @@ class JourDistribType extends AbstractType
             ->add('limite', CheckboxType::class,[
                 'label' => 'jour_distrib.form.limite',
                 'required' => false,
+            ])
+            ->add('lieu', TextType::class, [
+                'label' => 'Lieu de la distribution',
+                'required' => false,
+                'attr' => ['placeholder' => 'Salle des fêtes, 3 rue du Moulin'],
+                'help' => 'Indiqué aux clients avec leur créneau de retrait, et aux bénévoles.',
             ])
             ;
     }

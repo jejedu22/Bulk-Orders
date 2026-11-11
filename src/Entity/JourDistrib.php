@@ -38,10 +38,24 @@ class JourDistrib
     #[ORM\Column(type: 'boolean')]
     private $limite;
 
+    // Lieu de la distribution, affiché aux clients et aux bénévoles
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private $lieu;
+
+    #[ORM\OneToMany(targetEntity: CreneauRetrait::class, mappedBy: 'jourDistrib', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['debut' => 'ASC'])]
+    private $creneaux;
+
+    #[ORM\OneToMany(targetEntity: PosteBenevole::class, mappedBy: 'jourDistrib', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['debut' => 'ASC', 'id' => 'ASC'])]
+    private $postes;
+
     public function __construct()
     {
         $this->commandes = new ArrayCollection();
         $this->products = new ArrayCollection();
+        $this->creneaux = new ArrayCollection();
+        $this->postes = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -186,6 +200,81 @@ class JourDistrib
     public function setLimite(bool $limite): self
     {
         $this->limite = $limite;
+
+        return $this;
+    }
+
+    /**
+     * Jour de la distribution : date de livraison, sinon date de la vente.
+     */
+    public function getDateDistribution(): \DateTimeImmutable
+    {
+        $date = $this->dateLivraison ?? $this->date;
+
+        return \DateTimeImmutable::createFromInterface($date)->setTime(0, 0);
+    }
+
+    public function getLieu(): ?string
+    {
+        return $this->lieu;
+    }
+
+    public function setLieu(?string $lieu): self
+    {
+        $this->lieu = null !== $lieu && '' !== trim($lieu) ? trim($lieu) : null;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|CreneauRetrait[]
+     */
+    public function getCreneaux(): Collection
+    {
+        return $this->creneaux;
+    }
+
+    public function addCreneau(CreneauRetrait $creneau): self
+    {
+        if (!$this->creneaux->contains($creneau)) {
+            $this->creneaux[] = $creneau;
+        }
+
+        return $this;
+    }
+
+    public function removeCreneau(CreneauRetrait $creneau): self
+    {
+        $this->creneaux->removeElement($creneau);
+
+        return $this;
+    }
+
+    public function hasCreneaux(): bool
+    {
+        return !$this->creneaux->isEmpty();
+    }
+
+    /**
+     * @return Collection|PosteBenevole[]
+     */
+    public function getPostes(): Collection
+    {
+        return $this->postes;
+    }
+
+    public function addPoste(PosteBenevole $poste): self
+    {
+        if (!$this->postes->contains($poste)) {
+            $this->postes[] = $poste;
+        }
+
+        return $this;
+    }
+
+    public function removePoste(PosteBenevole $poste): self
+    {
+        $this->postes->removeElement($poste);
 
         return $this;
     }

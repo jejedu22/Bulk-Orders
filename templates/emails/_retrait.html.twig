@@ -1,0 +1,21 @@
+{# Créneau de retrait d'une commande validée (ou invitation à le choisir) #}
+{% set jour = commande.jourDistrib %}
+{% if jour and jour.creneaux is not empty %}
+<table role="presentation" style="width: 100%; border-collapse: collapse; border: 2px solid {{ brand.accent }}; border-radius: 4px; margin: 0 0 16px">
+    <tr>
+        <td style="padding: 12px 14px; font-size: 15px">
+            {% if commande.creneau %}
+                <strong>Votre créneau de retrait :</strong><br>
+                {{ jour.dateDistribution|format_date('full', locale='fr')|capitalize }}, de {{ commande.creneau.debut|date('H:i') }} à {{ commande.creneau.fin|date('H:i') }}
+            {% else %}
+                <strong>Choisissez votre créneau de retrait</strong><br>
+                Le choix d'un créneau est obligatoire pour venir chercher votre commande le {{ jour.dateDistribution|format_date('full', locale='fr') }}.
+            {% endif %}
+            {% if jour.lieu %}<br><span style="color: #6c757d">Lieu : {{ jour.lieu }}</span>{% endif %}
+        </td>
+    </tr>
+</table>
+{% if creneau_url ?? null %}
+    {{ include('emails/_button.html.twig', {url: creneau_url, label: commande.creneau ? 'Changer de créneau' : 'Choisir mon créneau'}) }}
+{% endif %}
+{% endif %}

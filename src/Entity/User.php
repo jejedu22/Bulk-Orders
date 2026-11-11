@@ -68,6 +68,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OrderBy(['name' => 'ASC'])]
     private $newsletterGroups;
 
+    // Postes de bénévole pris lors des distributions
+    #[ORM\OneToMany(targetEntity: InscriptionBenevole::class, mappedBy: 'user', cascade: ['remove'])]
+    private $inscriptionsBenevole;
+
     // Adhésions (cotisations), de la plus récente à la plus ancienne
     #[ORM\OneToMany(targetEntity: Adhesion::class, mappedBy: 'user', cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['dateFin' => 'DESC', 'id' => 'DESC'])]
@@ -76,6 +80,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function __construct()
     {
         $this->adhesions = new ArrayCollection();
+        $this->inscriptionsBenevole = new ArrayCollection();
         $this->commandes = new ArrayCollection();
         $this->newsletterGroups = new ArrayCollection();
         $this->newsletterDeliveries = new ArrayCollection();
@@ -366,5 +371,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         return $derniere->isExpiree($date) ? self::ADHESION_EXPIREE : self::ADHESION_A_VENIR;
+    }
+
+    /**
+     * @return Collection|InscriptionBenevole[]
+     */
+    public function getInscriptionsBenevole(): Collection
+    {
+        return $this->inscriptionsBenevole;
+    }
+
+    public function addInscriptionBenevole(InscriptionBenevole $inscription): self
+    {
+        if (!$this->inscriptionsBenevole->contains($inscription)) {
+            $this->inscriptionsBenevole[] = $inscription;
+        }
+
+        return $this;
+    }
+
+    public function removeInscriptionBenevole(InscriptionBenevole $inscription): self
+    {
+        $this->inscriptionsBenevole->removeElement($inscription);
+
+        return $this;
     }
 }

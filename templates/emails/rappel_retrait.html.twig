@@ -1,0 +1,16 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% block title %}{{ subject }}{% endblock %}
+
+{% block content %}
+    <h1 style="font-size: 20px; margin: 0 0 16px">{{ subject }}</h1>
+    <p style="margin: 0 0 12px">Bonjour {{ commande.user.prenom }},</p>
+    <p style="margin: 0 0 16px">La distribution de votre commande n°{{ commande.id }} a lieu le {{ jour.dateDistribution|format_date('full', locale='fr') }}{% if jour.lieu %}, {{ jour.lieu }}{% endif %}.</p>
+    {% if jour.creneaux is not empty %}
+        {{ include('emails/_retrait.html.twig', {creneau_url: commande.creneau ? null : creneau_url}) }}
+    {% endif %}
+    {% if not commande.payee and commande.hasFinalPrices %}
+        <p style="margin: 0 0 16px">Montant à régler : <strong>{{ commande.total|format_currency('EUR', locale='fr') }}</strong>.</p>
+    {% endif %}
+    {{ include('emails/_lignes.html.twig', {final: commande.hasFinalPrices}) }}
+{% endblock %}

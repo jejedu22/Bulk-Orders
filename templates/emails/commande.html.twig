@@ -20,6 +20,10 @@
     </table>
     {% endif %}
 
+    {% if commande.confirmed and not commande.livree %}
+        {{ include('emails/_retrait.html.twig', {creneau_url: creneau_url ?? null}) }}
+    {% endif %}
+
     {{ include('emails/_lignes.html.twig', {final: final_prices ?? false}) }}
 
     {% if commande.commentaire %}

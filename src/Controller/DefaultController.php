@@ -55,7 +55,18 @@ class DefaultController extends AbstractController
             array_push ($tableJours, ['jour' => $jourDistrib, 'test_user_commande' => $testUser]);
         }
         
+        // Commandes validées dont le créneau de retrait (obligatoire) reste à choisir
+        $aChoisir = [];
+        if ($this->getUser()) {
+            foreach ($this->getUser()->getCommandes() as $commande) {
+                if ($commande->isCreneauAChoisir() && $commande->getJourDistrib()->getDateDistribution() >= new \DateTimeImmutable('today')) {
+                    $aChoisir[] = $commande;
+                }
+            }
+        }
+
         return $this->render('passe_commande/index.html.twig', [
+            'creneaux_a_choisir' => $aChoisir,
             'jour_distribs' => $tableJours,
             'poid_restant' => $jourDistribRepository->findConditionnement(),
         ]);

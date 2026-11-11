@@ -1,0 +1,21 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% block title %}{{ subject }}{% endblock %}
+
+{% block content %}
+    <h1 style="font-size: 20px; margin: 0 0 16px">{{ subject }}</h1>
+    <p style="margin: 0 0 12px">Bonjour {{ user.prenom }},</p>
+    <p style="margin: 0 0 16px">Merci de donner un coup de main pour la distribution du {{ jour.dateDistribution|format_date('full', locale='fr') }}{% if jour.lieu %}, {{ jour.lieu }}{% endif %}. Vous êtes inscrit·e sur :</p>
+    <table role="presentation" style="width: 100%; border-collapse: collapse; margin: 0 0 16px">
+        {% for inscription in inscriptions %}
+            <tr>
+                <td style="padding: 8px 12px; border-bottom: 1px solid #e9ecef; font-size: 15px; white-space: nowrap"><strong>{{ inscription.poste.debut|date('H:i') }}–{{ inscription.poste.fin|date('H:i') }}</strong></td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid #e9ecef; font-size: 15px">{{ inscription.poste.intitule }}{% if inscription.poste.description %}<br><span style="color: #6c757d; font-size: 13px">{{ inscription.poste.description }}</span>{% endif %}</td>
+            </tr>
+        {% endfor %}
+    </table>
+    <p style="margin: 0 0 16px">Le jour même, la feuille de distribution est accessible depuis la page Bénévolat.</p>
+    {% if benevolat_url %}
+        {{ include('emails/_button.html.twig', {url: benevolat_url, label: 'Voir le planning'}) }}
+    {% endif %}
+{% endblock %}

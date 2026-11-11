@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Poste {{ poste.intitule }}{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <a href="{{ path('jour_distrib_distribution', {'id': jour.id}) }}#benevoles" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Distribution du {{ jour.dateDistribution|date('d/m/Y') }}</a>
+    <div class="page-head"><h1>Modifier le poste</h1></div>
+    <div class="panel form-panel">
+        <div class="panel-body">
+            {{ form_start(form) }}
+                <div class="form-row">
+                    <div class="col-md-6">{{ form_row(form.intitule) }}</div>
+                    <div class="col-md-6">{{ form_row(form.description) }}</div>
+                    <div class="col-4">{{ form_row(form.debut) }}</div>
+                    <div class="col-4">{{ form_row(form.fin) }}</div>
+                    <div class="col-4">{{ form_row(form.besoin) }}</div>
+                </div>
+                {{ form_rest(form) }}
+                <div class="form-actions">
+                    <button class="btn btn-accent"><i class="fas fa-check mr-1"></i> Enregistrer</button>
+                    <a href="{{ path('jour_distrib_distribution', {'id': jour.id}) }}#benevoles" class="btn btn-soft">Annuler</a>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</div>
+{% endblock %}

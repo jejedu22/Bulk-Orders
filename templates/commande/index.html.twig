@@ -30,6 +30,27 @@
         </div>
     </div>
 
+    {% set jour = commande.jourDistrib %}
+    {% if jour.creneaux is not empty and not commande.livree %}
+    <div class="panel form-panel">
+        <div class="panel-body retrait-box justify-content-between">
+            {% if not commande.confirmed %}
+                <span class="text-muted"><i class="fas fa-clock mr-1"></i> Vous pourrez choisir votre créneau de retrait dès que votre commande sera validée.</span>
+            {% elseif commande.creneau %}
+                <span>
+                    <span class="d-block text-muted small">Votre créneau de retrait</span>
+                    <span class="when">{{ jour.dateDistribution|format_date('full', locale='fr')|capitalize }}, {{ commande.creneau.debut|date('H:i') }}–{{ commande.creneau.fin|date('H:i') }}</span>
+                    {% if jour.lieu %}<span class="d-block text-muted small"><i class="fas fa-map-marker-alt mr-1"></i>{{ jour.lieu }}</span>{% endif %}
+                </span>
+                <a href="{{ path('commande_creneau', {'id': commande.id}) }}" class="btn btn-soft"><i class="fas fa-clock mr-1"></i> Changer</a>
+            {% else %}
+                <span class="text-warning font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Choisissez votre créneau de retrait (obligatoire).</span>
+                <a href="{{ path('commande_creneau', {'id': commande.id}) }}" class="btn btn-accent"><i class="fas fa-clock mr-1"></i> Choisir mon créneau</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
     <div class="panel form-panel">
         <div class="panel-head">
             <div class="d-flex align-items-center" style="gap: .9rem">

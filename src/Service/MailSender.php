@@ -140,6 +140,7 @@ class MailSender
                 'commande' => $commande,
                 'final_prices' => $finalPrices && $commande->hasFinalPrices(),
                 'commandes_url' => $this->url('commande_index'),
+                'creneau_url' => null !== $commande->getId() ? $this->absoluteUrl('commande_creneau', ['id' => $commande->getId()]) : null,
             ]));
 
         return $this->send($email);
@@ -170,5 +171,31 @@ class MailSender
             ]));
 
         return $this->send($email);
+    }
+
+    /**
+     * E-mail mis en page avec l'habillage commun : $template reçoit « brand »,
+     * « subject » et $context.
+     */
+    public function sendTemplate(string $to, string $subject, string $template, array $context = []): bool
+    {
+        try {
+            $email = $this->withSender(new Email());
+        } catch (\LogicException $e) {
+            return false;
+        }
+
+        $email
+            ->to($to)
+            ->subject($subject)
+            ->html($this->twig->render($template, ['brand' => $this->brand($email), 'subject' => $subject] + $context));
+
+        return $this->send($email);
+    }
+
+    /** URL absolue d'une route, pour les liens des e-mails. */
+    public function absoluteUrl(string $route, array $parameters = []): ?string
+    {
+        return null !== $this->urlGenerator ? $this->urlGenerator->generate($route, $parameters, UrlGeneratorInterface::ABSOLUTE_URL) : null;
     }
 }

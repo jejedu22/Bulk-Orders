@@ -74,6 +74,28 @@
         </details>
     </div>
 
+    {% set inscriptions = user.inscriptionsBenevole|sort((a, b) => b.poste.debut <=> a.poste.debut) %}
+    <div class="panel form-panel" id="benevolat">
+        <div class="panel-head"><h3>Bénévolat</h3><span class="meta">{{ inscriptions|filter(i => i.present)|length }} participation{{ inscriptions|filter(i => i.present)|length > 1 ? 's' }} pointée{{ inscriptions|filter(i => i.present)|length > 1 ? 's' }}</span></div>
+        {% if inscriptions is empty %}
+            <p class="panel-body text-muted mb-0">Pas encore inscrit·e comme bénévole.</p>
+        {% else %}
+            <ul class="rows">
+            {% for inscription in inscriptions|slice(0, 12) %}
+                {% set poste = inscription.poste %}
+                <li class="row-item">
+                    <i class="fas fa-hands-helping fa-fw text-muted"></i>
+                    <span class="row-main">
+                        <span class="row-title d-block">{{ poste.intitule }} · {{ poste.libelle }}</span>
+                        <span class="row-meta d-block">{{ poste.jourDistrib.dateDistribution|format_date('full', locale='fr')|capitalize }}</span>
+                    </span>
+                    {% if inscription.present %}<span class="pill pill-success">Présent·e</span>{% elseif poste.fin > date() %}<span class="pill pill-info">À venir</span>{% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+
     <div class="panel form-panel">
         <div class="panel-head"><h3>Newsletters reçues</h3><span class="meta">{{ deliveries|filter(d => not d.test)|length }}</span></div>
         {% if deliveries is empty %}

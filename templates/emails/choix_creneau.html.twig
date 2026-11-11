@@ -1,0 +1,10 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% block title %}{{ subject }}{% endblock %}
+
+{% block content %}
+    <h1 style="font-size: 20px; margin: 0 0 16px">{{ subject }}</h1>
+    <p style="margin: 0 0 12px">Bonjour {{ commande.user.prenom }},</p>
+    <p style="margin: 0 0 16px">Votre commande n°{{ commande.id }} est validée, mais vous n'avez pas encore choisi quand venir la chercher. Merci de réserver votre créneau avant le {{ limite|format_datetime(pattern: "EEEE d MMMM 'à' H'h'", locale='fr') }}.</p>
+    {{ include('emails/_retrait.html.twig') }}
+{% endblock %}

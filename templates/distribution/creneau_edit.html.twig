@@ -1,0 +1,36 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Créneau {{ creneau.libelle }}{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <a href="{{ path('jour_distrib_distribution', {'id': jour.id}) }}#creneaux" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Distribution du {{ jour.dateDistribution|date('d/m/Y') }}</a>
+    <div class="page-head">
+        <div>
+            <h1>Créneau {{ creneau.libelle }}</h1>
+            <p class="subtitle">{{ creneau.reservees }} client{{ creneau.reservees > 1 ? 's' }} inscrit{{ creneau.reservees > 1 ? 's' }}</p>
+        </div>
+    </div>
+    <div class="panel form-panel">
+        <div class="panel-body">
+            {{ form_start(form) }}
+                <div class="form-row">
+                    <div class="col-4">{{ form_row(form.debut) }}</div>
+                    <div class="col-4">{{ form_row(form.fin) }}</div>
+                    <div class="col-4">{{ form_row(form.places) }}</div>
+                </div>
+                {{ form_rest(form) }}
+                <div class="form-actions">
+                    <button class="btn btn-accent"><i class="fas fa-check mr-1"></i> Enregistrer</button>
+                    <a href="{{ path('jour_distrib_distribution', {'id': jour.id}) }}#creneaux" class="btn btn-soft">Annuler</a>
+                </div>
+            {{ form_end(form) }}
+            {% if creneau.commandes is not empty %}
+                <p class="text-muted small mt-3 mb-0">Inscrits : {{ creneau.commandes|map(c => c.user.prenom ~ ' ' ~ c.user.nom)|join(', ') }}. Ils sont prévenus par le rappel de la veille si l'horaire change.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

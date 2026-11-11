@@ -112,6 +112,12 @@
                                     <p>{{ 'menu.synthesis'|trans }}</p>
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="{{ path('benevolat_index') }}" class="nav-link {{ current_route starts with 'benevolat_' or current_route == 'distribution_jour' ? 'active' }}">
+                                    <i class="fas fa-hands-helping nav-icon"></i>
+                                    <p>Bénévolat</p>
+                                </a>
+                            </li>
                             {% endif %}
 
                             {% if is_granted('ROLE_ADMIN') %}
@@ -150,7 +156,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ path('jour_distrib_index') }}" class="nav-link {{ current_route starts with 'jour_distrib' ? 'active' }}">
+                                <a href="{{ path('jour_distrib_index') }}" class="nav-link {{ current_route starts with 'jour_distrib' or (current_route starts with 'distribution_' and current_route != 'distribution_jour') ? 'active' }}">
                                     <i class="far fa-calendar-alt nav-icon"></i>
                                     <p>{{ 'menu.admin.add_day'|trans }}</p>
                                 </a>

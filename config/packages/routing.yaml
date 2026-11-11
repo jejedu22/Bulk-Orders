@@ -1,3 +1,9 @@
 framework:
     router:
         utf8: true
+        # Liens absolus des e-mails envoyés en ligne de commande (rappels) ;
+        # pendant une requête web, l'adresse de la requête est utilisée.
+        default_uri: 'https://%env(APP_HOST)%'
+
+parameters:
+    env(APP_HOST): 'localhost'

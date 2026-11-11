@@ -53,3 +53,6 @@ security:
         - { path: ^/commande, roles: ROLE_USER }
         - { path: ^/ligne, roles: ROLE_USER }
         - { path: ^/new/, roles: ROLE_USER }
+        # Bénévoles : la feuille du jour J vérifie l'inscription (voir JourDistributionController)
+        - { path: ^/benevolat, roles: ROLE_USER }
+        - { path: ^/distribution, roles: ROLE_USER }

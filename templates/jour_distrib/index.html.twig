@@ -42,6 +42,7 @@
                     </span>
                     <span class="row-aside hide-xs">
                         {% if jour_distrib.limite %}<span class="pill pill-info">1 commande / pers.</span>{% endif %}
+                        {% if jour_distrib.creneaux is not empty %}<span class="pill pill-muted"><i class="fas fa-clock"></i> {{ jour_distrib.creneaux|length }} créneaux</span>{% endif %}
                         {% if jour_distrib.closed %}
                             <span class="pill pill-muted"><i class="fas fa-lock"></i> Fermée</span>
                         {% elseif jour_distrib.date|date('Y-m-d') <= today %}

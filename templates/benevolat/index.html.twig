@@ -1,0 +1,102 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Bénévolat{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+<div class="col-12">
+    <div class="page-head">
+        <div>
+            <h1>Bénévolat</h1>
+            <p class="subtitle">Donnez un coup de main pour l'installation, la distribution ou le rangement.</p>
+        </div>
+    </div>
+
+    {% if mes_postes is not empty %}
+    <div class="panel form-panel">
+        <div class="panel-head"><h3>Mes prochains bénévolats</h3><span class="meta">{{ mes_postes|length }}</span></div>
+        <ul class="rows">
+        {% for poste in mes_postes %}
+            {% set jour = poste.jourDistrib %}
+            <li class="row-item">
+                {{ include('passe_commande/_date_badge.html.twig', {'date': jour.dateDistribution}) }}
+                <span class="row-main">
+                    <span class="row-title d-block">{{ poste.intitule }} · {{ poste.libelle }}</span>
+                    <span class="row-meta d-block">{{ jour.dateDistribution|format_date('full', locale='fr')|capitalize }}{% if jour.lieu %} · {{ jour.lieu }}{% endif %}</span>
+                </span>
+                {% if distribution.peutOuvrirFeuille(app.user, jour, false) %}
+                    <a href="{{ path('distribution_jour', {'id': jour.id}) }}" class="btn btn-sm btn-accent"><i class="fas fa-clipboard-check mr-1"></i> Feuille du jour</a>
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% for jour in jours %}
+        {% set modifiable = distribution.isModifiable(jour) %}
+        {% set besoin = jour.postes|reduce((t, p) => t + p.besoin, 0) %}
+        {% set pourvus = jour.postes|reduce((t, p) => t + min(p.inscriptions|length, p.besoin), 0) %}
+        <div class="panel form-panel" id="jour-{{ jour.id }}">
+            <div class="panel-head">
+                <div class="d-flex align-items-center" style="gap: .9rem">
+                    {{ include('passe_commande/_date_badge.html.twig', {'date': jour.dateDistribution}) }}
+                    <div>
+                        <h3>{{ jour.dateDistribution|format_date('full', locale='fr')|capitalize }}</h3>
+                        <div class="meta">{% if jour.lieu %}<i class="fas fa-map-marker-alt mr-1"></i>{{ jour.lieu }} · {% endif %}{{ pourvus }} / {{ besoin }} bénévoles</div>
+                    </div>
+                </div>
+            </div>
+            <ul class="rows">
+            {% for poste in jour.postes %}
+                {% set inscrit = poste.isInscrit(app.user) %}
+                {% set token = csrf_token('benevolat' ~ poste.id) %}
+                <li class="row-item poste-row">
+                    <span class="row-main">
+                        <span class="row-title d-block">{{ poste.intitule }} <span class="text-muted font-weight-normal">· {{ poste.libelle }}</span></span>
+                        {% if poste.description %}<span class="row-meta d-block">{{ poste.description }}</span>{% endif %}
+                        {% if poste.inscriptions is not empty %}
+                            <span class="d-flex flex-wrap mt-1" style="gap: .3rem" aria-label="Bénévoles inscrits">
+                                {% for inscription in poste.inscriptions %}
+                                    <span class="pill {{ inscription.user == app.user ? 'pill-accent' : 'pill-muted' }}">{{ inscription.user == app.user ? 'Vous' : inscription.user.prenom ~ ' ' ~ inscription.user.nom|first ~ '.' }}</span>
+                                {% endfor %}
+                            </span>
+                        {% endif %}
+                    </span>
+                    <span class="d-flex flex-column align-items-end" style="gap: .35rem">
+                        {% if inscrit %}
+                            <span class="pill pill-success"><i class="fas fa-check"></i> Inscrit·e</span>
+                            {% if modifiable %}
+                                <form method="post" action="{{ path('benevolat_desinscription', {'id': poste.id}) }}" data-confirm="Vous désinscrire du poste « {{ poste.intitule }} » ?">
+                                    <input type="hidden" name="_token" value="{{ token }}">
+                                    <button class="btn btn-sm btn-soft">Me désinscrire</button>
+                                </form>
+                            {% endif %}
+                        {% elseif poste.complet %}
+                            <span class="pill pill-success">Complet · {{ poste.inscriptions|length }}/{{ poste.besoin }}</span>
+                        {% elseif distribution.peutSInscrire(poste) %}
+                            <span class="pill pill-warning">Il manque {{ poste.manquants }} personne{{ poste.manquants > 1 ? 's' }}</span>
+                            <form method="post" action="{{ path('benevolat_inscription', {'id': poste.id}) }}">
+                                <input type="hidden" name="_token" value="{{ token }}">
+                                <button class="btn btn-sm btn-accent"><i class="fas fa-hand-paper mr-1"></i> Je m'inscris</button>
+                            </form>
+                        {% else %}
+                            <span class="pill pill-muted">Terminé</span>
+                        {% endif %}
+                    </span>
+                </li>
+            {% endfor %}
+            </ul>
+        </div>
+    {% else %}
+        <div class="panel">
+            <div class="empty-state">
+                <i class="fas fa-hands-helping"></i>
+                <h3>Pas de bénévolat prévu pour l'instant</h3>
+                <p>Les postes des prochaines distributions apparaîtront ici.</p>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Feuille de distribution{% endblock %}
+
+{% block titre_page %}{% endblock %}
+
+{% block body %}
+{% set token = csrf_token('jour' ~ jour.id) %}
+{% set commandes = groupes[onglet] ?? [] %}
+{% set remises = commandes|filter(c => c.livree)|length %}
+{% set total_commandes = groupes|reduce((t, g) => t + g|length, 0) %}
+{% set total_remises = groupes|reduce((t, g) => t + g|filter(c => c.livree)|length, 0) %}
+<div class="col-12">
+    {% if is_granted('ROLE_ADMIN') %}
+        <a href="{{ path('jour_distrib_distribution', {'id': jour.id}) }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Créneaux et bénévoles</a>
+    {% else %}
+        <a href="{{ path('benevolat_index') }}" class="back-link"><i class="fas fa-arrow-left mr-1"></i> Bénévolat</a>
+    {% endif %}
+    <div class="page-head">
+        <div>
+            <h1>Distribution du {{ jour.dateDistribution|format_date('full', locale='fr') }}</h1>
+            <p class="subtitle">{{ total_remises }} commande{{ total_remises > 1 ? 's' }} remise{{ total_remises > 1 ? 's' }} sur {{ total_commandes }}{% if jour.lieu %} · {{ jour.lieu }}{% endif %}</p>
+        </div>
+    </div>
+    {% if not jour_j %}
+        <div class="alert alert-info"><i class="fas fa-info-circle mr-1"></i> Aperçu : les bénévoles pourront ouvrir cette feuille le jour de la distribution.</div>
+    {% endif %}
+
+    {% if jour.creneaux is not empty %}
+    <nav class="sheet-tabs mb-3" aria-label="Créneaux">
+        {% for creneau in jour.creneaux %}
+            {% set liste = groupes[creneau.id] ?? [] %}
+            {% set reste = liste|filter(c => not c.livree)|length %}
+            <a href="{{ path('distribution_jour', {'id': jour.id, 'creneau': creneau.id}) }}" class="chip {{ onglet == creneau.id ? 'active' }}" {{ onglet == creneau.id ? 'aria-current="page"' }}>{{ creneau.debut|date('H:i') }} <span class="count">{{ reste > 0 ? reste : '✓' }}</span></a>
+        {% endfor %}
+        <a href="{{ path('distribution_jour', {'id': jour.id, 'creneau': 0}) }}" class="chip {{ onglet == 0 ? 'active' }}">Sans créneau <span class="count">{{ (groupes[0] ?? [])|length }}</span></a>
+    </nav>
+    {% endif %}
+
+    {% set searchable = commandes|length > 6 %}
+    <div class="panel form-panel" {{ searchable ? 'data-filter-scope' }}>
+        <div class="panel-head">
+            <h3>{{ creneau ? creneau.libelle : (jour.creneaux is empty ? 'Commandes' : 'Sans créneau') }}</h3>
+            <span class="meta">{{ remises }} remise{{ remises > 1 ? 's' }} sur {{ commandes|length }}</span>
+        </div>
+        {% if searchable %}
+            <div class="panel-body pb-0">
+                <div class="search-box"><i class="fas fa-search"></i><input type="search" data-filter-search placeholder="Rechercher un nom…" aria-label="Rechercher un client"></div>
+            </div>
+        {% endif %}
+        <ul class="rows">
+        {% for commande in commandes %}
+            <li class="row-item sheet-row {{ commande.livree ? 'is-done' }}" data-filter-item data-search="{{ commande.user.prenom }} {{ commande.user.nom }} {{ commande.id }}">
+                <span class="avatar">{{ commande.user.prenom|initials(commande.user.nom) }}</span>
+                <span class="row-main">
+                    <span class="row-title d-block">{{ commande.user.prenom }} {{ commande.user.nom }}</span>
+                    <span class="row-meta d-block">
+                        n°{{ commande.id }} · {{ commande.ligneCommandes|length }} produit{{ commande.ligneCommandes|length > 1 ? 's' }}
+                        {% if commande.user.phone %} · <a href="tel:{{ commande.user.phone }}" class="text-muted">{{ commande.user.phone }}</a>{% endif %}
+                    </span>
+                    <details class="mt-1">
+                        <summary class="small text-muted">Détail</summary>
+                        {{ include('commande/_lines.html.twig') }}
+                        {% if commande.commentaire %}<div class="small text-muted"><i class="far fa-comment mr-1"></i>{{ commande.commentaire }}</div>{% endif %}
+                    </details>
+                </span>
+                {% if commande.payee %}
+                    <span class="pill pill-success hide-xs">Payée</span>
+                {% else %}
+                    <span class="pill pill-warning">À régler {{ commande.total|format_currency('EUR', locale='fr') }}</span>
+                {% endif %}
+                <form method="post" action="{{ path('distribution_remise', {'id': commande.id}) }}" {{ commande.livree ? 'data-confirm="Annuler la remise de la commande de ' ~ commande.user.prenom ~ ' ' ~ commande.user.nom ~ ' ?"' }}>
+                    <input type="hidden" name="_token" value="{{ token }}">
+                    <input type="hidden" name="creneau" value="{{ onglet }}">
+                    {% if commande.livree %}
+                        <button class="btn btn-sm btn-soft" title="Annuler la remise"><i class="fas fa-undo mr-1"></i> Annuler</button>
+                    {% else %}
+                        <button class="btn btn-sm btn-accent"><i class="fas fa-check mr-1"></i> Remis</button>
+                    {% endif %}
+                </form>
+            </li>
+        {% else %}
+            <li class="row-item text-muted">Personne sur ce créneau.</li>
+        {% endfor %}
+        </ul>
+        {% if searchable %}<div class="empty-state is-hidden" data-filter-empty><i class="fas fa-user-slash"></i><h3>Aucun client ne correspond</h3></div>{% endif %}
+    </div>
+
+    {% if inscriptions is not empty %}
+    <div class="panel form-panel" id="benevoles">
+        <div class="panel-head"><h3>Bénévoles</h3><span class="meta">{{ inscriptions|filter(i => i.present)|length }} présent{{ inscriptions|filter(i => i.present)|length > 1 ? 's' }} sur {{ inscriptions|length }}</span></div>
+        <ul class="rows">
+        {% for inscription in inscriptions %}
+            <li class="row-item">
+                <span class="avatar">{{ inscription.user.prenom|initials(inscription.user.nom) }}</span>
+                <span class="row-main">
+                    <span class="row-title d-block">{{ inscription.user.prenom }} {{ inscription.user.nom }}</span>
+                    <span class="row-meta d-block">{{ inscription.poste.intitule }} · {{ inscription.poste.libelle }}</span>
+                </span>
+                <form method="post" action="{{ path('distribution_presence', {'id': inscription.id}) }}">
+                    <input type="hidden" name="_token" value="{{ token }}">
+                    <input type="hidden" name="creneau" value="{{ onglet }}">
+                    <button class="btn btn-sm {{ inscription.present ? 'btn-accent' : 'btn-soft' }}" aria-pressed="{{ inscription.present ? 'true' : 'false' }}">
+                        <i class="fas {{ inscription.present ? 'fa-check' : 'fa-user-clock' }} mr-1"></i> {{ inscription.present ? 'Présent·e' : 'Pointer' }}
+                    </button>
+                </form>
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

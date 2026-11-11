@@ -65,6 +65,7 @@
                     {% if nb_delivered %}<span class="pill pill-success">{{ nb_delivered }} livrée{{ nb_delivered > 1 ? 's' }}</span>{% endif %}
                 {% endif %}
                 {% if suivi == 2 %}
+                    <a href="{{ path('jour_distrib_distribution', {'id': jour_distrib.id}) }}" class="btn btn-sm btn-soft" title="Créneaux de retrait et bénévoles"><i class="fas fa-clock mr-1"></i> Distribution</a>
                     {% set nb_requests = demande_paiement_pending(jour_distrib) %}
                     {% if nb_requests %}
                         <form method="post" action="{{ path('jour_distrib_demande_paiement', {'id': jour_distrib.id}) }}" class="d-inline" data-confirm="Envoyer le montant définitif {{ helloasso_configured() ? 'et le lien de paiement en ligne ' }}à {{ nb_requests }} client{{ nb_requests > 1 ? 's' }} ?">
@@ -135,6 +136,13 @@
                                 <a href="{{ path('livree_commande', { commande: commande.id }) }}" class="btn btn-sm btn-accent" data-confirm="Confirmer la remise de la commande ?">
                                     <i class="fas fa-check mr-1"></i> Remise
                                 </a>
+                            {% endif %}
+                            {% if commande.confirmed and not commande.livree and jour_distrib.creneaux is not empty %}
+                                {% if suivi == 0 %}
+                                    <a href="{{ path('commande_creneau', {'id': commande.id}) }}" class="btn btn-sm {{ commande.creneau ? 'btn-soft' : 'btn-accent' }}"><i class="fas fa-clock mr-1"></i> {{ commande.creneau ? 'Retrait ' ~ commande.creneau.libelle : 'Choisir mon créneau' }}</a>
+                                {% else %}
+                                    <span class="pill {{ commande.creneau ? 'pill-info' : 'pill-warning' }}"><i class="fas fa-clock"></i> {{ commande.creneau ? commande.creneau.libelle : 'Sans créneau' }}</span>
+                                {% endif %}
                             {% endif %}
                             {% if suivi == 0 and helloasso_can_pay(commande) %}{{ include('commande/_paiement_form.html.twig', {'compact': true}) }}{% endif %}
                             {% if can_delete %}{{ include('commande/_delete_form.html.twig', {'compact': true}) }}{% endif %}

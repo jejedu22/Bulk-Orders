@@ -52,6 +52,15 @@ class Commande
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private $payee = false;
 
+    /** Créneau de retrait choisi après la validation de la commande */
+    #[ORM\ManyToOne(targetEntity: CreneauRetrait::class, inversedBy: 'commandes')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private $creneau;
+
+    /** Rappel de la distribution envoyé (la veille) */
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private $rappelEnvoyeLe;
+
     /** Envoi de l'e-mail de demande de paiement (montant définitif) */
     #[ORM\Column(type: 'datetime', nullable: true)]
     private $paiementDemandeLe;
@@ -248,5 +257,50 @@ class Commande
         }
 
         return $total;
+    }
+
+    public function getCreneau(): ?CreneauRetrait
+    {
+        return $this->creneau;
+    }
+
+    /**
+     * Affecte le créneau (voir App\Service\Distribution::choisir, qui vérifie les places).
+     */
+    public function setCreneau(?CreneauRetrait $creneau): self
+    {
+        if ($this->creneau === $creneau) {
+            return $this;
+        }
+        if (null !== $this->creneau) {
+            $this->creneau->getCommandes()->removeElement($this);
+        }
+        $this->creneau = $creneau;
+        if (null !== $creneau && !$creneau->getCommandes()->contains($this)) {
+            $creneau->getCommandes()->add($this);
+        }
+
+        return $this;
+    }
+
+    public function getRappelEnvoyeLe(): ?\DateTimeImmutable
+    {
+        return $this->rappelEnvoyeLe;
+    }
+
+    public function setRappelEnvoyeLe(?\DateTimeImmutable $rappelEnvoyeLe): self
+    {
+        $this->rappelEnvoyeLe = $rappelEnvoyeLe;
+
+        return $this;
+    }
+
+    /**
+     * Validée, pas encore remise, vente avec des créneaux, et aucun créneau choisi.
+     */
+    public function isCreneauAChoisir(): bool
+    {
+        return $this->confirmed && !$this->livree && null === $this->creneau
+            && null !== $this->jourDistrib && $this->jourDistrib->hasCreneaux();
     }
 }

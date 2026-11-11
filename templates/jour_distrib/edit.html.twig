@@ -12,7 +12,10 @@
             <h1>Vente du {{ jour_distrib.date|format_date('long', locale='fr') }}</h1>
             <p class="subtitle">{{ jour_distrib.commandes|length }} commande{{ jour_distrib.commandes|length > 1 ? 's' }}</p>
         </div>
-        <div class="actions">{{ include('jour_distrib/_delete_form.html.twig') }}</div>
+        <div class="actions">
+            {{ include('jour_distrib/_delete_form.html.twig') }}
+            <a href="{{ path('jour_distrib_distribution', {'id': jour_distrib.id}) }}" class="btn btn-accent"><i class="fas fa-clock mr-1"></i> Créneaux et bénévoles</a>
+        </div>
     </div>
     <div class="panel" style="max-width: 960px">
         <div class="panel-body">

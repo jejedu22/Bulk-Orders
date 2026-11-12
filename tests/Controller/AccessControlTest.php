@@ -82,7 +82,7 @@ class AccessControlTest extends WebTestCase
     public static function adminActions(): iterable
     {
         yield 'validation du paiement' => ['/confirme/%commande%'];
-        yield 'export CSV' => ['/exportcsv/%jour%'];
+        yield 'export Excel' => ['/exportxlsx/%jour%'];
         yield 'remise d\'une commande' => ['/livree/%commande%'];
         yield 'remise d\'une ligne' => ['/livree/ligne/%ligne%'];
     }

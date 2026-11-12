@@ -88,8 +88,9 @@ class NewsletterSaleAndEditorTest extends WebTestCase
         $crawler = $this->client->request('GET', '/newsletter/new');
         $options = $crawler->filter('#newsletter_jourDistrib option')->each(function ($option) { return $option->attr('value'); });
 
-        // Vente close mais distribution dans 1 jour : toujours à venir
-        $this->assertSame(['', (string) $enCours->getId(), (string) $aVenir->getId()], $options);
+        // Vente close mais distribution dans 1 jour : toujours à venir.
+        // La plus récente en premier.
+        $this->assertSame(['', (string) $aVenir->getId(), (string) $enCours->getId()], $options);
         $this->assertNotContains((string) $passee->getId(), $options);
     }
 

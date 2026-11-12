@@ -39,10 +39,11 @@ class BenevolatController extends AbstractController
             ->addSelect('p')
             ->where('COALESCE(j.dateLivraison, j.date) >= :today')
             ->setParameter('today', $aujourdhui->format('Y-m-d'))
-            ->orderBy('j.date', 'ASC')
+            ->orderBy('j.date', 'DESC')
             ->getQuery()
             ->getResult();
-        usort($jours, function (JourDistrib $a, JourDistrib $b) { return $a->getDateDistribution() <=> $b->getDateDistribution(); });
+        // La plus récente en premier
+        usort($jours, function (JourDistrib $a, JourDistrib $b) { return $b->getDateDistribution() <=> $a->getDateDistribution(); });
 
         $mesPostes = [];
         foreach ($jours as $jour) {

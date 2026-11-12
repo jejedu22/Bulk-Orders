@@ -168,14 +168,17 @@ class GestionCommandesTest extends WebTestCase
         file_put_contents($file, $this->client->getInternalResponse()->getContent());
         $reader = new \OpenSpout\Reader\XLSX\Reader();
         $reader->open($file);
-        $rows = [];
+        $sheets = [];
         foreach ($reader->getSheetIterator() as $sheet) {
             foreach ($sheet->getRowIterator() as $row) {
-                $rows[] = $row->toArray();
+                $sheets[$sheet->getName()][] = $row->toArray();
             }
         }
         $reader->close();
         unlink($file);
+
+        $this->assertSame(['Commandes', 'Par produit', 'Détail', 'Retraits'], array_keys($sheets));
+        $rows = $sheets['Commandes'];
 
         $this->assertSame('N° commande', $rows[0][0]);
         // Deux produits, mais une seule ligne pour la commande
@@ -186,5 +189,17 @@ class GestionCommandesTest extends WebTestCase
         $this->assertStringContainsString('Riz', $rows[1][6]);
         $this->assertEquals(24.0, $rows[1][7]);
         $this->assertSame('Le matin', $rows[1][8]);
+
+        // Par produit : quantités totales des commandes validées
+        $this->assertSame(['Farine', 'Riz'], array_column(\array_slice($sheets['Par produit'], 1), 1));
+        $this->assertEquals([5, 'kg', 2, 10, 1, 2], \array_slice($sheets['Par produit'][1], 2, 6));
+
+        // Détail : une ligne par produit commandé
+        $this->assertCount(3, $sheets['Détail']);
+        $this->assertSame([$commande->getId(), 'Martin', 'Jean'], \array_slice($sheets['Détail'][1], 0, 3));
+
+        // Retraits : commandes validées, sans créneau ici
+        $this->assertCount(2, $sheets['Retraits']);
+        $this->assertSame(['Sans créneau', 'Martin', 'Jean'], \array_slice($sheets['Retraits'][1], 0, 3));
     }
 }

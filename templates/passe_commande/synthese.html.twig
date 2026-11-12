@@ -75,7 +75,7 @@
                     {% endif %}
                     {% set nb_missing = demande_paiement_missing(jour_distrib) %}
                     {% if nb_missing %}<span class="pill pill-muted" title="Commandes non payées dont un produit n'a pas encore de prix final">{{ nb_missing }} sans prix définitif</span>{% endif %}
-                    <a href="{{ path('export_xlsx', { id: jour_distrib.id }) }}" class="btn btn-sm btn-soft" title="Exporter en Excel : une ligne par commande"><i class="fas fa-file-excel mr-1"></i> Excel</a>
+                    <a href="{{ path('export_xlsx', { id: jour_distrib.id }) }}" class="btn btn-sm btn-soft" title="Classeur Excel : commandes, par produit, détail, retraits"><i class="fas fa-file-excel mr-1"></i> Excel</a>
                 {% endif %}
                 <i class="fas fa-chevron-down ml-1"></i>
             </div>

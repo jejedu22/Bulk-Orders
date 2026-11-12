@@ -241,12 +241,14 @@ class SalesExport
         $commandes = array_values(array_filter($commandes, function (Commande $commande) {
             return $commande->getConfirmed();
         }));
-        // Tri stable : les commandes arrivent déjà triées par nom
+        // Ordre de passage : créneaux dans l'ordre de la journée, sans créneau en
+        // dernier, puis par nom
         usort($commandes, function (Commande $a, Commande $b) {
             $ca = $a->getCreneau();
             $cb = $b->getCreneau();
 
-            return [null === $ca, $ca ? $ca->getDebut() : null] <=> [null === $cb, $cb ? $cb->getDebut() : null];
+            return [null === $ca, $ca ? $ca->getDebut() : null, mb_strtolower($a->getUser()->getNom().' '.$a->getUser()->getPrenom())]
+                <=> [null === $cb, $cb ? $cb->getDebut() : null, mb_strtolower($b->getUser()->getNom().' '.$b->getUser()->getPrenom())];
         });
 
         return array_map(function (Commande $commande) {
@@ -297,7 +299,7 @@ class SalesExport
     }
 
     /**
-     * Commandes de la vente, triées par nom, avec utilisateurs, produits,
+     * Commandes de la vente, la plus récente en premier, avec utilisateurs, produits,
      * catégories et créneaux (une seule requête).
      *
      * @return Commande[]
@@ -314,9 +316,8 @@ class SalesExport
             ->leftJoin('c.creneau', 'cr')
             ->andWhere('c.jourDistrib = :jour')
             ->setParameter('jour', $jourDistrib)
-            ->orderBy('u.nom', 'ASC')
-            ->addOrderBy('u.prenom', 'ASC')
-            ->addOrderBy('c.id', 'ASC')
+            ->orderBy('c.date', 'DESC')
+            ->addOrderBy('c.id', 'DESC')
             ->getQuery()
             ->getResult();
     }

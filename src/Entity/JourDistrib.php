@@ -17,7 +17,9 @@ class JourDistrib
     #[ORM\Column(type: 'date')]
     private $date;
 
+    /** La commande la plus récente en premier */
     #[ORM\OneToMany(targetEntity: Commande::class, mappedBy: 'jourDistrib', cascade: ['persist', 'remove'])]
+    #[ORM\OrderBy(['date' => 'DESC', 'id' => 'DESC'])]
     private $commandes;
 
     #[ORM\Column(type: 'float')]

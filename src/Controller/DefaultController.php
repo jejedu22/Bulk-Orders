@@ -303,7 +303,8 @@ class DefaultController extends AbstractController
     #[Route('/recap', name: 'recap', methods: ['GET'])]
     public function recap(JourDistribRepository $jourDistribRepository): Response
     {
-        $jourDistribs = $jourDistribRepository->findAll();
+        // La vente la plus récente en premier
+        $jourDistribs = $jourDistribRepository->findBy([], ['date' => 'DESC']);
         $joursRecap=[];
         foreach ($jourDistribs as $jourDistrib) {
             array_push($joursRecap, ['jourDistrib' => $jourDistrib->getDate(), 'products' => $jourDistribRepository->recap($jourDistrib)]);

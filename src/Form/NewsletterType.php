@@ -57,7 +57,7 @@ class NewsletterType extends AbstractType
                     $qb = $repository->createQueryBuilder('j')
                         ->where('COALESCE(j.dateLivraison, j.date) >= :today')
                         ->setParameter('today', new \DateTime('today'))
-                        ->orderBy('j.date', 'ASC');
+                        ->orderBy('j.date', 'DESC');
                     if (null !== $current) {
                         $qb->orWhere('j = :current')->setParameter('current', $current);
                     }

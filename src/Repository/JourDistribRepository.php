@@ -65,7 +65,7 @@ class JourDistribRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('j')
             ->andWhere('j.date >= :dateNow')
             ->setParameter('dateNow', $now)
-            ->orderBy('j.date', \SortDirection::Ascending)
+            ->orderBy('j.date', \SortDirection::Descending)
             ->getQuery()
             ->getResult()
             ;
@@ -76,7 +76,7 @@ class JourDistribRepository extends ServiceEntityRepository
             ->join('j.commandes','c')
             ->andWhere('c.confirmed = true')
             ->andWhere('c.livree = false')
-            ->orderBy('j.date', \SortDirection::Ascending)
+            ->orderBy('j.date', \SortDirection::Descending)
             ->getQuery()
             ->getResult()
             ;
